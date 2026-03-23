@@ -143,7 +143,7 @@ export const usePlanStore = create<PlanState>()(
           return { maxSemester: last - 1, semesters: newSemesters };
         }),
 
-      loadPlan: (plan) => set(() => ({ ...plan })),
+      loadPlan: (plan) => set(() => ({ ...initialState, ...plan })),
 
       resetPlan: () => set(() => ({ ...initialState })),
     }),
