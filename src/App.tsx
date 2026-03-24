@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
 import { savePlanToCloud, loadPlanFromCloud } from './services/cloudSync';
-import { usePlanStore, REPEATABLE_COURSES } from './store/planStore';
+import { usePlanStore } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
 import { SemesterGrid } from './components/SemesterGrid';
