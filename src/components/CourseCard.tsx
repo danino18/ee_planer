@@ -14,11 +14,18 @@ interface Props {
   missingPrereqGroups?: string[][];  // OR-groups of unsatisfied prereqs
   courses?: Map<string, SapCourse>;
   semester?: number;
+  instanceKey?: string;       // unique draggable ID (for repeated courses)
+  wrongSemesterType?: boolean; // true if placed in wrong teaching semester
 }
 
-export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted, isPlanned, missingPrereqGroups = [], courses = new Map(), semester }: Props) {
+export function CourseCard({
+  course, isMandatory, hasPrereqWarning, isCompleted, isPlanned,
+  missingPrereqGroups = [], courses = new Map(), semester,
+  instanceKey, wrongSemesterType,
+}: Props) {
+  const draggableId = instanceKey ?? course.id;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: course.id,
+    id: draggableId,
     data: { course },
   });
   const { favorites, toggleFavorite, toggleCompleted, grades, removeCourseFromSemester } = usePlanStore();
@@ -31,7 +38,8 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
     : undefined;
 
   let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
-  if (isCompleted) colorClass = 'bg-green-50 border-green-300';
+  if (wrongSemesterType) colorClass = 'bg-red-50 border-red-200 hover:border-red-300';
+  else if (isCompleted) colorClass = 'bg-green-50 border-green-300';
   else if (hasPrereqWarning) colorClass = 'bg-orange-50 border-orange-300';
   else if (isMandatory) colorClass = 'bg-blue-50 border-blue-200 hover:border-blue-300';
 
@@ -47,6 +55,8 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
   const hasMoreInGroup = bestGroup.length > 2;
 
   const facultyStyle = course.faculty ? getFacultyStyle(course.faculty) : null;
+
+  const seasonLabel = course.teachingSemester === 'winter' ? '❄️' : course.teachingSemester === 'spring' ? '🌸' : null;
 
   return (
     <>
@@ -87,6 +97,13 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
         {/* Course name — padded to avoid 44px button overlap */}
         <p className="text-xs font-medium text-gray-900 leading-snug px-11 pt-0.5">{course.name}</p>
 
+        {/* Wrong semester warning */}
+        {wrongSemesterType && (
+          <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">
+            {course.teachingSemester === 'winter' ? '❄️ קורס חורף בלבד' : '🌸 קורס אביב בלבד'}
+          </p>
+        )}
+
         {/* Inline missing prereqs — show easiest path */}
         {missingPrereqGroups.length > 0 && bestGroup.length > 0 && (
           <p className="text-xs text-orange-500 mt-1 px-4 leading-tight">
@@ -107,6 +124,18 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {/* Season badge */}
+            {seasonLabel && (
+              <span className="text-xs leading-none" title={course.teachingSemester === 'winter' ? 'חורף בלבד' : 'אביב בלבד'}>
+                {seasonLabel}
+              </span>
+            )}
+            {/* English badge */}
+            {course.isEnglish && (
+              <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס באנגלית">
+                EN
+              </span>
+            )}
             {/* Mandatory / elective badge */}
             <span className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
               isMandatory ? 'bg-blue-100 text-blue-600' : 'bg-teal-50 text-teal-600'

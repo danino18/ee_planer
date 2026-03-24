@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { CourseCard } from './CourseCard';
 import type { SapCourse } from '../types';
@@ -21,12 +22,13 @@ interface Props {
   isPast: boolean;
   isFuture: boolean;
   onSetCurrentSemester: (n: number | null) => void;
-  summerIndex?: number;  // 1-based index among summer semesters (for independent labeling)
+  summerIndex?: number;
   isRowMode?: boolean;
   canMoveLeft?: boolean;
   canMoveRight?: boolean;
   onMoveLeft?: () => void;
   onMoveRight?: () => void;
+  semesterType?: 'winter' | 'spring' | 'summer';
 }
 
 function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -41,11 +43,12 @@ function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, 
 export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
-  summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight,
+  summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight, semesterType,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
-  const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
+  const [search, setSearch] = useState('');
 
+  const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
   const columnStyle = getColumnStyle(isOver, isSummer, isCurrent, isPast, isFuture);
 
   const semesterLabel = semester === 0
@@ -53,6 +56,15 @@ export function SemesterColumn({
     : isSummer
       ? `קיץ ${SEM_LABELS[summerIndex ?? semester]}`
       : `סמסטר ${SEM_LABELS[semester]}`;
+
+  // Filter for search in the unassigned column
+  const filteredIds = (semester === 0 && search.trim())
+    ? courseIds.filter((id) => {
+        const c = courses.get(id);
+        const q = search.trim();
+        return c?.name.includes(q) || id.includes(q);
+      })
+    : courseIds;
 
   return (
     <div
@@ -76,7 +88,6 @@ export function SemesterColumn({
                 {totalCredits.toFixed(1)} נ״ז
               </span>
             )}
-            {/* Reorder arrows — only shown for summer semesters */}
             {isSummer && canMoveRight && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}
@@ -108,12 +119,32 @@ export function SemesterColumn({
             )}
           </div>
         </div>
+
+        {/* Search input for unassigned column */}
+        {semester === 0 && (
+          <div className="mt-1.5 relative">
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">🔍</span>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="חפש קורס..."
+              onPointerDown={(e) => e.stopPropagation()}
+              className="w-full text-xs pr-6 pl-2 py-1 border border-gray-200 rounded-lg bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-300"
+            />
+          </div>
+        )}
       </div>
+
       <div className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
-        {courseIds.map((id, idx) => {
+        {filteredIds.map((id, idx) => {
           const course = courses.get(id);
           if (!course) return null;
           const missingPrereqGroups = prereqStatus.get(id) ?? [];
+          const wrongSemesterType = !!(
+            semesterType && semesterType !== 'summer' && course.teachingSemester
+            && course.teachingSemester !== semesterType
+          );
           return (
             <CourseCard
               key={`${id}_${idx}`}
@@ -125,12 +156,16 @@ export function SemesterColumn({
               isCompleted={effectiveCompleted.has(id)}
               isPlanned={isFuture && !completedCourses.has(id)}
               semester={semester}
+              instanceKey={`${id}__${semester}__${idx}`}
+              wrongSemesterType={wrongSemesterType}
             />
           );
         })}
-        {courseIds.length === 0 && (
+        {filteredIds.length === 0 && (
           <p className="text-xs text-gray-400 text-center py-6 italic">
-            {semester === 0 ? 'כל הקורסים משובצים' : 'גרור קורסים לכאן'}
+            {semester === 0
+              ? (search.trim() ? 'אין קורסים תואמים' : 'כל הקורסים משובצים')
+              : 'גרור קורסים לכאן'}
           </p>
         )}
       </div>

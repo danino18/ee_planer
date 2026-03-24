@@ -26,7 +26,8 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
   const completedSet = new Set(completedCourses);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);  // may be instanceKey
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null); // base course ID
   const [activeSemFrom, setActiveSemFrom] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
@@ -55,30 +56,46 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     }
   }
 
+  function parseInstanceKey(rawId: string): { courseId: string; semFrom: number } {
+    // instanceKey format: `${courseId}__${semester}__${idx}`
+    const parts = rawId.split('__');
+    return {
+      courseId: parts[0],
+      semFrom: parts.length >= 2 ? parseInt(parts[1], 10) : 0,
+    };
+  }
+
   function handleDragStart(event: DragStartEvent) {
-    const id = String(event.active.id);
-    setActiveId(id);
-    // Find source semester
-    for (const [k, ids] of Object.entries(semesters)) {
-      if (ids.includes(id)) { setActiveSemFrom(Number(k)); break; }
-    }
+    const rawId = String(event.active.id);
+    setActiveId(rawId);
+    const { courseId, semFrom } = parseInstanceKey(rawId);
+    setActiveCourseId(courseId);
+    setActiveSemFrom(semFrom);
   }
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
     const { active, over } = event;
     if (!over) return;
-    const courseId = String(active.id);
+    const { courseId, semFrom } = parseInstanceKey(String(active.id));
     const target = String(over.id);
     if (!target.startsWith('semester-')) return;
     const toSem = parseInt(target.replace('semester-', ''), 10);
-    if (activeSemFrom !== toSem) moveCourse(courseId, activeSemFrom, toSem);
+    if (semFrom !== toSem) moveCourse(courseId, semFrom, toSem);
   }
 
   // Migrate: use semesterOrder if available, else fall back to range
   const displayOrder = semesterOrder?.length
     ? semesterOrder
     : Array.from({ length: maxSemester }, (_, i) => i + 1);
+
+  // Compute semester type: among non-summer semesters, 0-indexed even = winter, odd = spring
+  const nonSummerOrder = displayOrder.filter((s) => !summerSemesters.includes(s));
+  const getSemesterType = (sem: number): 'winter' | 'spring' | 'summer' => {
+    if (summerSemesters.includes(sem)) return 'summer';
+    const pos = nonSummerOrder.indexOf(sem);
+    return pos % 2 === 0 ? 'winter' : 'spring';
+  };
 
   const semColProps = (sem: number) => {
     const posInOrder = displayOrder.indexOf(sem);
@@ -99,8 +116,9 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       isRowMode: viewMode === 'rows',
       canMoveLeft: summerSemesters.includes(sem) && posInOrder > 0,
       canMoveRight: summerSemesters.includes(sem) && posInOrder < displayOrder.length - 1,
-      onMoveLeft: () => moveSemesterInOrder(sem, 'right'),   // RTL: left arrow = earlier in display (right in LTR)
+      onMoveLeft: () => moveSemesterInOrder(sem, 'right'),
       onMoveRight: () => moveSemesterInOrder(sem, 'left'),
+      semesterType: getSemesterType(sem),
     };
   };
 
@@ -120,7 +138,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     }
   }
 
-  const activeCourse = activeId ? courses.get(activeId) : null;
+  const activeCourse = activeCourseId ? courses.get(activeCourseId) : null;
   const hasSummers = summerSemesters.length > 0;
 
   return (
@@ -263,14 +281,14 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       </div>
 
       <DragOverlay dropAnimation={null}>
-        {activeCourse && (
+        {activeCourse && activeCourseId && (
           <div className="rotate-2 scale-105 shadow-2xl">
             <CourseCard
               course={activeCourse}
               courses={courses}
-              isMandatory={mandatoryIds.has(activeId!)}
-              isCompleted={completedSet.has(activeId!)}
-              missingPrereqGroups={prereqStatus.get(activeId!) ?? []}
+              isMandatory={mandatoryIds.has(activeCourseId)}
+              isCompleted={completedSet.has(activeCourseId)}
+              missingPrereqGroups={prereqStatus.get(activeCourseId) ?? []}
             />
           </div>
         )}

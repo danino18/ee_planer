@@ -9,6 +9,8 @@ export interface SapCourse {
   examMoed2?: string;
   faculty: string;
   syllabus?: string;
+  teachingSemester?: 'winter' | 'spring';  // undefined = both
+  isEnglish?: boolean;
 }
 
 export interface TrackDefinition {
