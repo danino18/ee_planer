@@ -44,4 +44,6 @@ export interface StudentPlan {
   substitutions: Record<string, string>;
   maxSemester: number;
   selectedPrereqGroups: Record<string, string[]>; // courseId → chosen AND-group; absent = auto OR-logic
+  summerSemesters: number[];
+  currentSemester: number | null;
 }

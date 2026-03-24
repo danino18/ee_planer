@@ -293,6 +293,7 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
             max={100}
             value={gradeInput}
             onChange={(e) => setGradeInput(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
             placeholder="הזן ציון..."
             className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-colors text-right
               ${isValid ? 'border-gray-300 focus:border-blue-400' : 'border-red-400'}`}

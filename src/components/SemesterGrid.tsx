@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, useSensor, useSensors,
@@ -9,6 +9,7 @@ import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
+import { getFacultyStyle, getFacultyShortName } from '../utils/faculty';
 
 interface Props {
   courses: Map<string, SapCourse>;
@@ -16,13 +17,40 @@ interface Props {
 }
 
 export function SemesterGrid({ courses, trackDef }: Props) {
-  const { semesters, moveCourse, completedCourses, maxSemester, addSemester, removeSemester } = usePlanStore();
+  const {
+    semesters, moveCourse, completedCourses, maxSemester,
+    addSemester, removeSemester, summerSemesters, currentSemester,
+    setCurrentSemester, addSummerSemester,
+  } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
   const completedSet = new Set(completedCourses);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
+  const [showSummerSemesters, setShowSummerSemesters] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
+
+  // Compute unique faculties from placed courses for legend
+  const placedFaculties = useMemo(() => {
+    const seen = new Map<string, string>(); // faculty → dot class
+    for (const ids of Object.values(semesters)) {
+      for (const id of ids) {
+        const f = courses.get(id)?.faculty;
+        if (f && !seen.has(f)) seen.set(f, getFacultyStyle(f).dot);
+      }
+    }
+    return [...seen.entries()].map(([faculty, dot]) => ({ faculty, dot }));
+  }, [semesters, courses]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  // Effective completed: explicit completedCourses + all courses in semesters before currentSemester
+  const effectiveCompleted = new Set<string>(completedCourses);
+  if (currentSemester !== null) {
+    for (let s = 1; s < currentSemester; s++) {
+      for (const id of semesters[s] ?? []) effectiveCompleted.add(id);
+    }
+  }
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(String(event.active.id));
@@ -50,13 +78,28 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     mandatoryCourseIds: mandatoryIds,
     prereqStatus,
     completedCourses: completedSet,
+    effectiveCompleted,
+    isSummer: summerSemesters.includes(sem),
+    isCurrent: currentSemester === sem,
+    isPast: currentSemester !== null && sem < currentSemester,
+    isFuture: currentSemester !== null && sem > currentSemester,
+    onSetCurrentSemester: setCurrentSemester,
   });
 
-  // Build rows of 4 semesters
-  const semesterList = Array.from({ length: maxSemester }, (_, i) => i + 1);
+  // Build semester list, filtering out summer semesters when hidden
+  const semesterList = Array.from({ length: maxSemester }, (_, i) => i + 1)
+    .filter((s) => showSummerSemesters || !summerSemesters.includes(s));
+
+  // Build rows based on view mode
   const rows: number[][] = [];
-  for (let i = 0; i < semesterList.length; i += 4) {
-    rows.push(semesterList.slice(i, i + 4));
+  if (viewMode === 'grid') {
+    for (let i = 0; i < semesterList.length; i += 4) {
+      rows.push(semesterList.slice(i, i + 4));
+    }
+  } else {
+    for (const s of semesterList) {
+      rows.push([s]);
+    }
   }
 
   const activeCourse = activeId ? courses.get(activeId) : null;
@@ -68,8 +111,70 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <button
+          onClick={() => setViewMode(viewMode === 'grid' ? 'rows' : 'grid')}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
+          title={viewMode === 'grid' ? 'עבור לתצוגת שורות' : 'עבור לתצוגת גריד'}
+        >
+          <span>{viewMode === 'grid' ? '☰' : '⊞'}</span>
+          <span>{viewMode === 'grid' ? 'תצוגת שורות' : 'תצוגת גריד'}</span>
+        </button>
+
+        <button
+          onClick={() => setShowSummerSemesters(!showSummerSemesters)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+            showSummerSemesters
+              ? 'border-amber-400 bg-amber-50 text-amber-700'
+              : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+          }`}
+          title={showSummerSemesters ? 'הסתר סמסטרי קיץ' : 'הצג סמסטרי קיץ'}
+        >
+          <span>☀️</span>
+          <span>{showSummerSemesters ? 'הסתר קיץ' : 'הצג קיץ'}</span>
+        </button>
+
+        {placedFaculties.length > 0 && (
+          <button
+            onClick={() => setShowLegend(!showLegend)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors ${
+              showLegend
+                ? 'border-gray-400 bg-gray-100 text-gray-700'
+                : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+            }`}
+            title="מקרא פקולטות"
+          >
+            <span className="flex gap-0.5">
+              {placedFaculties.slice(0, 3).map(({ faculty, dot }) => (
+                <span key={faculty} className={`w-2 h-2 rounded-full inline-block ${dot}`} />
+              ))}
+            </span>
+            <span>מקרא</span>
+          </button>
+        )}
+      </div>
+
+      {/* Faculty legend */}
+      {showLegend && placedFaculties.length > 0 && (
+        <div className="mb-3 p-2.5 bg-white border border-gray-200 rounded-xl flex flex-wrap gap-x-4 gap-y-1.5">
+          {placedFaculties.map(({ faculty }) => {
+            const s = getFacultyStyle(faculty);
+            return (
+              <div key={faculty} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.dot}`} />
+                <span className="text-xs text-gray-600">{getFacultyShortName(faculty)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {rows.map((row, rowIdx) => (
-        <div key={rowIdx} className="grid grid-cols-4 gap-3 mb-3">
+        <div
+          key={rowIdx}
+          className={viewMode === 'grid' ? 'grid grid-cols-4 gap-3 mb-3' : 'flex flex-col gap-3 mb-3'}
+        >
           {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}
         </div>
       ))}
@@ -86,6 +191,15 @@ export function SemesterGrid({ courses, trackDef }: Props) {
             >
               <span className="text-2xl leading-none">+</span>
               <span>הוסף סמסטר</span>
+            </button>
+          )}
+          {maxSemester < 16 && (
+            <button
+              onClick={addSummerSemester}
+              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-16 text-sm font-medium"
+            >
+              <span className="text-xl leading-none">☀️</span>
+              <span>הוסף קיץ</span>
             </button>
           )}
           {maxSemester > 1 && (

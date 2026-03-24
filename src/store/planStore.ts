@@ -14,21 +14,25 @@ interface PlanState extends StudentPlan {
   setSubstitution: (fromId: string, toId: string | null) => void;
   setSelectedPrereqGroup: (courseId: string, group: string[] | null) => void;
   addSemester: () => void;
+  addSummerSemester: () => void;
   removeSemester: () => void;
+  setCurrentSemester: (n: number | null) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
 }
 
 const initialState: StudentPlan = {
   trackId: null,
-  semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] },
+  semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] },
   completedCourses: [],
   selectedSpecializations: [],
   favorites: [],
   grades: {},
   substitutions: {},
-  maxSemester: 7,
+  maxSemester: 8,
   selectedPrereqGroups: {},
+  summerSemesters: [],
+  currentSemester: null,
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -39,10 +43,12 @@ export const usePlanStore = create<PlanState>()(
       setTrack: (trackId) =>
         set(() => ({
           trackId,
-          semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [] },
+          semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] },
           completedCourses: [],
           selectedSpecializations: [],
-          maxSemester: 7,
+          maxSemester: 8,
+          summerSemesters: [],
+          currentSemester: null,
         })),
 
       addCourseToSemester: (courseId, semester) =>
@@ -132,6 +138,17 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      addSummerSemester: () =>
+        set((state) => {
+          const next = state.maxSemester + 1;
+          if (next > 16) return state;
+          return {
+            maxSemester: next,
+            semesters: { ...state.semesters, [next]: [] },
+            summerSemesters: [...state.summerSemesters, next],
+          };
+        }),
+
       removeSemester: () =>
         set((state) => {
           if (state.maxSemester <= 1) return state;
@@ -140,8 +157,15 @@ export const usePlanStore = create<PlanState>()(
           const newSemesters = { ...state.semesters };
           newSemesters[0] = [...(newSemesters[0] ?? []), ...coursesInLast];
           delete newSemesters[last];
-          return { maxSemester: last - 1, semesters: newSemesters };
+          return {
+            maxSemester: last - 1,
+            semesters: newSemesters,
+            summerSemesters: state.summerSemesters.filter((s) => s !== last),
+            currentSemester: state.currentSemester === last ? null : state.currentSemester,
+          };
         }),
+
+      setCurrentSemester: (n) => set(() => ({ currentSemester: n })),
 
       loadPlan: (plan) => set(() => ({ ...initialState, ...plan })),
 

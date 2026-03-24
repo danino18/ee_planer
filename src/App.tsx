@@ -62,8 +62,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           loadPlan(cloudPlan);
         } else {
           // First login — save current local plan to cloud
-          const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups } = store;
-          savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups });
+          const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester } = store;
+          savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester });
         }
       })
       .catch(console.error);
@@ -75,8 +75,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     const unsubscribe = usePlanStore.subscribe((state) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups } = state;
-        savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups }).catch(console.error);
+        const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester } = state;
+        savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester }).catch(console.error);
       }, 2000);
     });
     return () => {

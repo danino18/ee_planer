@@ -19,19 +19,34 @@ export function usePrerequisiteStatus(
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const substitutions = usePlanStore((s) => s.substitutions);
   const selectedPrereqGroups = usePlanStore((s) => s.selectedPrereqGroups);
+  const currentSemester = usePlanStore((s) => s.currentSemester);
 
   return useMemo(() => {
     const missingMap = new Map<string, string[][]>();
     if (!trackDef) return missingMap;
 
+    // Build base set: completedCourses + all courses in semesters before currentSemester
+    const baseTaken = new Set<string>(completedCourses);
+    if (currentSemester !== null) {
+      for (let s = 1; s < currentSemester; s++) {
+        for (const id of semesters[s] ?? []) baseTaken.add(id);
+      }
+    }
+
     for (const [semStr, courseIds] of Object.entries(semesters)) {
       const sem = Number(semStr);
-      if (sem === 0) continue;
 
-      const alreadyTaken = new Set<string>(completedCourses);
-      for (let s = 1; s < sem; s++) {
-        for (const id of semesters[s] ?? []) {
-          alreadyTaken.add(id);
+      const alreadyTaken = new Set<string>(baseTaken);
+      if (sem === 0) {
+        // For unassigned courses, consider ALL placed courses as available prereqs
+        for (const [k, ids] of Object.entries(semesters)) {
+          if (Number(k) !== 0) for (const id of ids) alreadyTaken.add(id);
+        }
+      } else {
+        for (let s = 1; s < sem; s++) {
+          for (const id of semesters[s] ?? []) {
+            alreadyTaken.add(id);
+          }
         }
       }
       // Expand with substitutions: if course A substitutes for course B, treat B as taken
@@ -70,7 +85,7 @@ export function usePrerequisiteStatus(
     }
 
     return missingMap;
-  }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef]);
+  }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester]);
 }
 
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {

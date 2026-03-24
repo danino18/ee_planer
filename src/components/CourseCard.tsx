@@ -3,18 +3,20 @@ import { useDraggable } from '@dnd-kit/core';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseDetailModal } from './CourseDetailModal';
+import { getFacultyStyle } from '../utils/faculty';
 
 interface Props {
   course: SapCourse;
   isMandatory: boolean;
   hasPrereqWarning?: boolean;
   isCompleted?: boolean;
+  isPlanned?: boolean;
   missingPrereqGroups?: string[][];  // OR-groups of unsatisfied prereqs
   courses?: Map<string, SapCourse>;
   semester?: number;
 }
 
-export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted, missingPrereqGroups = [], courses = new Map(), semester }: Props) {
+export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted, isPlanned, missingPrereqGroups = [], courses = new Map(), semester }: Props) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: course.id,
     data: { course },
@@ -44,6 +46,8 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
   const displayedNames = bestGroup.slice(0, 2).map(id => courses.get(id)?.name ?? id);
   const hasMoreInGroup = bestGroup.length > 2;
 
+  const facultyStyle = course.faculty ? getFacultyStyle(course.faculty) : null;
+
   return (
     <>
       <div
@@ -56,31 +60,32 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
           ${colorClass} border rounded-lg p-2.5 relative
           cursor-grab active:cursor-grabbing select-none
           ${isDragging ? 'opacity-50 shadow-2xl' : 'hover:shadow-sm'}
+          ${isPlanned && !isDragging ? 'opacity-60' : ''}
           transition-all
         `}
       >
-        {/* Favorite star — top physical-left */}
+        {/* Favorite star — 44×44px hit area, top physical-left */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); toggleFavorite(course.id); }}
-          className={`absolute top-1.5 left-1.5 text-sm leading-none ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
+          className={`absolute top-0 left-0 w-11 h-11 flex items-center justify-center text-sm leading-none ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
           title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
         >
           {isFavorite ? '★' : '☆'}
         </button>
 
-        {/* Completed toggle — top physical-right */}
+        {/* Completed toggle — 44×44px hit area, top physical-right */}
         <button
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); toggleCompleted(course.id); }}
-          className={`absolute top-1.5 right-1.5 text-sm leading-none font-bold ${isCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
+          className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${isCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
           title={isCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
         >
           {isCompleted ? '✓' : '○'}
         </button>
 
-        {/* Course name */}
-        <p className="text-xs font-medium text-gray-900 leading-snug px-4">{course.name}</p>
+        {/* Course name — padded to avoid 44px button overlap */}
+        <p className="text-xs font-medium text-gray-900 leading-snug px-11 pt-0.5">{course.name}</p>
 
         {/* Inline missing prereqs — show easiest path */}
         {missingPrereqGroups.length > 0 && bestGroup.length > 0 && (
@@ -89,10 +94,25 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
           </p>
         )}
 
-        {/* Bottom row: ID | grade badge + warning + credits */}
-        <div className="flex items-center justify-between mt-1.5">
-          <span className="text-xs text-gray-400">{course.id}</span>
-          <div className="flex items-center gap-1">
+        {/* Bottom row: ID | tags + grade + warning + credits */}
+        <div className="flex items-center justify-between mt-1.5 gap-1">
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="text-xs text-gray-400 shrink-0">{course.id}</span>
+            {/* Faculty colored dot */}
+            {facultyStyle && (
+              <span
+                className={`inline-block w-2 h-2 rounded-full shrink-0 ${facultyStyle.dot}`}
+                title={course.faculty}
+              />
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Mandatory / elective badge */}
+            <span className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
+              isMandatory ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
+            }`}>
+              {isMandatory ? 'חובה' : 'בחירה'}
+            </span>
             {grade !== undefined && (
               <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>
             )}
@@ -101,7 +121,7 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
           </div>
         </div>
 
-        {/* Remove (X) — shown in all semesters including לא משובץ */}
+        {/* Remove (X) */}
         {semester !== undefined && (
           <button
             onPointerDown={(e) => e.stopPropagation()}

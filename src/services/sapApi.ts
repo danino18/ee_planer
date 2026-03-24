@@ -90,12 +90,30 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '00460204': { name: 'תקשורת אנלוגית', credits: 3 },
     '00460242': { name: 'פיסיקה סטטיסטית להנדסת חשמל', credits: 3 },
     '00460001': { name: 'הנדסת מערכות תוכנה מבוזרות', credits: 3 },
-    '03940901': { name: 'חינוך גופני', credits: 3 },
+    '03940901': { name: 'חינוך גופני', credits: 1 },
+    '03940800': { name: 'ספורט נבחרות', credits: 1.5 },
   };
   for (const [id, info] of Object.entries(LEGACY_COURSES)) {
     if (!merged.has(id)) {
       merged.set(id, { id, name: info.name, credits: info.credits, prerequisites: [], faculty: '' });
     }
+  }
+
+  // Remove self-referencing prerequisites (e.g. פיזיקה 1מ listing itself as prereq)
+  for (const [id, course] of merged) {
+    course.prerequisites = course.prerequisites
+      .map(group => group.filter(prereqId => prereqId !== id))
+      .filter(group => group.length > 0);
+  }
+
+  // Force correct credits for sport courses (SAP data may have wrong values)
+  const SPORT_OVERRIDES: Record<string, number> = {
+    '03940901': 1,
+    '03940800': 1.5,
+  };
+  for (const [id, credits] of Object.entries(SPORT_OVERRIDES)) {
+    const course = merged.get(id);
+    if (course) course.credits = credits;
   }
 
   courseCache = merged;
