@@ -26,9 +26,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
   const completedSet = new Set(completedCourses);
-  const [activeId, setActiveId] = useState<string | null>(null);  // may be instanceKey
-  const [activeCourseId, setActiveCourseId] = useState<string | null>(null); // base course ID
-  const [activeSemFrom, setActiveSemFrom] = useState<number>(0);
+  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
@@ -66,15 +64,12 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    const rawId = String(event.active.id);
-    setActiveId(rawId);
-    const { courseId, semFrom } = parseInstanceKey(rawId);
+    const { courseId } = parseInstanceKey(String(event.active.id));
     setActiveCourseId(courseId);
-    setActiveSemFrom(semFrom);
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setActiveId(null);
+    setActiveCourseId(null);
     const { active, over } = event;
     if (!over) return;
     const { courseId, semFrom } = parseInstanceKey(String(active.id));
