@@ -29,6 +29,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [gridCols, setGridCols] = useState<3 | 4 | 5>(4);
 
   // Compute unique faculties from placed courses for legend
   const placedFaculties = useMemo(() => {
@@ -84,6 +85,8 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     isPast: currentSemester !== null && sem < currentSemester,
     isFuture: currentSemester !== null && sem > currentSemester,
     onSetCurrentSemester: setCurrentSemester,
+    summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
+    isRowMode: viewMode === 'rows',
   });
 
   // Build semester list, filtering out summer semesters when hidden
@@ -93,8 +96,8 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   // Build rows based on view mode
   const rows: number[][] = [];
   if (viewMode === 'grid') {
-    for (let i = 0; i < semesterList.length; i += 4) {
-      rows.push(semesterList.slice(i, i + 4));
+    for (let i = 0; i < semesterList.length; i += gridCols) {
+      rows.push(semesterList.slice(i, i + gridCols));
     }
   } else {
     for (const s of semesterList) {
@@ -135,6 +138,24 @@ export function SemesterGrid({ courses, trackDef }: Props) {
           <span>{showSummerSemesters ? 'הסתר קיץ' : 'הצג קיץ'}</span>
         </button>
 
+        {viewMode === 'grid' && (
+          <div className="flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
+            <button
+              onClick={() => setGridCols(gridCols > 3 ? (gridCols - 1) as 3 | 4 | 5 : 3)}
+              disabled={gridCols <= 3}
+              className="px-2.5 py-1.5 hover:bg-gray-100 disabled:opacity-30 transition-colors"
+              title="הצג יותר עמודות (קטן יותר)"
+            >−</button>
+            <span className="px-1 py-1.5 text-xs border-x border-gray-200 select-none">{gridCols}</span>
+            <button
+              onClick={() => setGridCols(gridCols < 5 ? (gridCols + 1) as 3 | 4 | 5 : 5)}
+              disabled={gridCols >= 5}
+              className="px-2.5 py-1.5 hover:bg-gray-100 disabled:opacity-30 transition-colors"
+              title="הצג פחות עמודות (גדול יותר)"
+            >+</button>
+          </div>
+        )}
+
         {placedFaculties.length > 0 && (
           <button
             onClick={() => setShowLegend(!showLegend)}
@@ -173,7 +194,9 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       {rows.map((row, rowIdx) => (
         <div
           key={rowIdx}
-          className={viewMode === 'grid' ? 'grid grid-cols-4 gap-3 mb-3' : 'flex flex-col gap-3 mb-3'}
+          className={viewMode === 'grid'
+            ? `grid gap-3 mb-3 ${gridCols === 3 ? 'grid-cols-3' : gridCols === 5 ? 'grid-cols-5' : 'grid-cols-4'}`
+            : 'flex flex-col gap-3 mb-3'}
         >
           {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}
         </div>

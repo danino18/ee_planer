@@ -106,6 +106,14 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
       .filter(group => group.length > 0);
   }
 
+  // Fix: 01140071 (פיסיקה 1מ, new ID) lists 01130013 (פיזיקה 1מ, old ID) as prereq — same course
+  const physics1m = merged.get('01140071');
+  if (physics1m) {
+    physics1m.prerequisites = physics1m.prerequisites
+      .map(group => group.filter(id => id !== '01130013'))
+      .filter(group => group.length > 0);
+  }
+
   // Force correct credits for sport courses (SAP data may have wrong values)
   const SPORT_OVERRIDES: Record<string, number> = {
     '03940901': 1,

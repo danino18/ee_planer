@@ -21,6 +21,9 @@ interface PlanState extends StudentPlan {
   resetPlan: () => void;
 }
 
+// Courses that can appear in multiple semesters simultaneously
+const REPEATABLE_COURSES = new Set(['03940901', '03940800']);
+
 const initialState: StudentPlan = {
   trackId: null,
   semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] },
@@ -54,10 +57,19 @@ export const usePlanStore = create<PlanState>()(
       addCourseToSemester: (courseId, semester) =>
         set((state) => {
           const newSemesters: Record<number, string[]> = {};
-          for (const [k, v] of Object.entries(state.semesters)) {
-            newSemesters[Number(k)] = v.filter((id) => id !== courseId);
+          if (REPEATABLE_COURSES.has(courseId)) {
+            // Repeatable courses can appear in multiple semesters — just add without removing
+            for (const [k, v] of Object.entries(state.semesters)) {
+              newSemesters[Number(k)] = v;
+            }
+          } else {
+            for (const [k, v] of Object.entries(state.semesters)) {
+              newSemesters[Number(k)] = v.filter((id) => id !== courseId);
+            }
           }
-          newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
+          if (!newSemesters[semester]?.includes(courseId)) {
+            newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
+          }
           return { semesters: newSemesters };
         }),
 

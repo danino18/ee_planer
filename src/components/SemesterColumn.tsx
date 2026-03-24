@@ -21,6 +21,8 @@ interface Props {
   isPast: boolean;
   isFuture: boolean;
   onSetCurrentSemester: (n: number | null) => void;
+  summerIndex?: number;  // 1-based index among summer semesters (for independent labeling)
+  isRowMode?: boolean;
 }
 
 function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -34,7 +36,8 @@ function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, 
 
 export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
-  completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester
+  completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
+  summerIndex, isRowMode,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
@@ -44,7 +47,7 @@ export function SemesterColumn({
   const semesterLabel = semester === 0
     ? 'לא משובץ'
     : isSummer
-      ? `קיץ ${SEM_LABELS[semester]}`
+      ? `קיץ ${SEM_LABELS[summerIndex ?? semester]}`
       : `סמסטר ${SEM_LABELS[semester]}`;
 
   return (
@@ -85,7 +88,7 @@ export function SemesterColumn({
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-1.5 p-2 flex-1">
+      <div className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
         {courseIds.map((id) => {
           const course = courses.get(id);
           if (!course) return null;
