@@ -90,7 +90,9 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '00460204': { name: 'תקשורת אנלוגית', credits: 3 },
     '00460242': { name: 'פיסיקה סטטיסטית להנדסת חשמל', credits: 3 },
     '00460001': { name: 'הנדסת מערכות תוכנה מבוזרות', credits: 3 },
+    '03940900': { name: 'חינוך גופני', credits: 1 },
     '03940901': { name: 'חינוך גופני', credits: 1 },
+    '03940902': { name: 'נבחרות ספורט', credits: 1.5 },
     '03940800': { name: 'ספורט נבחרות', credits: 1.5 },
   };
   for (const [id, info] of Object.entries(LEGACY_COURSES)) {
@@ -116,7 +118,9 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
 
   // Force correct credits for sport courses (SAP data may have wrong values)
   const SPORT_OVERRIDES: Record<string, number> = {
+    '03940900': 1,
     '03940901': 1,
+    '03940902': 1.5,
     '03940800': 1.5,
   };
   for (const [id, credits] of Object.entries(SPORT_OVERRIDES)) {

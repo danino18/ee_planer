@@ -46,4 +46,5 @@ export interface StudentPlan {
   selectedPrereqGroups: Record<string, string[]>; // courseId → chosen AND-group; absent = auto OR-logic
   summerSemesters: number[];
   currentSemester: number | null;
+  semesterOrder: number[];  // display order of semesters 1..maxSemester
 }

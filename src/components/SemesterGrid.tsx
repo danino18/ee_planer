@@ -20,12 +20,14 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   const {
     semesters, moveCourse, completedCourses, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
-    setCurrentSemester, addSummerSemester,
+    setCurrentSemester, addSummerSemester, removeSummerSemester,
+    semesterOrder, moveSemesterInOrder,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
   const completedSet = new Set(completedCourses);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeSemFrom, setActiveSemFrom] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
@@ -54,7 +56,12 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    setActiveId(String(event.active.id));
+    const id = String(event.active.id);
+    setActiveId(id);
+    // Find source semester
+    for (const [k, ids] of Object.entries(semesters)) {
+      if (ids.includes(id)) { setActiveSemFrom(Number(k)); break; }
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -65,32 +72,40 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     const target = String(over.id);
     if (!target.startsWith('semester-')) return;
     const toSem = parseInt(target.replace('semester-', ''), 10);
-    let fromSem = 0;
-    for (const [k, ids] of Object.entries(semesters)) {
-      if (ids.includes(courseId)) { fromSem = Number(k); break; }
-    }
-    if (fromSem !== toSem) moveCourse(courseId, fromSem, toSem);
+    if (activeSemFrom !== toSem) moveCourse(courseId, activeSemFrom, toSem);
   }
 
-  const semColProps = (sem: number) => ({
-    semester: sem,
-    courseIds: semesters[sem] ?? [],
-    courses,
-    mandatoryCourseIds: mandatoryIds,
-    prereqStatus,
-    completedCourses: completedSet,
-    effectiveCompleted,
-    isSummer: summerSemesters.includes(sem),
-    isCurrent: currentSemester === sem,
-    isPast: currentSemester !== null && sem < currentSemester,
-    isFuture: currentSemester !== null && sem > currentSemester,
-    onSetCurrentSemester: setCurrentSemester,
-    summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
-    isRowMode: viewMode === 'rows',
-  });
+  // Migrate: use semesterOrder if available, else fall back to range
+  const displayOrder = semesterOrder?.length
+    ? semesterOrder
+    : Array.from({ length: maxSemester }, (_, i) => i + 1);
+
+  const semColProps = (sem: number) => {
+    const posInOrder = displayOrder.indexOf(sem);
+    return {
+      semester: sem,
+      courseIds: semesters[sem] ?? [],
+      courses,
+      mandatoryCourseIds: mandatoryIds,
+      prereqStatus,
+      completedCourses: completedSet,
+      effectiveCompleted,
+      isSummer: summerSemesters.includes(sem),
+      isCurrent: currentSemester === sem,
+      isPast: currentSemester !== null && sem < currentSemester,
+      isFuture: currentSemester !== null && sem > currentSemester,
+      onSetCurrentSemester: setCurrentSemester,
+      summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
+      isRowMode: viewMode === 'rows',
+      canMoveLeft: summerSemesters.includes(sem) && posInOrder > 0,
+      canMoveRight: summerSemesters.includes(sem) && posInOrder < displayOrder.length - 1,
+      onMoveLeft: () => moveSemesterInOrder(sem, 'right'),   // RTL: left arrow = earlier in display (right in LTR)
+      onMoveRight: () => moveSemesterInOrder(sem, 'left'),
+    };
+  };
 
   // Build semester list, filtering out summer semesters when hidden
-  const semesterList = Array.from({ length: maxSemester }, (_, i) => i + 1)
+  const semesterList = displayOrder
     .filter((s) => showSummerSemesters || !summerSemesters.includes(s));
 
   // Build rows based on view mode
@@ -106,6 +121,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   }
 
   const activeCourse = activeId ? courses.get(activeId) : null;
+  const hasSummers = summerSemesters.length > 0;
 
   return (
     <DndContext
@@ -210,28 +226,37 @@ export function SemesterGrid({ courses, trackDef }: Props) {
           {maxSemester < 16 && (
             <button
               onClick={addSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors min-h-16 text-sm font-medium"
+              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors min-h-14 text-sm font-medium"
             >
-              <span className="text-2xl leading-none">+</span>
+              <span className="text-xl leading-none">+</span>
               <span>הוסף סמסטר</span>
-            </button>
-          )}
-          {maxSemester < 16 && (
-            <button
-              onClick={addSummerSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-16 text-sm font-medium"
-            >
-              <span className="text-xl leading-none">☀️</span>
-              <span>הוסף קיץ</span>
             </button>
           )}
           {maxSemester > 1 && (
             <button
               onClick={removeSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-red-200 rounded-xl text-red-300 hover:border-red-400 hover:text-red-500 transition-colors min-h-16 text-sm font-medium"
+              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-red-200 rounded-xl text-red-300 hover:border-red-400 hover:text-red-500 transition-colors min-h-14 text-sm font-medium"
             >
-              <span className="text-2xl leading-none">−</span>
+              <span className="text-xl leading-none">−</span>
               <span>הסר סמסטר</span>
+            </button>
+          )}
+          {maxSemester < 16 && (
+            <button
+              onClick={addSummerSemester}
+              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-14 text-sm font-medium"
+            >
+              <span className="text-lg leading-none">☀️</span>
+              <span>הוסף קיץ</span>
+            </button>
+          )}
+          {hasSummers && (
+            <button
+              onClick={removeSummerSemester}
+              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-orange-200 rounded-xl text-orange-300 hover:border-orange-400 hover:text-orange-500 transition-colors min-h-14 text-sm font-medium"
+            >
+              <span className="text-lg leading-none">🌤️</span>
+              <span>הסר קיץ</span>
             </button>
           )}
         </div>

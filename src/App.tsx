@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
 import { savePlanToCloud, loadPlanFromCloud } from './services/cloudSync';
-import { usePlanStore } from './store/planStore';
+import { usePlanStore, REPEATABLE_COURSES } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
 import { SemesterGrid } from './components/SemesterGrid';
@@ -36,7 +36,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLoadCloud = useRef(false);
 
-  // Initialize plan with track's semester schedule
+  // Initialize plan with track's semester schedule + sport course pool
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -47,6 +47,16 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         if (!allPlaced.has(id) && !alreadyInitialized.has(id) && courses.has(id)) {
           addCourseToSemester(id, semester);
           alreadyInitialized.add(id);
+        }
+      }
+    }
+    // Pre-populate 10 copies of each repeatable sport course in unassigned pool
+    const SPORT_POOL_IDS = ['03940900', '03940902'];
+    for (const id of SPORT_POOL_IDS) {
+      if (courses.has(id)) {
+        const existing = (semesters[0] ?? []).filter((c) => c === id).length;
+        for (let i = existing; i < 10; i++) {
+          addCourseToSemester(id, 0);
         }
       }
     }
@@ -62,8 +72,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           loadPlan(cloudPlan);
         } else {
           // First login — save current local plan to cloud
-          const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester } = store;
-          savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester });
+          const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder } = store;
+          savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder });
         }
       })
       .catch(console.error);
@@ -75,8 +85,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     const unsubscribe = usePlanStore.subscribe((state) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester } = state;
-        savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester }).catch(console.error);
+        const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder } = state;
+        savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder }).catch(console.error);
       }, 2000);
     });
     return () => {

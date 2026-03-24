@@ -109,7 +109,7 @@ export function CourseCard({ course, isMandatory, hasPrereqWarning, isCompleted,
           <div className="flex items-center gap-1 shrink-0">
             {/* Mandatory / elective badge */}
             <span className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
-              isMandatory ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'
+              isMandatory ? 'bg-blue-100 text-blue-600' : 'bg-teal-50 text-teal-600'
             }`}>
               {isMandatory ? 'חובה' : 'בחירה'}
             </span>

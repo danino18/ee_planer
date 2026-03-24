@@ -16,26 +16,36 @@ interface PlanState extends StudentPlan {
   addSemester: () => void;
   addSummerSemester: () => void;
   removeSemester: () => void;
+  removeSummerSemester: () => void;
   setCurrentSemester: (n: number | null) => void;
+  moveSemesterInOrder: (sem: number, direction: 'left' | 'right') => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
 }
 
-// Courses that can appear in multiple semesters simultaneously
-const REPEATABLE_COURSES = new Set(['03940901', '03940800']);
+// Courses that can appear in multiple semesters simultaneously (pool-style)
+export const REPEATABLE_COURSES = new Set([
+  '03940900', '03940901', '03940902', '03940800',
+]);
+
+const DEFAULT_SEMESTERS = 8;
+const DEFAULT_ORDER = Array.from({ length: DEFAULT_SEMESTERS }, (_, i) => i + 1);
+const DEFAULT_SEMESTER_MAP: Record<number, string[]> = { 0: [] };
+for (let i = 1; i <= DEFAULT_SEMESTERS; i++) DEFAULT_SEMESTER_MAP[i] = [];
 
 const initialState: StudentPlan = {
   trackId: null,
-  semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] },
+  semesters: { ...DEFAULT_SEMESTER_MAP },
   completedCourses: [],
   selectedSpecializations: [],
   favorites: [],
   grades: {},
   substitutions: {},
-  maxSemester: 8,
+  maxSemester: DEFAULT_SEMESTERS,
   selectedPrereqGroups: {},
   summerSemesters: [],
   currentSemester: null,
+  semesterOrder: [...DEFAULT_ORDER],
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -46,49 +56,71 @@ export const usePlanStore = create<PlanState>()(
       setTrack: (trackId) =>
         set(() => ({
           trackId,
-          semesters: { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] },
+          semesters: { ...DEFAULT_SEMESTER_MAP },
           completedCourses: [],
           selectedSpecializations: [],
-          maxSemester: 8,
+          maxSemester: DEFAULT_SEMESTERS,
           summerSemesters: [],
           currentSemester: null,
+          semesterOrder: [...DEFAULT_ORDER],
         })),
 
       addCourseToSemester: (courseId, semester) =>
         set((state) => {
           const newSemesters: Record<number, string[]> = {};
           if (REPEATABLE_COURSES.has(courseId)) {
-            // Repeatable courses can appear in multiple semesters — just add without removing
+            // Repeatable: just add to target, never remove from other semesters
             for (const [k, v] of Object.entries(state.semesters)) {
               newSemesters[Number(k)] = v;
             }
+            newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
           } else {
+            // Regular: remove from all semesters first, then add
             for (const [k, v] of Object.entries(state.semesters)) {
               newSemesters[Number(k)] = v.filter((id) => id !== courseId);
             }
-          }
-          if (!newSemesters[semester]?.includes(courseId)) {
             newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
           }
           return { semesters: newSemesters };
         }),
 
       removeCourseFromSemester: (courseId, semester) =>
-        set((state) => ({
-          semesters: {
-            ...state.semesters,
-            [semester]: (state.semesters[semester] ?? []).filter((id) => id !== courseId),
-          },
-          completedCourses: state.completedCourses.filter((id) => id !== courseId),
-        })),
+        set((state) => {
+          const list = state.semesters[semester] ?? [];
+          // For repeatable: remove only first occurrence; for others: remove all
+          let newList: string[];
+          if (REPEATABLE_COURSES.has(courseId)) {
+            const idx = list.indexOf(courseId);
+            newList = idx >= 0 ? [...list.slice(0, idx), ...list.slice(idx + 1)] : list;
+          } else {
+            newList = list.filter((id) => id !== courseId);
+          }
+          return {
+            semesters: { ...state.semesters, [semester]: newList },
+            completedCourses: state.completedCourses.filter((id) => id !== courseId),
+          };
+        }),
 
-      moveCourse: (courseId, _from, toSemester) =>
+      moveCourse: (courseId, from, toSemester) =>
         set((state) => {
           const newSemesters: Record<number, string[]> = {};
-          for (const [k, v] of Object.entries(state.semesters)) {
-            newSemesters[Number(k)] = v.filter((id) => id !== courseId);
+          if (REPEATABLE_COURSES.has(courseId)) {
+            // Repeatable: remove one copy from source, add to target
+            for (const [k, v] of Object.entries(state.semesters)) {
+              newSemesters[Number(k)] = v;
+            }
+            const fromList = newSemesters[from] ?? [];
+            const idx = fromList.indexOf(courseId);
+            if (idx >= 0) {
+              newSemesters[from] = [...fromList.slice(0, idx), ...fromList.slice(idx + 1)];
+            }
+            newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
+          } else {
+            for (const [k, v] of Object.entries(state.semesters)) {
+              newSemesters[Number(k)] = v.filter((id) => id !== courseId);
+            }
+            newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           }
-          newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           return { semesters: newSemesters };
         }),
 
@@ -147,6 +179,7 @@ export const usePlanStore = create<PlanState>()(
           return {
             maxSemester: next,
             semesters: { ...state.semesters, [next]: [] },
+            semesterOrder: [...state.semesterOrder, next],
           };
         }),
 
@@ -158,28 +191,72 @@ export const usePlanStore = create<PlanState>()(
             maxSemester: next,
             semesters: { ...state.semesters, [next]: [] },
             summerSemesters: [...state.summerSemesters, next],
+            semesterOrder: [...state.semesterOrder, next],
           };
         }),
 
       removeSemester: () =>
         set((state) => {
-          if (state.maxSemester <= 1) return state;
-          const last = state.maxSemester;
-          const coursesInLast = state.semesters[last] ?? [];
+          // Remove the last non-summer semester from semesterOrder
+          const lastRegular = [...state.semesterOrder].reverse().find(
+            (s) => !state.summerSemesters.includes(s)
+          );
+          if (lastRegular === undefined) return state;
+          const coursesInLast = state.semesters[lastRegular] ?? [];
           const newSemesters = { ...state.semesters };
           newSemesters[0] = [...(newSemesters[0] ?? []), ...coursesInLast];
-          delete newSemesters[last];
+          delete newSemesters[lastRegular];
+          // Compact: renumber if lastRegular === maxSemester
+          const newMax = lastRegular === state.maxSemester ? state.maxSemester - 1 : state.maxSemester;
           return {
-            maxSemester: last - 1,
+            maxSemester: newMax,
             semesters: newSemesters,
-            summerSemesters: state.summerSemesters.filter((s) => s !== last),
-            currentSemester: state.currentSemester === last ? null : state.currentSemester,
+            semesterOrder: state.semesterOrder.filter((s) => s !== lastRegular),
+            summerSemesters: state.summerSemesters.filter((s) => s !== lastRegular),
+            currentSemester: state.currentSemester === lastRegular ? null : state.currentSemester,
+          };
+        }),
+
+      removeSummerSemester: () =>
+        set((state) => {
+          if (state.summerSemesters.length === 0) return state;
+          // Remove the last summer semester
+          const lastSummer = state.summerSemesters[state.summerSemesters.length - 1];
+          const coursesInLast = state.semesters[lastSummer] ?? [];
+          const newSemesters = { ...state.semesters };
+          newSemesters[0] = [...(newSemesters[0] ?? []), ...coursesInLast];
+          delete newSemesters[lastSummer];
+          const newMax = lastSummer === state.maxSemester ? state.maxSemester - 1 : state.maxSemester;
+          return {
+            maxSemester: newMax,
+            semesters: newSemesters,
+            semesterOrder: state.semesterOrder.filter((s) => s !== lastSummer),
+            summerSemesters: state.summerSemesters.filter((s) => s !== lastSummer),
+            currentSemester: state.currentSemester === lastSummer ? null : state.currentSemester,
           };
         }),
 
       setCurrentSemester: (n) => set(() => ({ currentSemester: n })),
 
-      loadPlan: (plan) => set(() => ({ ...initialState, ...plan })),
+      moveSemesterInOrder: (sem, direction) =>
+        set((state) => {
+          const order = [...state.semesterOrder];
+          const idx = order.indexOf(sem);
+          if (idx < 0) return state;
+          const swapIdx = direction === 'left' ? idx - 1 : idx + 1;
+          if (swapIdx < 0 || swapIdx >= order.length) return state;
+          [order[idx], order[swapIdx]] = [order[swapIdx], order[idx]];
+          return { semesterOrder: order };
+        }),
+
+      loadPlan: (plan) => set(() => ({
+        ...initialState,
+        ...plan,
+        // Migrate old plans without semesterOrder
+        semesterOrder: plan.semesterOrder?.length
+          ? plan.semesterOrder
+          : Array.from({ length: plan.maxSemester }, (_, i) => i + 1),
+      })),
 
       resetPlan: () => set(() => ({ ...initialState })),
     }),

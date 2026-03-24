@@ -23,6 +23,10 @@ interface Props {
   onSetCurrentSemester: (n: number | null) => void;
   summerIndex?: number;  // 1-based index among summer semesters (for independent labeling)
   isRowMode?: boolean;
+  canMoveLeft?: boolean;
+  canMoveRight?: boolean;
+  onMoveLeft?: () => void;
+  onMoveRight?: () => void;
 }
 
 function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -37,7 +41,7 @@ function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, 
 export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
-  summerIndex, isRowMode,
+  summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
@@ -66,11 +70,28 @@ export function SemesterColumn({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {semester > 0 && (
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                 {totalCredits.toFixed(1)} נ״ז
               </span>
+            )}
+            {/* Reorder arrows — only shown for summer semesters */}
+            {isSummer && canMoveRight && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
+                className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
+                title="הזז ימינה"
+              >◀</button>
+            )}
+            {isSummer && canMoveLeft && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
+                className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
+                title="הזז שמאלה"
+              >▶</button>
             )}
             {semester > 0 && (
               <button
@@ -89,13 +110,13 @@ export function SemesterColumn({
         </div>
       </div>
       <div className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
-        {courseIds.map((id) => {
+        {courseIds.map((id, idx) => {
           const course = courses.get(id);
           if (!course) return null;
           const missingPrereqGroups = prereqStatus.get(id) ?? [];
           return (
             <CourseCard
-              key={id}
+              key={`${id}_${idx}`}
               course={course}
               courses={courses}
               isMandatory={mandatoryCourseIds.has(id)}
