@@ -29,6 +29,9 @@ interface Props {
   onMoveLeft?: () => void;
   onMoveRight?: () => void;
   semesterType?: 'winter' | 'spring' | 'summer';
+  onSetSemesterType?: (type: 'winter' | 'spring') => void;
+  warningsIgnored?: boolean;
+  onToggleWarnings?: () => void;
 }
 
 function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -43,7 +46,8 @@ function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, 
 export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
-  summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight, semesterType,
+  summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight,
+  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const [search, setSearch] = useState('');
@@ -75,6 +79,16 @@ export function SemesterColumn({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {isSummer && <span className="text-sm">☀️</span>}
+            {!isSummer && semester > 0 && semesterType && semesterType !== 'summer' && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onSetSemesterType?.(semesterType === 'winter' ? 'spring' : 'winter'); }}
+                className="text-sm leading-none opacity-60 hover:opacity-100 transition-opacity"
+                title={semesterType === 'winter' ? 'לחץ לשנות לאביב' : 'לחץ לשנות לחורף'}
+              >
+                {semesterType === 'winter' ? '❄️' : '🌸'}
+              </button>
+            )}
             <span className="font-semibold text-gray-800 text-sm">{semesterLabel}</span>
             {isCurrent && (
               <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
@@ -87,6 +101,14 @@ export function SemesterColumn({
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                 {totalCredits.toFixed(1)} נ״ז
               </span>
+            )}
+            {isSummer && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onToggleWarnings?.(); }}
+                className={`text-xs px-1 py-0.5 rounded border transition-colors ${warningsIgnored ? 'text-gray-300 border-gray-200 hover:text-amber-400' : 'text-amber-500 border-amber-200 bg-amber-50 hover:bg-amber-100'}`}
+                title={warningsIgnored ? 'הצג אזהרות עונה' : 'התעלם מאזהרות עונה'}
+              >⚠️</button>
             )}
             {isSummer && canMoveRight && (
               <button
@@ -142,8 +164,10 @@ export function SemesterColumn({
           if (!course) return null;
           const missingPrereqGroups = prereqStatus.get(id) ?? [];
           const wrongSemesterType = !!(
-            semesterType && semesterType !== 'summer' && course.teachingSemester
-            && course.teachingSemester !== semesterType
+            semesterType
+            && course.teachingSemester
+            && !warningsIgnored
+            && (semesterType === 'summer' || course.teachingSemester !== semesterType)
           );
           return (
             <CourseCard

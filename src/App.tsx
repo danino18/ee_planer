@@ -50,14 +50,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         }
       }
     }
-    // Pre-populate 10 copies of each repeatable sport course in unassigned pool
+    // Pre-populate 1 copy of each repeatable sport course in unassigned pool (if not already there)
     const SPORT_POOL_IDS = ['03940900', '03940902'];
     for (const id of SPORT_POOL_IDS) {
-      if (courses.has(id)) {
-        const existing = (semesters[0] ?? []).filter((c) => c === id).length;
-        for (let i = existing; i < 10; i++) {
-          addCourseToSemester(id, 0);
-        }
+      if (courses.has(id) && !(semesters[0] ?? []).includes(id)) {
+        addCourseToSemester(id, 0);
       }
     }
   }, []);

@@ -49,4 +49,6 @@ export interface StudentPlan {
   summerSemesters: number[];
   currentSemester: number | null;
   semesterOrder: number[];  // display order of semesters 1..maxSemester
+  semesterTypeOverrides?: Record<number, 'winter' | 'spring'>;  // manual winter/spring override per semester
+  semesterWarningsIgnored?: number[];  // semester IDs where season warnings are suppressed
 }

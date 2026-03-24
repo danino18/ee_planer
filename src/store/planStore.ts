@@ -19,6 +19,8 @@ interface PlanState extends StudentPlan {
   removeSummerSemester: () => void;
   setCurrentSemester: (n: number | null) => void;
   moveSemesterInOrder: (sem: number, direction: 'left' | 'right') => void;
+  setSemesterType: (sem: number, type: 'winter' | 'spring') => void;
+  toggleSemesterWarnings: (sem: number) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
 }
@@ -46,6 +48,8 @@ const initialState: StudentPlan = {
   summerSemesters: [],
   currentSemester: null,
   semesterOrder: [...DEFAULT_ORDER],
+  semesterTypeOverrides: {},
+  semesterWarningsIgnored: [],
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -63,6 +67,8 @@ export const usePlanStore = create<PlanState>()(
           summerSemesters: [],
           currentSemester: null,
           semesterOrder: [...DEFAULT_ORDER],
+          semesterTypeOverrides: {},
+          semesterWarningsIgnored: [],
         })),
 
       addCourseToSemester: (courseId, semester) =>
@@ -249,6 +255,21 @@ export const usePlanStore = create<PlanState>()(
           return { semesterOrder: order };
         }),
 
+      setSemesterType: (sem, type) =>
+        set((state) => ({
+          semesterTypeOverrides: { ...(state.semesterTypeOverrides ?? {}), [sem]: type },
+        })),
+
+      toggleSemesterWarnings: (sem) =>
+        set((state) => {
+          const ignored = state.semesterWarningsIgnored ?? [];
+          return {
+            semesterWarningsIgnored: ignored.includes(sem)
+              ? ignored.filter((s) => s !== sem)
+              : [...ignored, sem],
+          };
+        }),
+
       loadPlan: (plan) => set(() => ({
         ...initialState,
         ...plan,
@@ -256,6 +277,8 @@ export const usePlanStore = create<PlanState>()(
         semesterOrder: plan.semesterOrder?.length
           ? plan.semesterOrder
           : Array.from({ length: plan.maxSemester }, (_, i) => i + 1),
+        semesterTypeOverrides: plan.semesterTypeOverrides ?? {},
+        semesterWarningsIgnored: plan.semesterWarningsIgnored ?? [],
       })),
 
       resetPlan: () => set(() => ({ ...initialState })),

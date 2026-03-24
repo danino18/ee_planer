@@ -7,7 +7,7 @@ import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition } from '../types';
-import { usePlanStore } from '../store/planStore';
+import { usePlanStore, REPEATABLE_COURSES } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName } from '../utils/faculty';
 
@@ -18,10 +18,11 @@ interface Props {
 
 export function SemesterGrid({ courses, trackDef }: Props) {
   const {
-    semesters, moveCourse, completedCourses, maxSemester,
+    semesters, moveCourse, addCourseToSemester, completedCourses, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, moveSemesterInOrder,
+    semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
@@ -76,7 +77,13 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     const target = String(over.id);
     if (!target.startsWith('semester-')) return;
     const toSem = parseInt(target.replace('semester-', ''), 10);
-    if (semFrom !== toSem) moveCourse(courseId, semFrom, toSem);
+    if (semFrom === toSem) return;
+    // Repeatable courses dragged from unassigned stay in unassigned (copy, not move)
+    if (REPEATABLE_COURSES.has(courseId) && semFrom === 0) {
+      addCourseToSemester(courseId, toSem);
+    } else {
+      moveCourse(courseId, semFrom, toSem);
+    }
   }
 
   // Migrate: use semesterOrder if available, else fall back to range
@@ -84,10 +91,11 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     ? semesterOrder
     : Array.from({ length: maxSemester }, (_, i) => i + 1);
 
-  // Compute semester type: among non-summer semesters, 0-indexed even = winter, odd = spring
+  // Compute semester type: check manual overrides first, then even/odd position
   const nonSummerOrder = displayOrder.filter((s) => !summerSemesters.includes(s));
   const getSemesterType = (sem: number): 'winter' | 'spring' | 'summer' => {
     if (summerSemesters.includes(sem)) return 'summer';
+    if (semesterTypeOverrides?.[sem]) return semesterTypeOverrides[sem];
     const pos = nonSummerOrder.indexOf(sem);
     return pos % 2 === 0 ? 'winter' : 'spring';
   };
@@ -109,11 +117,14 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       onSetCurrentSemester: setCurrentSemester,
       summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
       isRowMode: viewMode === 'rows',
-      canMoveLeft: summerSemesters.includes(sem) && posInOrder > 0,
-      canMoveRight: summerSemesters.includes(sem) && posInOrder < displayOrder.length - 1,
+      canMoveLeft: summerSemesters.includes(sem) && posInOrder < displayOrder.length - 1,
+      canMoveRight: summerSemesters.includes(sem) && posInOrder > 0,
       onMoveLeft: () => moveSemesterInOrder(sem, 'right'),
       onMoveRight: () => moveSemesterInOrder(sem, 'left'),
       semesterType: getSemesterType(sem),
+      onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),
+      warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
+      onToggleWarnings: () => toggleSemesterWarnings(sem),
     };
   };
 
