@@ -54,7 +54,7 @@ export function CourseCard({
   const displayedNames = bestGroup.slice(0, 2).map(id => courses.get(id)?.name ?? id);
   const hasMoreInGroup = bestGroup.length > 2;
 
-  const facultyStyle = course.faculty ? getFacultyStyle(course.faculty) : null;
+  const facultyStyle = course.faculty ? getFacultyStyle(course.faculty, course.id) : null;
 
   const seasonLabel = course.teachingSemester === 'winter' ? '❄️' : course.teachingSemester === 'spring' ? '🌸' : null;
 

@@ -22,6 +22,8 @@ interface PlanState extends StudentPlan {
   setSemesterType: (sem: number, type: 'winter' | 'spring') => void;
   toggleSemesterWarnings: (sem: number) => void;
   toggleDoubleSpecialization: (groupId: string) => void;
+  toggleEnglishExemption: () => void;
+  setManualSapAverage: (courseId: string, avg: number | null) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
 }
@@ -52,6 +54,8 @@ const initialState: StudentPlan = {
   semesterTypeOverrides: {},
   semesterWarningsIgnored: [],
   doubleSpecializations: [],
+  hasEnglishExemption: false,
+  manualSapAverages: {},
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -72,6 +76,8 @@ export const usePlanStore = create<PlanState>()(
           semesterTypeOverrides: {},
           semesterWarningsIgnored: [],
           doubleSpecializations: [],
+          hasEnglishExemption: false,
+          manualSapAverages: {},
         })),
 
       addCourseToSemester: (courseId, semester) =>
@@ -283,6 +289,17 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      toggleEnglishExemption: () =>
+        set((state) => ({ hasEnglishExemption: !state.hasEnglishExemption })),
+
+      setManualSapAverage: (courseId, avg) =>
+        set((state) => {
+          const m = { ...(state.manualSapAverages ?? {}) };
+          if (avg === null) delete m[courseId];
+          else m[courseId] = avg;
+          return { manualSapAverages: m };
+        }),
+
       loadPlan: (plan) => set(() => ({
         ...initialState,
         ...plan,
@@ -293,6 +310,8 @@ export const usePlanStore = create<PlanState>()(
         semesterTypeOverrides: plan.semesterTypeOverrides ?? {},
         semesterWarningsIgnored: plan.semesterWarningsIgnored ?? [],
         doubleSpecializations: plan.doubleSpecializations ?? [],
+        hasEnglishExemption: plan.hasEnglishExemption ?? false,
+        manualSapAverages: plan.manualSapAverages ?? {},
       })),
 
       resetPlan: () => set(() => ({ ...initialState })),

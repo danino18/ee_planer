@@ -45,6 +45,8 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
           const id = g['מספר מקצוע'];
           if (!id) continue;
           const credits = parseFloat(g['נקודות'] ?? '0');
+          const avgRaw = g['ממוצע'] ?? g['ממוצע ציונים'] ?? g['ממוצע ציון'];
+          const sapAverage = avgRaw ? parseFloat(avgRaw) : undefined;
           m.set(id, {
             id,
             name: g['שם מקצוע'] ?? id,
@@ -54,6 +56,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
             examMoed2: g['מועד ב'],
             faculty: g['פקולטה'] ?? '',
             syllabus: g['סילבוס'],
+            sapAverage: sapAverage && !isNaN(sapAverage) ? sapAverage : undefined,
           });
         }
         return m;

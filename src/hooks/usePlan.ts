@@ -114,6 +114,7 @@ export function useRequirementsProgress(
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
   const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
+  const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -175,6 +176,42 @@ export function useRequirementsProgress(
       return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id) };
     });
 
+    // #13: Sport credits (039xxx courses)
+    let sportCredits = 0;
+    for (const id of allPlaced) {
+      if (id.startsWith('039')) sportCredits += courses.get(id)?.credits ?? 0;
+    }
+
+    // #13: General / מל"גים credits (032xxx courses — humanities, English, general education)
+    let generalCredits = 0;
+    for (const id of allPlaced) {
+      if (id.startsWith('032')) generalCredits += courses.get(id)?.credits ?? 0;
+    }
+
+    // #13: Labs — mandatory courses whose name contains "מעבד"
+    const labs = trackDef.semesterSchedule
+      .flatMap((s) => s.courses)
+      .reduce<{ id: string; name: string; done: boolean }[]>((acc, id) => {
+        const c = courses.get(id);
+        if (c && c.name.includes('מעבד')) {
+          acc.push({ id, name: c.name, done: allPlaced.has(id) });
+        }
+        return acc;
+      }, []);
+
+    // #13: English courses placed (courses whose name contains "אנגלית")
+    const englishPlaced: { id: string; name: string }[] = [];
+    const seenEng = new Set<string>();
+    for (const id of allPlaced) {
+      if (!seenEng.has(id)) {
+        const c = courses.get(id);
+        if (c && c.name.includes('אנגלית')) {
+          englishPlaced.push({ id, name: c.name });
+          seenEng.add(id);
+        }
+      }
+    }
+
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
@@ -185,13 +222,18 @@ export function useRequirementsProgress(
         total: selectedGroups.length,
       },
       groupDetails,
+      // #13 extended:
+      sport: { earned: sportCredits, required: 2 },
+      general: { earned: generalCredits, required: trackDef.generalCreditsRequired },
+      labs,
+      english: { placed: englishPlaced, hasExemption: hasEnglishExemption },
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
         completedCount >= trackDef.specializationGroupsRequired &&
         totalCredits >= trackDef.totalCreditsRequired,
     };
-  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations]);
+  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption]);
 }
 
 export function useChainRecommendations(

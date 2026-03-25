@@ -23,6 +23,7 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
     completedCourses, semesters,
     selectedPrereqGroups, setSelectedPrereqGroup,
     trackId,
+    manualSapAverages, setManualSapAverage,
   } = usePlanStore();
 
   // Chains this course can contribute to
@@ -40,7 +41,9 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
 
   const currentGrade = grades[course.id];
   const currentSubTarget = substitutions[course.id];
+  const currentManualAvg = (manualSapAverages ?? {})[course.id];
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
+  const [avgInput, setAvgInput] = useState(currentManualAvg !== undefined ? String(currentManualAvg) : '');
   const [subSearch, setSubSearch] = useState('');
   const [customSearch, setCustomSearch] = useState('');
 
@@ -324,6 +327,49 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
             </ul>
           </div>
         )}
+
+        {/* SAP Average (#20) */}
+        <div className="mb-4 border border-gray-200 rounded-lg p-3">
+          <p className="text-xs font-semibold text-gray-700 mb-2">ממוצע ציונים</p>
+          {course.sapAverage !== undefined ? (
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-500">מ-SAP</span>
+              <span className="text-sm font-bold text-blue-700">{course.sapAverage.toFixed(1)}</span>
+            </div>
+          ) : null}
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              max={100}
+              step={0.1}
+              value={avgInput}
+              onChange={(e) => setAvgInput(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
+              placeholder={course.sapAverage !== undefined ? 'עקוף...' : 'הזן ממוצע...'}
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-blue-400 text-right"
+            />
+            <button
+              onClick={() => {
+                const val = parseFloat(avgInput);
+                if (!isNaN(val) && val >= 0 && val <= 100) setManualSapAverage(course.id, val);
+              }}
+              disabled={avgInput === '' || isNaN(parseFloat(avgInput))}
+              className="text-xs bg-gray-100 hover:bg-gray-200 disabled:opacity-40 px-2 py-1.5 rounded-lg transition-colors"
+            >
+              שמור
+            </button>
+            {currentManualAvg !== undefined && (
+              <button
+                onClick={() => { setManualSapAverage(course.id, null); setAvgInput(''); }}
+                className="text-xs text-red-400 hover:text-red-600 border border-red-200 px-2 py-1.5 rounded-lg transition-colors"
+              >✕</button>
+            )}
+          </div>
+          {currentManualAvg !== undefined && (
+            <p className="text-xs text-gray-400 mt-1">ממוצע ידני: <span className="font-bold text-gray-600">{currentManualAvg.toFixed(1)}</span></p>
+          )}
+        </div>
 
         {/* Grade */}
         <div className="mb-4">

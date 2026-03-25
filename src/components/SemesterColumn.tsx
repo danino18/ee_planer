@@ -32,6 +32,7 @@ interface Props {
   onSetSemesterType?: (type: 'winter' | 'spring') => void;
   warningsIgnored?: boolean;
   onToggleWarnings?: () => void;
+  semesterAverage?: number | null;
 }
 
 function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -47,7 +48,7 @@ export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight,
-  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings,
+  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const [search, setSearch] = useState('');
@@ -100,6 +101,11 @@ export function SemesterColumn({
             {semester > 0 && (
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                 {totalCredits.toFixed(1)} נ״ז
+              </span>
+            )}
+            {semester > 0 && semesterAverage !== null && semesterAverage !== undefined && (
+              <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full" title="ממוצע סמסטר משוקלל">
+                ∅ {semesterAverage.toFixed(1)}
               </span>
             )}
             {isSummer && (

@@ -11,6 +11,7 @@ export interface SapCourse {
   syllabus?: string;
   teachingSemester?: 'winter' | 'spring';  // undefined = both
   isEnglish?: boolean;
+  sapAverage?: number;  // grade average from SAP data, if available
 }
 
 export interface TrackDefinition {
@@ -52,4 +53,6 @@ export interface StudentPlan {
   semesterTypeOverrides?: Record<number, 'winter' | 'spring'>;  // manual winter/spring override per semester
   semesterWarningsIgnored?: number[];  // semester IDs where season warnings are suppressed
   doubleSpecializations?: string[];  // specialization group IDs selected as double (כפולה)
+  hasEnglishExemption?: boolean;  // student has English language exemption
+  manualSapAverages?: Record<string, number>;  // manual SAP average overrides per courseId
 }

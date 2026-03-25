@@ -11,6 +11,24 @@ import { usePlanStore, REPEATABLE_COURSES } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName } from '../utils/faculty';
 
+function computeSemesterAverage(
+  courseIds: string[],
+  grades: Record<string, number>,
+  courses: Map<string, SapCourse>
+): number | null {
+  let weightedSum = 0;
+  let totalCredits = 0;
+  for (const id of courseIds) {
+    const grade = grades[id];
+    const credits = courses.get(id)?.credits ?? 0;
+    if (grade !== undefined && credits > 0) {
+      weightedSum += grade * credits;
+      totalCredits += credits;
+    }
+  }
+  return totalCredits > 0 ? weightedSum / totalCredits : null;
+}
+
 interface Props {
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition;
@@ -23,6 +41,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, moveSemesterInOrder,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
+    grades,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
@@ -39,7 +58,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
     for (const ids of Object.values(semesters)) {
       for (const id of ids) {
         const f = courses.get(id)?.faculty;
-        if (f && !seen.has(f)) seen.set(f, getFacultyStyle(f).dot);
+        if (f && !seen.has(f)) seen.set(f, getFacultyStyle(f, id).dot);
       }
     }
     return [...seen.entries()].map(([faculty, dot]) => ({ faculty, dot }));
@@ -125,6 +144,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
       onToggleWarnings: () => toggleSemesterWarnings(sem),
+      semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses) : null,
     };
   };
 
@@ -219,15 +239,12 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       {/* Faculty legend */}
       {showLegend && placedFaculties.length > 0 && (
         <div className="mb-3 p-2.5 bg-white border border-gray-200 rounded-xl flex flex-wrap gap-x-4 gap-y-1.5">
-          {placedFaculties.map(({ faculty }) => {
-            const s = getFacultyStyle(faculty);
-            return (
-              <div key={faculty} className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.dot}`} />
-                <span className="text-xs text-gray-600">{getFacultyShortName(faculty)}</span>
-              </div>
-            );
-          })}
+          {placedFaculties.map(({ faculty, dot }) => (
+            <div key={faculty} className="flex items-center gap-1.5">
+              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
+              <span className="text-xs text-gray-600">{getFacultyShortName(faculty)}</span>
+            </div>
+          ))}
         </div>
       )}
 
