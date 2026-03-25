@@ -9,9 +9,15 @@ interface Props {
 }
 
 export function SpecializationPanel({ groups, courses }: Props) {
-  const { selectedSpecializations, semesters, completedCourses, toggleSpecialization } = usePlanStore();
+  const {
+    selectedSpecializations, semesters, completedCourses,
+    toggleSpecialization, doubleSpecializations, toggleDoubleSpecialization,
+  } = usePlanStore();
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
   const [openGroup, setOpenGroup] = useState<SpecializationGroup | null>(null);
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+
+  const doubles = doubleSpecializations ?? [];
 
   return (
     <>
@@ -21,10 +27,17 @@ export function SpecializationPanel({ groups, courses }: Props) {
         <div className="flex flex-col gap-1.5">
           {groups.map((group) => {
             const isSelected = selectedSpecializations.includes(group.id);
+            const isDouble = doubles.includes(group.id);
+            const effectiveMin = (isDouble && group.doubleMinCoursesToComplete)
+              ? group.doubleMinCoursesToComplete
+              : group.minCoursesToComplete;
             const all = [...group.mandatoryCourses, ...group.electiveCourses];
             const done = all.filter((id) => allPlaced.has(id)).length;
-            const pct = Math.min(100, (done / group.minCoursesToComplete) * 100);
-            const complete = done >= group.minCoursesToComplete;
+            const allMandatoryDone = group.mandatoryCourses.length === 0 ||
+              group.mandatoryCourses.every((id) => allPlaced.has(id));
+            const complete = allMandatoryDone && done >= effectiveMin;
+            const pct = Math.min(100, (done / effectiveMin) * 100);
+
             return (
               <button
                 key={group.id}
@@ -34,7 +47,8 @@ export function SpecializationPanel({ groups, courses }: Props) {
                 }`}
               >
                 <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1">
+                    {/* Checkbox */}
                     <button
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); toggleSpecialization(group.id); }}
@@ -47,16 +61,74 @@ export function SpecializationPanel({ groups, courses }: Props) {
                     >
                       ✓
                     </button>
+                    {/* Double toggle — only for eligible, selected groups */}
+                    {isSelected && group.canBeDouble && (
+                      <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); toggleDoubleSpecialization(group.id); }}
+                        className={`text-xs leading-none px-1 py-0.5 rounded border transition-colors ${
+                          isDouble
+                            ? 'bg-purple-500 border-purple-500 text-white'
+                            : 'border-gray-300 text-gray-400 hover:border-purple-400 hover:text-purple-500'
+                        }`}
+                        title={isDouble ? 'בטל התמחות כפולה' : 'הגדר כהתמחות כפולה'}
+                      >
+                        כ׳
+                      </button>
+                    )}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  {/* Chain name with hover tooltip */}
+                  <div
+                    className="relative flex items-center gap-1.5"
+                    onMouseEnter={() => setHoveredGroup(group.id)}
+                    onMouseLeave={() => setHoveredGroup(null)}
+                  >
                     <span className="text-xs font-semibold text-gray-800">{group.name}</span>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full ${complete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {done}/{group.minCoursesToComplete}{complete ? ' ✓' : ''}
+                      {done}/{effectiveMin}{complete ? ' ✓' : ''}
                     </span>
+                    {isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפולה</span>}
+                    {/* Hover tooltip */}
+                    {hoveredGroup === group.id && (
+                      <div
+                        className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-72 text-right"
+                        onMouseEnter={() => setHoveredGroup(group.id)}
+                      >
+                        <p className="text-xs font-bold text-gray-700 mb-1.5">{group.name}</p>
+                        {group.mandatoryCourses.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-xs font-semibold text-blue-700 mb-1">חובה:</p>
+                            <ul className="space-y-0.5">
+                              {group.mandatoryCourses.map((id) => (
+                                <li key={id} className={`text-xs flex items-center gap-1 ${allPlaced.has(id) ? 'text-green-700' : 'text-gray-500'}`}>
+                                  <span>{allPlaced.has(id) ? '✓' : '○'}</span>
+                                  <span>{courses.get(id)?.name ?? id}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 mb-1">בחירה ({group.electiveCourses.length} קורסים):</p>
+                          <ul className="space-y-0.5 max-h-40 overflow-y-auto">
+                            {group.electiveCourses.map((id) => (
+                              <li key={id} className={`text-xs flex items-center gap-1 ${allPlaced.has(id) ? 'text-green-700' : 'text-gray-400'}`}>
+                                <span>{allPlaced.has(id) ? '✓' : '○'}</span>
+                                <span>{courses.get(id)?.name ?? id}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1.5 border-t pt-1.5">
+                          נדרש: {effectiveMin} קורסים
+                          {group.canBeDouble && group.doubleMinCoursesToComplete && ` | כפולה: ${group.doubleMinCoursesToComplete}`}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div className={`h-1.5 rounded-full ${complete ? 'bg-green-500' : 'bg-blue-400'}`} style={{ width: `${pct}%` }} />
+                  <div className={`h-1.5 rounded-full ${complete ? (isDouble ? 'bg-purple-500' : 'bg-green-500') : 'bg-blue-400'}`} style={{ width: `${pct}%` }} />
                 </div>
               </button>
             );

@@ -29,7 +29,7 @@ interface Props {
     elective: { earned: number; required: number };
     total: { earned: number; required: number };
     specializationGroups: { completed: number; required: number; total: number };
-    groupDetails: { id: string; name: string; done: number; min: number }[];
+    groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean }[];
     isReady: boolean;
   } | null;
   weightedAverage: number | null;
@@ -60,10 +60,13 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
           <div className="space-y-1 pr-1">
             {progress.groupDetails.map(g => (
               <div key={g.id} className="flex justify-between items-center">
-                <span className="text-xs text-gray-500 truncate max-w-[140px]" title={g.name}>{g.name}</span>
-                <span className={`text-xs font-medium ${g.done >= g.min ? 'text-green-600' : 'text-gray-500'}`}>
-                  {g.done}/{g.min}{g.done >= g.min ? ' ✓' : ''}
-                </span>
+                <span className="text-xs text-gray-500 truncate max-w-[120px]" title={g.name}>{g.name}</span>
+                <div className="flex items-center gap-1 shrink-0">
+                  {g.isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כ׳</span>}
+                  <span className={`text-xs font-medium ${g.done >= g.min ? 'text-green-600' : 'text-gray-500'}`}>
+                    {g.done}/{g.min}{g.done >= g.min ? ' ✓' : ''}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

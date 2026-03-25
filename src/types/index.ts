@@ -1,4 +1,4 @@
-export type TrackId = 'ee' | 'cs' | 'ee_math' | 'ee_physics';
+export type TrackId = 'ee' | 'cs' | 'ee_math' | 'ee_physics' | 'ee_combined' | 'ce';
 
 export interface SapCourse {
   id: string;
@@ -51,4 +51,5 @@ export interface StudentPlan {
   semesterOrder: number[];  // display order of semesters 1..maxSemester
   semesterTypeOverrides?: Record<number, 'winter' | 'spring'>;  // manual winter/spring override per semester
   semesterWarningsIgnored?: number[];  // semester IDs where season warnings are suppressed
+  doubleSpecializations?: string[];  // specialization group IDs selected as double (כפולה)
 }

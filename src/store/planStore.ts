@@ -21,6 +21,7 @@ interface PlanState extends StudentPlan {
   moveSemesterInOrder: (sem: number, direction: 'left' | 'right') => void;
   setSemesterType: (sem: number, type: 'winter' | 'spring') => void;
   toggleSemesterWarnings: (sem: number) => void;
+  toggleDoubleSpecialization: (groupId: string) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
 }
@@ -50,6 +51,7 @@ const initialState: StudentPlan = {
   semesterOrder: [...DEFAULT_ORDER],
   semesterTypeOverrides: {},
   semesterWarningsIgnored: [],
+  doubleSpecializations: [],
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -69,6 +71,7 @@ export const usePlanStore = create<PlanState>()(
           semesterOrder: [...DEFAULT_ORDER],
           semesterTypeOverrides: {},
           semesterWarningsIgnored: [],
+          doubleSpecializations: [],
         })),
 
       addCourseToSemester: (courseId, semester) =>
@@ -270,6 +273,16 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      toggleDoubleSpecialization: (groupId) =>
+        set((state) => {
+          const doubles = state.doubleSpecializations ?? [];
+          return {
+            doubleSpecializations: doubles.includes(groupId)
+              ? doubles.filter((id) => id !== groupId)
+              : [...doubles, groupId],
+          };
+        }),
+
       loadPlan: (plan) => set(() => ({
         ...initialState,
         ...plan,
@@ -279,6 +292,7 @@ export const usePlanStore = create<PlanState>()(
           : Array.from({ length: plan.maxSemester }, (_, i) => i + 1),
         semesterTypeOverrides: plan.semesterTypeOverrides ?? {},
         semesterWarningsIgnored: plan.semesterWarningsIgnored ?? [],
+        doubleSpecializations: plan.doubleSpecializations ?? [],
       })),
 
       resetPlan: () => set(() => ({ ...initialState })),

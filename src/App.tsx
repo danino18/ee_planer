@@ -14,15 +14,18 @@ import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
 import { eePhysicsTrack } from './data/tracks/ee_physics';
+import { eeCombinedTrack } from './data/tracks/ee_combined';
+import { ceTrack } from './data/tracks/ce';
 import { eeSpecializations } from './data/specializations/ee_specializations';
 import { csSpecializations } from './data/specializations/cs_specializations';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 
-const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack];
+const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 const SPECS: Record<string, SpecializationGroup[]> = {
   ee: eeSpecializations, cs: csSpecializations,
   ee_math: eeSpecializations, ee_physics: eeSpecializations,
+  ee_combined: eeSpecializations, ce: eeSpecializations,
 };
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {

@@ -1,6 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { SapCourse } from '../types';
+import type { SapCourse, SpecializationGroup } from '../types';
 import { usePlanStore } from '../store/planStore';
+import { eeSpecializations } from '../data/specializations/ee_specializations';
+import { csSpecializations } from '../data/specializations/cs_specializations';
+
+const TRACK_SPECS: Record<string, SpecializationGroup[]> = {
+  ee: eeSpecializations, cs: csSpecializations,
+  ee_math: eeSpecializations, ee_physics: eeSpecializations,
+  ee_combined: eeSpecializations, ce: eeSpecializations,
+};
 
 interface Props {
   course: SapCourse;
@@ -14,7 +22,21 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
     substitutions, setSubstitution,
     completedCourses, semesters,
     selectedPrereqGroups, setSelectedPrereqGroup,
+    trackId,
   } = usePlanStore();
+
+  // Chains this course can contribute to
+  const allSpecs = TRACK_SPECS[trackId ?? 'ee'] ?? [];
+  const chainMemberships = useMemo(() => {
+    return allSpecs
+      .filter((g) =>
+        g.mandatoryCourses.includes(course.id) || g.electiveCourses.includes(course.id)
+      )
+      .map((g) => ({
+        name: g.name,
+        role: g.mandatoryCourses.includes(course.id) ? 'mandatory' as const : 'elective' as const,
+      }));
+  }, [allSpecs, course.id]);
 
   const currentGrade = grades[course.id];
   const currentSubTarget = substitutions[course.id];
@@ -283,6 +305,25 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
             </div>
           )}
         </div>
+
+        {/* Chain membership */}
+        {chainMemberships.length > 0 && (
+          <div className="mb-4 border border-gray-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-gray-700 mb-2">נספר לשרשראות:</p>
+            <ul className="space-y-1">
+              {chainMemberships.map(({ name, role }) => (
+                <li key={name} className="flex items-center justify-between gap-2">
+                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${
+                    role === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {role === 'mandatory' ? 'חובה' : 'בחירה'}
+                  </span>
+                  <span className="text-xs text-gray-700 text-right">{name}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Grade */}
         <div className="mb-4">

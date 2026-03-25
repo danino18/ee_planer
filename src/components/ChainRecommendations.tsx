@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { SapCourse, SpecializationGroup } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { useChainRecommendations } from '../hooks/usePlan';
@@ -8,8 +9,10 @@ interface Props {
 }
 
 export function ChainRecommendations({ groups, courses }: Props) {
-  const { toggleSpecialization, selectedSpecializations } = usePlanStore();
+  const { toggleSpecialization, selectedSpecializations, semesters, completedCourses } = usePlanStore();
+  const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
   const recommendations = useChainRecommendations(courses, groups);
+  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
 
   if (recommendations.length === 0) {
     return (
@@ -39,8 +42,47 @@ export function ChainRecommendations({ groups, courses }: Props) {
               className={`rounded-lg border p-2.5 ${isSelected ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'}`}
             >
               <div className="flex items-start justify-between gap-1 mb-1">
-                <span className="text-xs font-semibold text-gray-800">{group.name}</span>
-                {isSelected && <span className="text-xs text-green-600 shrink-0">✓</span>}
+                <span className="text-xs font-semibold text-gray-800 flex items-center gap-1">
+                  {isSelected && <span className="text-xs text-green-600 shrink-0">✓</span>}
+                </span>
+                {/* Chain name with hover tooltip */}
+                <div
+                  className="relative flex-1 text-right"
+                  onMouseEnter={() => setHoveredGroup(group.id)}
+                  onMouseLeave={() => setHoveredGroup(null)}
+                >
+                  <span className="text-xs font-semibold text-gray-800 cursor-default">{group.name}</span>
+                  {hoveredGroup === group.id && (
+                    <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-72 text-right">
+                      <p className="text-xs font-bold text-gray-700 mb-1.5">{group.name}</p>
+                      {group.mandatoryCourses.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs font-semibold text-blue-700 mb-1">חובה:</p>
+                          <ul className="space-y-0.5">
+                            {group.mandatoryCourses.map((id) => (
+                              <li key={id} className={`text-xs flex items-center gap-1 ${allPlaced.has(id) ? 'text-green-700' : 'text-gray-500'}`}>
+                                <span>{allPlaced.has(id) ? '✓' : '○'}</span>
+                                <span>{courses.get(id)?.name ?? id}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 mb-1">בחירה ({group.electiveCourses.length}):</p>
+                        <ul className="space-y-0.5 max-h-40 overflow-y-auto">
+                          {group.electiveCourses.map((id) => (
+                            <li key={id} className={`text-xs flex items-center gap-1 ${allPlaced.has(id) ? 'text-green-700' : 'text-gray-400'}`}>
+                              <span>{allPlaced.has(id) ? '✓' : '○'}</span>
+                              <span>{courses.get(id)?.name ?? id}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1.5 border-t pt-1.5">נדרש: {group.minCoursesToComplete} קורסים</p>
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-gray-500 mb-1">
                 {matchingCourses.length} קורסים מתוכניתך מתאימים

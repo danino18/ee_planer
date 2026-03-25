@@ -113,6 +113,7 @@ export function useRequirementsProgress(
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
+  const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -142,10 +143,24 @@ export function useRequirementsProgress(
     const selectedGroups = specializations.filter((g) =>
       selectedSpecializations.includes(g.id)
     );
+
+    // #12: chain complete only when ALL mandatory courses done first, then min count met
+    // #4: double specialization uses doubleMinCoursesToComplete
     const completedGroupsList = selectedGroups.filter((g) => {
+      const allMandatoryDone = g.mandatoryCourses.length === 0 ||
+        g.mandatoryCourses.every((id) => allPlaced.has(id));
+      if (!allMandatoryDone) return false;
+      const effectiveMin = (doubleSpecializations.includes(g.id) && g.doubleMinCoursesToComplete)
+        ? g.doubleMinCoursesToComplete
+        : g.minCoursesToComplete;
       const n = [...g.mandatoryCourses, ...g.electiveCourses].filter((id) => allPlaced.has(id)).length;
-      return n >= g.minCoursesToComplete;
+      return n >= effectiveMin;
     });
+
+    // Double groups count as 2 towards the requirement
+    const completedCount = completedGroupsList.reduce(
+      (sum, g) => sum + (doubleSpecializations.includes(g.id) ? 2 : 1), 0
+    );
 
     const totalCredits = [...allPlaced].reduce((sum, id) => {
       return sum + (courses.get(id)?.credits ?? 0);
@@ -154,7 +169,10 @@ export function useRequirementsProgress(
     const groupDetails = selectedGroups.map((g) => {
       const all = [...g.mandatoryCourses, ...g.electiveCourses];
       const done = all.filter((id) => allPlaced.has(id)).length;
-      return { id: g.id, name: g.name, done, min: g.minCoursesToComplete };
+      const effectiveMin = (doubleSpecializations.includes(g.id) && g.doubleMinCoursesToComplete)
+        ? g.doubleMinCoursesToComplete
+        : g.minCoursesToComplete;
+      return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id) };
     });
 
     return {
@@ -162,7 +180,7 @@ export function useRequirementsProgress(
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
       total: { earned: totalCredits, required: trackDef.totalCreditsRequired },
       specializationGroups: {
-        completed: completedGroupsList.length,
+        completed: completedCount,
         required: trackDef.specializationGroupsRequired,
         total: selectedGroups.length,
       },
@@ -170,10 +188,10 @@ export function useRequirementsProgress(
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
-        completedGroupsList.length >= trackDef.specializationGroupsRequired &&
+        completedCount >= trackDef.specializationGroupsRequired &&
         totalCredits >= trackDef.totalCreditsRequired,
     };
-  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations]);
+  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations]);
 }
 
 export function useChainRecommendations(
