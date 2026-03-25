@@ -39,10 +39,10 @@ export function SpecializationPanel({ groups, courses }: Props) {
             const pct = Math.min(100, (done / effectiveMin) * 100);
 
             return (
-              <button
+              <div
                 key={group.id}
                 onClick={() => setOpenGroup(group)}
-                className={`text-right p-2.5 rounded-lg border-2 transition-all ${
+                className={`text-right p-2.5 rounded-lg border-2 transition-all cursor-pointer ${
                   isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -130,7 +130,7 @@ export function SpecializationPanel({ groups, courses }: Props) {
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div className={`h-1.5 rounded-full ${complete ? (isDouble ? 'bg-purple-500' : 'bg-green-500') : 'bg-blue-400'}`} style={{ width: `${pct}%` }} />
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
