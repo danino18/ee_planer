@@ -48,7 +48,7 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
   const englishOk = progress.english.hasExemption || progress.english.placed.length > 0;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-20">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 sticky top-20 overflow-y-auto max-h-[calc(100vh-5.5rem)]">
       <h2 className="text-base font-bold text-gray-900 mb-4">מעקב דרישות</h2>
       {progress.isReady && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 mb-4 text-center">

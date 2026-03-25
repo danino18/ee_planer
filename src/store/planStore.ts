@@ -140,11 +140,18 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       toggleCompleted: (courseId) =>
-        set((state) => ({
-          completedCourses: state.completedCourses.includes(courseId)
-            ? state.completedCourses.filter((id) => id !== courseId)
-            : [...state.completedCourses, courseId],
-        })),
+        set((state) => {
+          const isCompleted = state.completedCourses.includes(courseId);
+          if (isCompleted) {
+            return { completedCourses: state.completedCourses.filter((id) => id !== courseId) };
+          }
+          // If not in any semester, also add to unassigned pool so it's visible
+          const inAnySemester = Object.values(state.semesters).some((ids) => ids.includes(courseId));
+          const newSemesters = inAnySemester
+            ? state.semesters
+            : { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] };
+          return { completedCourses: [...state.completedCourses, courseId], semesters: newSemesters };
+        }),
 
       toggleSpecialization: (groupId) =>
         set((state) => ({

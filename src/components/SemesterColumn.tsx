@@ -116,20 +116,20 @@ export function SemesterColumn({
                 title={warningsIgnored ? 'הצג אזהרות עונה' : 'התעלם מאזהרות עונה'}
               >⚠️</button>
             )}
-            {isSummer && canMoveRight && (
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
-                className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
-                title="הזז ימינה"
-              >◀</button>
-            )}
             {isSummer && canMoveLeft && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
                 className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
                 title="הזז שמאלה"
+              >◀</button>
+            )}
+            {isSummer && canMoveRight && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
+                className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
+                title="הזז ימינה"
               >▶</button>
             )}
             {semester > 0 && (

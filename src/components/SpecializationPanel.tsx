@@ -91,7 +91,7 @@ export function SpecializationPanel({ groups, courses }: Props) {
                     {/* Hover tooltip */}
                     {hoveredGroup === group.id && (
                       <div
-                        className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-72 text-right"
+                        className="absolute z-50 top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64 text-right"
                         onMouseEnter={() => setHoveredGroup(group.id)}
                       >
                         <p className="text-xs font-bold text-gray-700 mb-1.5">{group.name}</p>

@@ -53,7 +53,7 @@ export function ChainRecommendations({ groups, courses }: Props) {
                 >
                   <span className="text-xs font-semibold text-gray-800 cursor-default">{group.name}</span>
                   {hoveredGroup === group.id && (
-                    <div className="absolute z-50 top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-72 text-right">
+                    <div className="absolute z-50 top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64 text-right">
                       <p className="text-xs font-bold text-gray-700 mb-1.5">{group.name}</p>
                       {group.mandatoryCourses.length > 0 && (
                         <div className="mb-2">

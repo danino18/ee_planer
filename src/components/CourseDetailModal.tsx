@@ -129,6 +129,16 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
           <div>
             <h3 className="text-base font-bold text-gray-900 leading-snug">{course.name}</h3>
             <p className="text-xs text-gray-400 mt-0.5">{course.id} · {course.credits} נ״ז</p>
+            <a
+              href={`https://ug3.technion.ac.il/rishum/course_details.html?MK=${course.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs text-blue-500 hover:text-blue-700 hover:underline mt-0.5 inline-block"
+            >
+              פתח ב-SAP ↗
+            </a>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none mr-2">✕</button>
         </div>

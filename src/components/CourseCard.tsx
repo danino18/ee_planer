@@ -69,9 +69,9 @@ export function CourseCard({
         className={`
           ${colorClass} border rounded-lg p-2.5 relative
           cursor-grab active:cursor-grabbing select-none
-          ${isDragging ? 'opacity-50 shadow-2xl' : 'hover:shadow-sm'}
+          ${isDragging ? 'opacity-50 shadow-2xl scale-105' : 'hover:shadow-sm active:scale-95'}
           ${isPlanned && !isDragging ? 'opacity-60' : ''}
-          transition-all
+          transition-all duration-100
         `}
       >
         {/* Favorite star — 44×44px hit area, top physical-left */}
@@ -84,15 +84,17 @@ export function CourseCard({
           {isFavorite ? '★' : '☆'}
         </button>
 
-        {/* Completed toggle — 44×44px hit area, top physical-right */}
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => { e.stopPropagation(); toggleCompleted(course.id); }}
-          className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${isCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
-          title={isCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
-        >
-          {isCompleted ? '✓' : '○'}
-        </button>
+        {/* Completed toggle — only shown when course is in a semester */}
+        {semester !== undefined && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleCompleted(course.id); }}
+            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${isCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
+            title={isCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
+          >
+            {isCompleted ? '✓' : '○'}
+          </button>
+        )}
 
         {/* Course name — padded to avoid 44px button overlap */}
         <p className="text-xs font-medium text-gray-900 leading-snug px-11 pt-0.5">{course.name}</p>
@@ -104,11 +106,14 @@ export function CourseCard({
           </p>
         )}
 
-        {/* Inline missing prereqs — show easiest path */}
+        {/* Inline missing prereqs — each on its own line */}
         {missingPrereqGroups.length > 0 && bestGroup.length > 0 && (
-          <p className="text-xs text-orange-500 mt-1 px-4 leading-tight">
-            נותר: {displayedNames.join(', ')}{hasMoreInGroup ? '...' : ''}
-          </p>
+          <div className="mt-1 px-4 space-y-0.5">
+            {displayedNames.map((name, i) => (
+              <p key={i} className="text-xs text-orange-500 leading-tight">נותר: {name}</p>
+            ))}
+            {hasMoreInGroup && <p className="text-xs text-orange-400 leading-tight">...</p>}
+          </div>
         )}
 
         {/* Bottom row: ID | tags + grade + warning + credits */}

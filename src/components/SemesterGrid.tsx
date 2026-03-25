@@ -50,7 +50,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
-  const [gridCols, setGridCols] = useState<3 | 4 | 5>(4);
+  const [gridCols, setGridCols] = useState<3 | 4 | 5 | 6 | 7 | 8>(4);
 
   // Compute unique faculties from placed courses for legend
   const placedFaculties = useMemo(() => {
@@ -201,15 +201,15 @@ export function SemesterGrid({ courses, trackDef }: Props) {
         {viewMode === 'grid' && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
             <button
-              onClick={() => setGridCols(gridCols > 3 ? (gridCols - 1) as 3 | 4 | 5 : 3)}
+              onClick={() => setGridCols(gridCols > 3 ? (gridCols - 1) as 3 | 4 | 5 | 6 | 7 | 8 : 3)}
               disabled={gridCols <= 3}
               className="px-2.5 py-1.5 hover:bg-gray-100 disabled:opacity-30 transition-colors"
               title="הצג יותר עמודות (קטן יותר)"
             >−</button>
             <span className="px-1 py-1.5 text-xs border-x border-gray-200 select-none">{gridCols}</span>
             <button
-              onClick={() => setGridCols(gridCols < 5 ? (gridCols + 1) as 3 | 4 | 5 : 5)}
-              disabled={gridCols >= 5}
+              onClick={() => setGridCols(gridCols < 8 ? (gridCols + 1) as 3 | 4 | 5 | 6 | 7 | 8 : 8)}
+              disabled={gridCols >= 8}
               className="px-2.5 py-1.5 hover:bg-gray-100 disabled:opacity-30 transition-colors"
               title="הצג פחות עמודות (גדול יותר)"
             >+</button>
@@ -252,7 +252,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
         <div
           key={rowIdx}
           className={viewMode === 'grid'
-            ? `grid gap-3 mb-3 ${gridCols === 3 ? 'grid-cols-3' : gridCols === 5 ? 'grid-cols-5' : 'grid-cols-4'}`
+            ? `grid gap-3 mb-3 ${{3:'grid-cols-3',4:'grid-cols-4',5:'grid-cols-5',6:'grid-cols-6',7:'grid-cols-7',8:'grid-cols-8'}[gridCols] ?? 'grid-cols-4'}`
             : 'flex flex-col gap-3 mb-3'}
         >
           {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}

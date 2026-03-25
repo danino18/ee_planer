@@ -2,6 +2,29 @@ import { useMemo } from 'react';
 import { usePlanStore } from '../store/planStore';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
 
+// Bidirectional equivalences: having ANY course in a group satisfies prereqs for ALL in the group.
+// Handles Technion's parallel course numbering for the same subject across tracks.
+const PREREQ_EQUIVALENCES: string[][] = [
+  // Linear Algebra 1 variants
+  ['01040064', '01040065', '01040016'],
+  // Calculus 1 variants
+  ['01040012', '01040031', '01040041', '01040042', '01040018'],
+  // Physics 1 variants
+  ['01140071', '01130013'],
+  // Physics 2 variants
+  ['01140075', '01130014'],
+];
+
+function expandWithEquivalents(taken: Set<string>): Set<string> {
+  const expanded = new Set(taken);
+  for (const group of PREREQ_EQUIVALENCES) {
+    if (group.some((id) => taken.has(id))) {
+      for (const id of group) expanded.add(id);
+    }
+  }
+  return expanded;
+}
+
 export interface RecommendedChain {
   group: SpecializationGroup;
   score: number;
@@ -53,6 +76,9 @@ export function usePrerequisiteStatus(
       for (const [from, to] of Object.entries(substitutions)) {
         if (alreadyTaken.has(from)) alreadyTaken.add(to);
       }
+      // Expand with system equivalences (bidirectional: having any variant satisfies all)
+      const expanded = expandWithEquivalents(alreadyTaken);
+      for (const id of expanded) alreadyTaken.add(id);
 
       for (const courseId of courseIds) {
         const course = courses.get(courseId);
