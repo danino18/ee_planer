@@ -6,7 +6,7 @@ import {
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
-import type { SapCourse, TrackDefinition } from '../types';
+import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
 import { usePlanStore, REPEATABLE_COURSES } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName } from '../utils/faculty';
@@ -32,20 +32,35 @@ function computeSemesterAverage(
 interface Props {
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition;
+  specializations?: SpecializationGroup[];
 }
 
-export function SemesterGrid({ courses, trackDef }: Props) {
+export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   const {
     semesters, moveCourse, addCourseToSemester, completedCourses, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, moveSemesterInOrder,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
-    grades,
+    grades, selectedSpecializations,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
   const completedSet = new Set(completedCourses);
+
+  // Map courseId → chain name for selected specializations
+  const courseChainMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!specializations) return map;
+    for (const group of specializations) {
+      if (!selectedSpecializations.includes(group.id)) continue;
+      const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
+      for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) {
+        if (!map.has(id)) map.set(id, shortName);
+      }
+    }
+    return map;
+  }, [specializations, selectedSpecializations]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
@@ -145,6 +160,7 @@ export function SemesterGrid({ courses, trackDef }: Props) {
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
       onToggleWarnings: () => toggleSemesterWarnings(sem),
       semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses) : null,
+      courseChainMap,
     };
   };
 

@@ -16,12 +16,13 @@ interface Props {
   semester?: number;
   instanceKey?: string;       // unique draggable ID (for repeated courses)
   wrongSemesterType?: boolean; // true if placed in wrong teaching semester
+  chainName?: string;          // specialization chain name (replaces 'בחירה')
 }
 
 export function CourseCard({
   course, isMandatory, hasPrereqWarning, isCompleted, isPlanned,
   missingPrereqGroups = [], courses = new Map(), semester,
-  instanceKey, wrongSemesterType,
+  instanceKey, wrongSemesterType, chainName,
 }: Props) {
   const draggableId = instanceKey ?? course.id;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -141,11 +142,14 @@ export function CourseCard({
                 EN
               </span>
             )}
-            {/* Mandatory / elective badge */}
-            <span className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
-              isMandatory ? 'bg-blue-100 text-blue-600' : 'bg-teal-50 text-teal-600'
-            }`}>
-              {isMandatory ? 'חובה' : 'בחירה'}
+            {/* Mandatory / elective / chain badge */}
+            <span
+              className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
+                isMandatory ? 'bg-blue-100 text-blue-600' : chainName ? 'bg-indigo-50 text-indigo-600' : 'bg-teal-50 text-teal-600'
+              }`}
+              title={!isMandatory && chainName ? chainName : undefined}
+            >
+              {isMandatory ? 'חובה' : (chainName ?? 'בחירה')}
             </span>
             {grade !== undefined && (
               <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>

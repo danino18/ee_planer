@@ -33,6 +33,7 @@ interface Props {
   warningsIgnored?: boolean;
   onToggleWarnings?: () => void;
   semesterAverage?: number | null;
+  courseChainMap?: Map<string, string>;
 }
 
 function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -48,7 +49,7 @@ export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight,
-  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage,
+  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const [search, setSearch] = useState('');
@@ -188,6 +189,7 @@ export function SemesterColumn({
               semester={semester}
               instanceKey={`${id}__${semester}__${idx}`}
               wrongSemesterType={wrongSemesterType}
+              chainName={courseChainMap?.get(id)}
             />
           );
         })}

@@ -116,14 +116,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       </header>
       <main className="max-w-screen-2xl mx-auto px-4 py-5">
         <div className="flex gap-4">
-          <div className="w-64 shrink-0 flex flex-col gap-4">
+          <div className="w-64 shrink-0 flex flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
             <SpecializationPanel groups={specs} courses={courses} />
             <ChainRecommendations groups={specs} courses={courses} />
           </div>
           <div className="flex-1 min-w-0">
             <CourseSearch courses={courses} />
-            <SemesterGrid courses={courses} trackDef={trackDef} />
+            <SemesterGrid courses={courses} trackDef={trackDef} specializations={specs} />
           </div>
         </div>
       </main>
