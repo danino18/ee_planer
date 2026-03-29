@@ -15,7 +15,6 @@ aiRouter.use(verifyAuth);
  * The client never sees or needs the API key.
  */
 aiRouter.post("/recommend", async (req: Request, res: Response): Promise<void> => {
-  const _uid = (req as AuthRequest).uid;
   const { takenCourseIds, trackId } = req.body;
 
   if (!Array.isArray(takenCourseIds) || typeof trackId !== "string") {
