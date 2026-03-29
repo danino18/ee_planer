@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { verifyAuth, AuthRequest } from "../middleware/auth";
+import { verifyAuth } from "../middleware/auth";
 import { getAiRecommendations } from "../services/aiService";
 
 export const aiRouter = Router();
