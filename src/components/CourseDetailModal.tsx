@@ -24,6 +24,7 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
     selectedPrereqGroups, setSelectedPrereqGroup,
     trackId,
     manualSapAverages, setManualSapAverage,
+    binaryPass, setBinaryPass,
   } = usePlanStore();
 
   // Chains this course can contribute to
@@ -42,6 +43,8 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
   const currentGrade = grades[course.id];
   const currentSubTarget = substitutions[course.id];
   const currentManualAvg = (manualSapAverages ?? {})[course.id];
+  const isBinaryPass = !!(binaryPass ?? {})[course.id];
+  const [isBinaryMode, setIsBinaryMode] = useState(isBinaryPass);
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
   const [avgInput, setAvgInput] = useState(currentManualAvg !== undefined ? String(currentManualAvg) : '');
   const [subSearch, setSubSearch] = useState('');
@@ -109,8 +112,12 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
   }, [onClose]);
 
   function handleSaveGrade() {
-    const val = parseFloat(gradeInput);
-    if (!isNaN(val) && val >= 0 && val <= 100) setGrade(course.id, val);
+    if (isBinaryMode) {
+      setBinaryPass(course.id, true);
+    } else {
+      const val = parseFloat(gradeInput);
+      if (!isNaN(val) && val >= 0 && val <= 100) setGrade(course.id, val);
+    }
     onClose();
   }
 
@@ -383,36 +390,61 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
 
         {/* Grade */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">ציון (0–100)</label>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={gradeInput}
-            onChange={(e) => setGradeInput(e.target.value)}
-            onWheel={(e) => e.currentTarget.blur()}
-            placeholder="הזן ציון..."
-            className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-colors text-right
-              ${isValid ? 'border-gray-300 focus:border-blue-400' : 'border-red-400'}`}
-          />
-          {!isValid && <p className="text-xs text-red-500 mt-1">ציון חייב להיות בין 0 ל-100</p>}
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">ציון</label>
+
+          {/* Binary pass toggle */}
+          <label className="flex items-center gap-2 mb-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isBinaryMode}
+              onChange={(e) => {
+                setIsBinaryMode(e.target.checked);
+                if (e.target.checked) setGradeInput('');
+              }}
+              className="w-4 h-4 rounded"
+            />
+            <span className="text-sm text-gray-700">עובר בינארי</span>
+            <span className="text-xs text-gray-400">(לא נכנס לממוצע)</span>
+          </label>
+
+          {isBinaryMode ? (
+            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <span className="text-green-600 text-sm font-bold">✓</span>
+              <span className="text-sm text-green-700">הקורס יסומן כעובר בינארי</span>
+            </div>
+          ) : (
+            <>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={gradeInput}
+                onChange={(e) => setGradeInput(e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="הזן ציון (0–100)..."
+                className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-colors text-right
+                  ${isValid ? 'border-gray-300 focus:border-blue-400' : 'border-red-400'}`}
+              />
+              {!isValid && <p className="text-xs text-red-500 mt-1">ציון חייב להיות בין 0 ל-100</p>}
+            </>
+          )}
         </div>
 
         {/* Buttons */}
         <div className="flex gap-2">
           <button
             onClick={handleSaveGrade}
-            disabled={!isValid || gradeInput === ''}
+            disabled={!isBinaryMode && (!isValid || gradeInput === '')}
             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
-            שמור ציון
+            {isBinaryMode ? 'שמור עובר' : 'שמור ציון'}
           </button>
-          {currentGrade !== undefined && (
+          {(currentGrade !== undefined || isBinaryPass) && (
             <button
-              onClick={() => { setGrade(course.id, null); onClose(); }}
+              onClick={() => { setGrade(course.id, null); setBinaryPass(course.id, null); onClose(); }}
               className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-2 rounded-lg transition-colors"
             >
-              מחק ציון
+              מחק
             </button>
           )}
           <button

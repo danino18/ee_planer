@@ -4,6 +4,7 @@ import {
   PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
@@ -14,11 +15,13 @@ import { getFacultyStyle, getFacultyShortName } from '../utils/faculty';
 function computeSemesterAverage(
   courseIds: string[],
   grades: Record<string, number>,
-  courses: Map<string, SapCourse>
+  courses: Map<string, SapCourse>,
+  binaryPass: Record<string, boolean>
 ): number | null {
   let weightedSum = 0;
   let totalCredits = 0;
   for (const id of courseIds) {
+    if (binaryPass[id]) continue; // binary pass courses excluded from weighted average
     const grade = grades[id];
     const credits = courses.get(id)?.credits ?? 0;
     if (grade !== undefined && credits > 0) {
@@ -40,9 +43,9 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     semesters, moveCourse, addCourseToSemester, completedCourses, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
     setCurrentSemester, addSummerSemester, removeSummerSemester,
-    semesterOrder, moveSemesterInOrder,
+    semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
-    grades, selectedSpecializations,
+    grades, binaryPass, selectedSpecializations,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
@@ -99,7 +102,9 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   }
 
   function handleDragStart(event: DragStartEvent) {
-    const { courseId } = parseInstanceKey(String(event.active.id));
+    const activeId = String(event.active.id);
+    if (activeId.startsWith('col-')) return; // column drag — no course overlay
+    const { courseId } = parseInstanceKey(activeId);
     setActiveCourseId(courseId);
   }
 
@@ -107,10 +112,25 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     setActiveCourseId(null);
     const { active, over } = event;
     if (!over) return;
-    const { courseId, semFrom } = parseInstanceKey(String(active.id));
-    const target = String(over.id);
-    if (!target.startsWith('semester-')) return;
-    const toSem = parseInt(target.replace('semester-', ''), 10);
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    // Semester column reordering
+    if (activeId.startsWith('col-') && overId.startsWith('col-')) {
+      const fromSem = parseInt(activeId.replace('col-', ''), 10);
+      const toSem = parseInt(overId.replace('col-', ''), 10);
+      if (fromSem !== toSem) {
+        const fromIdx = displayOrder.indexOf(fromSem);
+        const toIdx = displayOrder.indexOf(toSem);
+        reorderSemesters(arrayMove([...displayOrder], fromIdx, toIdx));
+      }
+      return;
+    }
+
+    // Course card dragging
+    const { courseId, semFrom } = parseInstanceKey(activeId);
+    if (!overId.startsWith('semester-')) return;
+    const toSem = parseInt(overId.replace('semester-', ''), 10);
     if (semFrom === toSem) return;
     // Repeatable courses dragged from unassigned stay in unassigned (copy, not move)
     if (REPEATABLE_COURSES.has(courseId) && semFrom === 0) {
@@ -135,7 +155,6 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   };
 
   const semColProps = (sem: number) => {
-    const posInOrder = displayOrder.indexOf(sem);
     return {
       semester: sem,
       courseIds: semesters[sem] ?? [],
@@ -151,15 +170,11 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
       onSetCurrentSemester: setCurrentSemester,
       summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
       isRowMode: viewMode === 'rows',
-      canMoveLeft: summerSemesters.includes(sem) && posInOrder < displayOrder.length - 1,
-      canMoveRight: summerSemesters.includes(sem) && posInOrder > 0,
-      onMoveLeft: () => moveSemesterInOrder(sem, 'right'),
-      onMoveRight: () => moveSemesterInOrder(sem, 'left'),
       semesterType: getSemesterType(sem),
       onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
       onToggleWarnings: () => toggleSemesterWarnings(sem),
-      semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses) : null,
+      semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses, binaryPass ?? {}) : null,
       courseChainMap,
     };
   };
@@ -264,16 +279,18 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
         </div>
       )}
 
-      {rows.map((row, rowIdx) => (
-        <div
-          key={rowIdx}
-          className={viewMode === 'grid'
-            ? `grid gap-3 mb-3 ${{3:'grid-cols-3',4:'grid-cols-4',5:'grid-cols-5',6:'grid-cols-6',7:'grid-cols-7',8:'grid-cols-8'}[gridCols] ?? 'grid-cols-4'}`
-            : 'flex flex-col gap-3 mb-3'}
-        >
-          {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}
-        </div>
-      ))}
+      <SortableContext items={semesterList.map(s => `col-${s}`)} strategy={rectSortingStrategy}>
+        {rows.map((row, rowIdx) => (
+          <div
+            key={rowIdx}
+            className={viewMode === 'grid'
+              ? `grid gap-3 mb-3 ${{3:'grid-cols-3',4:'grid-cols-4',5:'grid-cols-5',6:'grid-cols-6',7:'grid-cols-7',8:'grid-cols-8'}[gridCols] ?? 'grid-cols-4'}`
+              : 'flex flex-col gap-3 mb-3'}
+          >
+            {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}
+          </div>
+        ))}
+      </SortableContext>
 
       <div className="flex gap-3 items-stretch mb-3">
         <div className="flex-1">

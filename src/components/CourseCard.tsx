@@ -29,9 +29,10 @@ export function CourseCard({
     id: draggableId,
     data: { course },
   });
-  const { favorites, toggleFavorite, toggleCompleted, grades, removeCourseFromSemester } = usePlanStore();
+  const { favorites, toggleFavorite, toggleCompleted, grades, binaryPass, removeCourseFromSemester } = usePlanStore();
   const isFavorite = favorites.includes(course.id);
   const grade = grades[course.id];
+  const isBinaryPass = !!(binaryPass ?? {})[course.id];
   const [modalOpen, setModalOpen] = useState(false);
 
   const style = transform
@@ -151,7 +152,10 @@ export function CourseCard({
             >
               {isMandatory ? 'חובה' : (chainName ?? 'בחירה')}
             </span>
-            {grade !== undefined && (
+            {isBinaryPass && (
+              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">עובר</span>
+            )}
+            {grade !== undefined && !isBinaryPass && (
               <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>
             )}
             {hasPrereqWarning && <span className="text-xs" title="קדמים חסרים">⚠️</span>}

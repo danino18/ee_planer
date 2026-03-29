@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { CourseCard } from './CourseCard';
 import type { SapCourse } from '../types';
 
@@ -24,10 +26,6 @@ interface Props {
   onSetCurrentSemester: (n: number | null) => void;
   summerIndex?: number;
   isRowMode?: boolean;
-  canMoveLeft?: boolean;
-  canMoveRight?: boolean;
-  onMoveLeft?: () => void;
-  onMoveRight?: () => void;
   semesterType?: 'winter' | 'spring' | 'summer';
   onSetSemesterType?: (type: 'winter' | 'spring') => void;
   warningsIgnored?: boolean;
@@ -48,10 +46,15 @@ function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, 
 export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
-  summerIndex, isRowMode, canMoveLeft, canMoveRight, onMoveLeft, onMoveRight,
+  summerIndex, isRowMode,
   semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
+  const {
+    attributes, listeners,
+    setNodeRef: setSortableRef,
+    transform, transition, isDragging,
+  } = useSortable({ id: `col-${semester}` });
   const [search, setSearch] = useState('');
 
   const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
@@ -72,14 +75,30 @@ export function SemesterColumn({
       })
     : courseIds;
 
+  const sortableStyle = semester > 0 ? {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : undefined,
+  } : undefined;
+
   return (
     <div
-      ref={setNodeRef}
+      ref={(node) => { setNodeRef(node); if (semester > 0) setSortableRef(node); }}
+      style={sortableStyle}
       className={`flex flex-col rounded-xl border-2 min-h-40 transition-colors ${columnStyle}`}
     >
       <div className={`px-3 py-2 rounded-t-xl border-b border-gray-200 ${isSummer ? 'bg-amber-50' : 'bg-white'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
+            {/* Drag handle for reordering */}
+            {semester > 0 && (
+              <div
+                {...attributes}
+                {...listeners}
+                className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 text-base select-none leading-none"
+                title="גרור לשינוי סדר"
+              >⠿</div>
+            )}
             {isSummer && <span className="text-sm">☀️</span>}
             {!isSummer && semester > 0 && semesterType && semesterType !== 'summer' && (
               <button
@@ -116,22 +135,6 @@ export function SemesterColumn({
                 className={`text-xs px-1 py-0.5 rounded border transition-colors ${warningsIgnored ? 'text-gray-300 border-gray-200 hover:text-amber-400' : 'text-amber-500 border-amber-200 bg-amber-50 hover:bg-amber-100'}`}
                 title={warningsIgnored ? 'הצג אזהרות עונה' : 'התעלם מאזהרות עונה'}
               >⚠️</button>
-            )}
-            {isSummer && canMoveLeft && (
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onMoveLeft?.(); }}
-                className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
-                title="הזז שמאלה"
-              >◀</button>
-            )}
-            {isSummer && canMoveRight && (
-              <button
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onMoveRight?.(); }}
-                className="text-xs text-gray-400 hover:text-amber-600 transition-colors leading-none px-0.5"
-                title="הזז ימינה"
-              >▶</button>
             )}
             {semester > 0 && (
               <button

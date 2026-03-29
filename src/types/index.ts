@@ -55,4 +55,5 @@ export interface StudentPlan {
   doubleSpecializations?: string[];  // specialization group IDs selected as double (כפולה)
   hasEnglishExemption?: boolean;  // student has English language exemption
   manualSapAverages?: Record<string, number>;  // manual SAP average overrides per courseId
+  binaryPass?: Record<string, boolean>;  // courseId → true = passed, not counted in weighted average
 }

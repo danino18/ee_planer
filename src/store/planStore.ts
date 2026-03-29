@@ -24,6 +24,8 @@ interface PlanState extends StudentPlan {
   toggleDoubleSpecialization: (groupId: string) => void;
   toggleEnglishExemption: () => void;
   setManualSapAverage: (courseId: string, avg: number | null) => void;
+  setBinaryPass: (courseId: string, value: boolean | null) => void;
+  reorderSemesters: (newOrder: number[]) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
 }
@@ -56,6 +58,7 @@ const initialState: StudentPlan = {
   doubleSpecializations: [],
   hasEnglishExemption: false,
   manualSapAverages: {},
+  binaryPass: {},
 };
 
 export const usePlanStore = create<PlanState>()(
@@ -175,7 +178,10 @@ export const usePlanStore = create<PlanState>()(
           } else {
             newGrades[courseId] = grade;
           }
-          return { grades: newGrades };
+          // Numeric grade and binary pass are mutually exclusive
+          const newBinaryPass = { ...(state.binaryPass ?? {}) };
+          delete newBinaryPass[courseId];
+          return { grades: newGrades, binaryPass: newBinaryPass };
         }),
 
       setSubstitution: (fromId, toId) =>
@@ -307,6 +313,22 @@ export const usePlanStore = create<PlanState>()(
           return { manualSapAverages: m };
         }),
 
+      setBinaryPass: (courseId, value) =>
+        set((state) => {
+          const bp = { ...(state.binaryPass ?? {}) };
+          const newGrades = { ...state.grades };
+          if (value === null) {
+            delete bp[courseId];
+          } else {
+            bp[courseId] = value;
+            // Clear numeric grade when binary pass is set
+            delete newGrades[courseId];
+          }
+          return { binaryPass: bp, grades: newGrades };
+        }),
+
+      reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
+
       loadPlan: (plan) => set(() => ({
         ...initialState,
         ...plan,
@@ -319,6 +341,7 @@ export const usePlanStore = create<PlanState>()(
         doubleSpecializations: plan.doubleSpecializations ?? [],
         hasEnglishExemption: plan.hasEnglishExemption ?? false,
         manualSapAverages: plan.manualSapAverages ?? {},
+        binaryPass: plan.binaryPass ?? {},
       })),
 
       resetPlan: () => set(() => ({ ...initialState })),
