@@ -83,7 +83,7 @@ export function SemesterColumn({
 
   return (
     <div
-      ref={(node) => { setNodeRef(node); if (semester > 0) setSortableRef(node); }}
+      ref={semester > 0 ? setSortableRef : undefined}
       style={sortableStyle}
       className={`flex flex-col rounded-xl border-2 min-h-40 transition-colors ${columnStyle}`}
     >
@@ -168,7 +168,7 @@ export function SemesterColumn({
         )}
       </div>
 
-      <div className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
+      <div ref={setNodeRef} className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
         {filteredIds.map((id, idx) => {
           const course = courses.get(id);
           if (!course) return null;
