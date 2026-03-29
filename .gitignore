@@ -3,3 +3,11 @@ dist/
 .env.local
 .claude/
 *.local
+
+# Firebase Functions build output
+functions/lib/
+
+# Functions secrets — NEVER commit these
+functions/.env
+functions/.env.local
+functions/.secret.local
