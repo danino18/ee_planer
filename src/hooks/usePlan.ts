@@ -43,16 +43,19 @@ export function usePrerequisiteStatus(
   const substitutions = usePlanStore((s) => s.substitutions);
   const selectedPrereqGroups = usePlanStore((s) => s.selectedPrereqGroups);
   const currentSemester = usePlanStore((s) => s.currentSemester);
+  const semesterOrder = usePlanStore((s) => s.semesterOrder);
 
   return useMemo(() => {
     const missingMap = new Map<string, string[][]>();
     if (!trackDef) return missingMap;
 
     // Build base set: completedCourses + all courses in semesters before currentSemester
+    // Use semesterOrder to correctly handle summer semesters (which may have non-sequential IDs)
     const baseTaken = new Set<string>(completedCourses);
     if (currentSemester !== null) {
-      for (let s = 1; s < currentSemester; s++) {
-        for (const id of semesters[s] ?? []) baseTaken.add(id);
+      const currentIdx = semesterOrder.indexOf(currentSemester);
+      for (let i = 0; i < currentIdx; i++) {
+        for (const id of semesters[semesterOrder[i]] ?? []) baseTaken.add(id);
       }
     }
 
@@ -66,8 +69,10 @@ export function usePrerequisiteStatus(
           if (Number(k) !== 0) for (const id of ids) alreadyTaken.add(id);
         }
       } else {
-        for (let s = 1; s < sem; s++) {
-          for (const id of semesters[s] ?? []) {
+        // Use semesterOrder to include summer semesters in prereq chain
+        const semIdx = semesterOrder.indexOf(sem);
+        for (let i = 0; i < semIdx; i++) {
+          for (const id of semesters[semesterOrder[i]] ?? []) {
             alreadyTaken.add(id);
           }
         }
@@ -111,7 +116,7 @@ export function usePrerequisiteStatus(
     }
 
     return missingMap;
-  }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester]);
+  }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester, semesterOrder]);
 }
 
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {
@@ -141,6 +146,9 @@ export function useRequirementsProgress(
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
   const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
   const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
+  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
+  const englishScore = usePlanStore((s) => s.englishScore);
+  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -244,6 +252,35 @@ export function useRequirementsProgress(
       }
     }
 
+    // English requirements based on Amiram/Psychometric score (Technion regulation 1.3.3)
+    const englishInPlan = [...allPlaced].filter((id) => {
+      const c = courses.get(id);
+      return c && (c.isEnglish || englishTaughtCourses.includes(id));
+    });
+    let englishRequirements: { label: string; done: boolean }[] = [];
+    if (englishScore !== undefined) {
+      const advancedA = englishPlaced.some((c) => c.name.includes("מתקדמים א'") || c.name.includes('מתקדמים א'));
+      const advancedB = englishPlaced.some((c) => c.name.includes("מתקדמים ב'") || c.name.includes('מתקדמים ב'));
+      if (englishScore >= 104 && englishScore <= 119) {
+        englishRequirements = [
+          { label: "מתקדמים א'", done: advancedA },
+          { label: "מתקדמים ב'", done: advancedB },
+        ];
+      } else if (englishScore >= 120 && englishScore <= 133) {
+        englishRequirements = [
+          { label: "מתקדמים ב'", done: advancedB },
+          { label: 'קורס 1 בנלמד באנגלית', done: englishInPlan.length >= 1 },
+        ];
+      } else if (englishScore >= 134 && englishScore <= 150) {
+        englishRequirements = [
+          { label: `קורסים נלמדים באנגלית (${englishInPlan.length}/2)`, done: englishInPlan.length >= 2 },
+        ];
+      }
+    }
+
+    // Miluim reduction: reduce generalCreditsRequired (but not sport/מלג courses)
+    const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
+
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
@@ -256,16 +293,23 @@ export function useRequirementsProgress(
       groupDetails,
       // #13 extended:
       sport: { earned: sportCredits, required: 2 },
-      general: { earned: generalCredits, required: trackDef.generalCreditsRequired },
+      general: { earned: generalCredits, required: generalRequired },
       labs,
-      english: { placed: englishPlaced, hasExemption: hasEnglishExemption },
+      english: {
+        placed: englishPlaced,
+        hasExemption: hasEnglishExemption,
+        score: englishScore,
+        requirements: englishRequirements,
+        taughtCourses: englishTaughtCourses,
+        englishInPlan,
+      },
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
         completedCount >= trackDef.specializationGroupsRequired &&
         totalCredits >= trackDef.totalCreditsRequired,
     };
-  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption]);
+  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses]);
 }
 
 export function useChainRecommendations(

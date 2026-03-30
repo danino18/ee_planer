@@ -30,6 +30,9 @@ interface PlanState extends StudentPlan {
   toggleDoubleSpecialization: (groupId: string) => void;
   toggleEnglishExemption: () => void;
   setBinaryPass: (courseId: string, value: boolean | null) => void;
+  setMiluimCredits: (n: number | null) => void;
+  setEnglishScore: (score: number | null) => void;
+  toggleEnglishTaughtCourse: (courseId: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
@@ -66,6 +69,9 @@ const initialState: StudentPlan = {
   hasEnglishExemption: false,
   manualSapAverages: {},
   binaryPass: {},
+  miluimCredits: undefined,
+  englishScore: undefined,
+  englishTaughtCourses: [],
 };
 
 /** Shallow snapshot of all plan fields for undo history */
@@ -374,6 +380,22 @@ export const usePlanStore = create<PlanState>()(
       toggleEnglishExemption: () =>
         set((state) => ({ hasEnglishExemption: !state.hasEnglishExemption })),
 
+      setMiluimCredits: (n) =>
+        set(() => ({ miluimCredits: n === null ? undefined : Math.max(0, Math.min(10, n)) })),
+
+      setEnglishScore: (score) =>
+        set(() => ({ englishScore: score === null ? undefined : score })),
+
+      toggleEnglishTaughtCourse: (courseId) =>
+        set((state) => {
+          const list = state.englishTaughtCourses ?? [];
+          return {
+            englishTaughtCourses: list.includes(courseId)
+              ? list.filter((id) => id !== courseId)
+              : [...list, courseId],
+          };
+        }),
+
       setBinaryPass: (courseId, value) =>
         set((state) => {
           const bp = { ...(state.binaryPass ?? {}) };
@@ -414,6 +436,9 @@ export const usePlanStore = create<PlanState>()(
         hasEnglishExemption: plan.hasEnglishExemption ?? false,
         manualSapAverages: plan.manualSapAverages ?? {},
         binaryPass: plan.binaryPass ?? {},
+        miluimCredits: plan.miluimCredits,
+        englishScore: plan.englishScore,
+        englishTaughtCourses: plan.englishTaughtCourses ?? [],
         // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
         savedTracks: plan.savedTracks ?? state.savedTracks ?? {},
         _history: [],
@@ -446,6 +471,9 @@ export const usePlanStore = create<PlanState>()(
             hasEnglishExemption: false,
             manualSapAverages: {},
             binaryPass: {},
+            miluimCredits: undefined,
+            englishScore: undefined,
+            englishTaughtCourses: [],
             savedTracks,
             _history: [],
             _initKey: state._initKey + 1,  // triggers re-initialization in App.tsx

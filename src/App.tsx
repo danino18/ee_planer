@@ -45,6 +45,9 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('.
     manualSapAverages: state.manualSapAverages,
     binaryPass: state.binaryPass,
     savedTracks: state.savedTracks,
+    miluimCredits: state.miluimCredits,
+    englishScore: state.englishScore,
+    englishTaughtCourses: state.englishTaughtCourses,
   };
 }
 const SPECS: Record<string, SpecializationGroup[]> = {

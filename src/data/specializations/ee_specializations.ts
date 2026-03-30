@@ -53,7 +53,7 @@ export const eeSpecializations: SpecializationGroup[] = [
     mandatoryCourses: [],
     mandatoryOptions: [['00460200','00440198']],
     electiveCourses: ['00440198','00460200','00460010','00460745','00460195','00460197','00460201','00460249','00460332','00460345','00460733','00460743','00460746','00460747','00460831','00460868','03360504'],
-    minCoursesToComplete: 4, doubleMinCoursesToComplete: 8, canBeDouble: true,
+    minCoursesToComplete: 4, canBeDouble: false,
   },
   {
     id: 'ee_vlsi', trackId: 'ee', name: 'מעגלים אלקטרוניים משולבים',

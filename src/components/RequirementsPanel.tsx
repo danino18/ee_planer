@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { usePlanStore } from '../store/planStore';
 
 interface ProgressRowProps {
@@ -35,17 +36,29 @@ interface Props {
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
     labs: { id: string; name: string; done: boolean }[];
-    english: { placed: { id: string; name: string }[]; hasExemption: boolean };
+    english: {
+      placed: { id: string; name: string }[];
+      hasExemption: boolean;
+      score?: number;
+      requirements: { label: string; done: boolean }[];
+      taughtCourses: string[];
+      englishInPlan: string[];
+    };
     isReady: boolean;
   } | null;
   weightedAverage: number | null;
 }
 
 export function RequirementsPanel({ progress, weightedAverage }: Props) {
-  const { toggleEnglishExemption } = usePlanStore();
+  const { toggleEnglishExemption, setMiluimCredits, setEnglishScore } = usePlanStore();
+  const miluimCredits = usePlanStore((s) => s.miluimCredits);
+  const englishScore = usePlanStore((s) => s.englishScore);
+  const [miluimInput, setMiluimInput] = useState<string>(miluimCredits?.toString() ?? '');
   if (!progress) return null;
 
-  const englishOk = progress.english.hasExemption || progress.english.placed.length > 0;
+  const isMiluim = miluimCredits !== undefined;
+  const englishOk = progress.english.hasExemption || progress.english.placed.length > 0 ||
+    (progress.english.requirements.length > 0 && progress.english.requirements.every((r) => r.done));
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -58,7 +71,45 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
       <ProgressRow label="סה״כ נקודות" earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
+      {/* מל"גים + מילואים */}
       <ProgressRow label="מל״גים" earned={progress.general.earned} required={progress.general.required} color="bg-yellow-400" />
+      <div className="mb-2 flex items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isMiluim}
+            onChange={(e) => {
+              if (e.target.checked) {
+                setMiluimCredits(0);
+                setMiluimInput('0');
+              } else {
+                setMiluimCredits(null);
+                setMiluimInput('');
+              }
+            }}
+            className="rounded"
+          />
+          מילואים
+        </label>
+        {isMiluim && (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={0}
+              max={10}
+              value={miluimInput}
+              onChange={(e) => {
+                setMiluimInput(e.target.value);
+                const n = parseInt(e.target.value);
+                if (!isNaN(n)) setMiluimCredits(n);
+              }}
+              className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
+              placeholder="0–10"
+            />
+            <span className="text-xs text-gray-400">נ״ז</span>
+          </div>
+        )}
+      </div>
       <ProgressRow label="ספורט" earned={progress.sport.earned} required={progress.sport.required} color="bg-green-400" />
 
       <div className="border-t pt-3 mt-1 space-y-2">
@@ -106,33 +157,65 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
         )}
 
         {/* English */}
-        <div className="flex items-start justify-between gap-1">
-          <div className="flex-1 min-w-0">
+        <div>
+          <div className="flex items-center justify-between mb-1">
             <span className="text-sm text-gray-700">אנגלית</span>
-            {progress.english.placed.length > 0 && (
-              <div className="space-y-0.5 pr-1 mt-0.5">
-                {progress.english.placed.map(c => (
-                  <p key={c.id} className="text-xs text-green-700 truncate">✓ {c.name}</p>
-                ))}
-              </div>
-            )}
-            {progress.english.placed.length === 0 && !progress.english.hasExemption && (
-              <p className="text-xs text-gray-400 mt-0.5">לא נמצאו קורסי אנגלית</p>
-            )}
+            <div className="flex items-center gap-1">
+              {englishOk && !progress.english.hasExemption && (
+                <span className="text-xs text-green-600 font-bold">✓</span>
+              )}
+              <button
+                onClick={toggleEnglishExemption}
+                className={`shrink-0 text-xs px-1.5 py-0.5 rounded border transition-colors ${
+                  progress.english.hasExemption
+                    ? 'bg-green-100 border-green-300 text-green-700'
+                    : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                }`}
+                title={progress.english.hasExemption ? 'בטל פטור' : 'סמן כפטור'}
+              >
+                {progress.english.hasExemption ? '✓ פטור' : 'פטור?'}
+              </button>
+            </div>
           </div>
-          <button
-            onClick={toggleEnglishExemption}
-            className={`shrink-0 text-xs px-1.5 py-0.5 rounded border transition-colors ${
-              progress.english.hasExemption
-                ? 'bg-green-100 border-green-300 text-green-700'
-                : 'border-gray-200 text-gray-400 hover:border-gray-300'
-            }`}
-            title={progress.english.hasExemption ? 'בטל פטור' : 'סמן כפטור'}
-          >
-            {progress.english.hasExemption ? '✓ פטור' : 'פטור?'}
-          </button>
-          {englishOk && !progress.english.hasExemption && (
-            <span className="shrink-0 text-xs text-green-600 font-bold">✓</span>
+          {/* Amiram score input */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-xs text-gray-500 shrink-0">ניקוד אמיר״ם:</span>
+            <input
+              type="number"
+              min={104}
+              max={150}
+              value={englishScore ?? ''}
+              onChange={(e) => {
+                const v = e.target.value === '' ? null : parseInt(e.target.value);
+                setEnglishScore(v);
+              }}
+              placeholder="104–150"
+              className="w-20 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
+            />
+          </div>
+          {/* Requirements based on score */}
+          {progress.english.requirements.length > 0 && (
+            <div className="space-y-0.5 pr-1">
+              {progress.english.requirements.map((req, i) => (
+                <div key={i} className="flex items-center gap-1">
+                  <span className={`text-xs font-bold ${req.done ? 'text-green-600' : 'text-gray-400'}`}>
+                    {req.done ? '✓' : '○'}
+                  </span>
+                  <span className={`text-xs ${req.done ? 'text-green-700' : 'text-gray-500'}`}>{req.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {/* Fallback: list placed English-named courses */}
+          {progress.english.score === undefined && progress.english.placed.length > 0 && (
+            <div className="space-y-0.5 pr-1">
+              {progress.english.placed.map(c => (
+                <p key={c.id} className="text-xs text-green-700 truncate">✓ {c.name}</p>
+              ))}
+            </div>
+          )}
+          {progress.english.score === undefined && progress.english.placed.length === 0 && !progress.english.hasExemption && (
+            <p className="text-xs text-gray-400">הזן ניקוד אמיר״ם לבקעת דרישות</p>
           )}
         </div>
 

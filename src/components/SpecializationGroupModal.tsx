@@ -73,6 +73,18 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
               {group.mandatoryCourses.map(renderCourse)}
             </>
           )}
+          {group.mandatoryOptions && group.mandatoryOptions.length > 0 && (
+            <div className="mt-3 mb-1 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs font-semibold text-amber-700 mb-2">
+                ⚠️ יש לבחור לפחות אחד מהקורסים הבאים:
+              </p>
+              {group.mandatoryOptions.map((opts, i) => (
+                <div key={i}>
+                  {opts.map(renderCourse)}
+                </div>
+              ))}
+            </div>
+          )}
           {group.electiveCourses.length > 0 && (
             <>
               <p className="text-xs font-semibold text-gray-500 mt-4 mb-2 uppercase tracking-wide">

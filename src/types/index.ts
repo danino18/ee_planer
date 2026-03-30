@@ -58,4 +58,7 @@ export interface StudentPlan {
   manualSapAverages?: Record<string, number>;  // manual SAP average overrides per courseId
   binaryPass?: Record<string, boolean>;  // courseId → true = passed, not counted in weighted average
   savedTracks?: Record<string, StudentPlan>;  // per-track saved state for track switching
+  miluimCredits?: number;  // 0–10: reserve duty credit reduction for כלל-טכניוני requirement
+  englishScore?: number;   // 104–150: Amiram/Psychometric English score
+  englishTaughtCourses?: string[];  // course IDs student marked as taught in English
 }
