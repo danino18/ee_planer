@@ -216,6 +216,11 @@ export function useRequirementsProgress(
       return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id), mandatoryOptionsDone };
     });
 
+    // Lab pool: count how many pool labs the student has placed
+    const labPoolTaken = trackDef.labPool
+      ? trackDef.labPool.courses.filter((id) => allPlaced.has(id)).length
+      : 0;
+
     // #13: Sport credits (039xxx courses)
     let sportCredits = 0;
     for (const id of allPlaced) {
@@ -294,6 +299,9 @@ export function useRequirementsProgress(
       // #13 extended:
       sport: { earned: sportCredits, required: 2 },
       general: { earned: generalCredits, required: generalRequired },
+      labPoolProgress: trackDef.labPool
+        ? { earned: labPoolTaken, required: trackDef.labPool.required }
+        : null,
       labs,
       english: {
         placed: englishPlaced,

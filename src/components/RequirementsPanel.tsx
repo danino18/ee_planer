@@ -35,6 +35,7 @@ interface Props {
     groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean }[];
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
+    labPoolProgress: { earned: number; required: number } | null;
     labs: { id: string; name: string; done: boolean }[];
     english: {
       placed: { id: string; name: string }[];
@@ -111,6 +112,9 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
         )}
       </div>
       <ProgressRow label="ספורט" earned={progress.sport.earned} required={progress.sport.required} color="bg-green-400" />
+      {progress.labPoolProgress && (
+        <ProgressRow label="מעבדות בחירה" earned={progress.labPoolProgress.earned} required={progress.labPoolProgress.required} color="bg-cyan-500" />
+      )}
 
       <div className="border-t pt-3 mt-1 space-y-2">
         {/* Specialization groups */}

@@ -93,6 +93,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '00460204': { name: 'תקשורת אנלוגית', credits: 3 },
     '00460242': { name: 'פיסיקה סטטיסטית להנדסת חשמל', credits: 3 },
     '00460001': { name: 'הנדסת מערכות תוכנה מבוזרות', credits: 3 },
+    '00450114': { name: 'מעבדה מתקדמת בתכנה', credits: 1 },
     '03940900': { name: 'חינוך גופני', credits: 1 },
     '03940901': { name: 'חינוך גופני', credits: 1 },
     '03940902': { name: 'נבחרות ספורט', credits: 1.5 },

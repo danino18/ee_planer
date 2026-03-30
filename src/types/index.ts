@@ -24,6 +24,7 @@ export interface TrackDefinition {
   semesterSchedule: { semester: number; courses: string[] }[];
   specializationGroupsRequired: number;
   description: string;
+  labPool?: { courses: string[]; required: number };  // choose-N lab requirement
 }
 
 export interface SpecializationGroup {
