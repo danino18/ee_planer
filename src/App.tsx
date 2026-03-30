@@ -30,19 +30,27 @@ const SPECS: Record<string, SpecializationGroup[]> = {
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
   const store = usePlanStore();
-  const { trackId, resetPlan, semesters, addCourseToSemester, loadPlan } = store;
+  const { trackId, resetPlan, resetToDefault, undo, semesters, addCourseToSemester, loadPlan } = store;
+  const _history = usePlanStore((s) => s._history);
+  const _initKey = usePlanStore((s) => s._initKey);
   const specs = SPECS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
-  const initialized = useRef(false);
+
+  // Track which (trackId, initKey) combos have been initialized
+  const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didLoadCloud = useRef(false);
 
   // Initialize plan with track's semester schedule + sport course pool
+  // Re-runs when trackId changes OR when resetToDefault increments _initKey
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
+    if (!trackId) return;
+    const key = `${trackId}_${_initKey}`;
+    if (initialized.current.has(key)) return;
+    initialized.current.add(key);
+
     const allPlaced = new Set(Object.values(semesters).flat());
     const alreadyInitialized = new Set<string>();
     for (const { semester, courses: ids } of trackDef.semesterSchedule) {
@@ -53,14 +61,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         }
       }
     }
-    // Pre-populate 1 copy of each repeatable sport course in unassigned pool (if not already there)
+    // Pre-populate 1 copy of each repeatable sport course in unassigned pool
     const SPORT_POOL_IDS = ['03940900', '03940902'];
     for (const id of SPORT_POOL_IDS) {
       if (courses.has(id) && !(semesters[0] ?? []).includes(id)) {
         addCourseToSemester(id, 0);
       }
     }
-  }, []);
+  }, [trackId, _initKey]);
 
   // Cloud sync: load plan from Firestore on login
   useEffect(() => {
@@ -71,7 +79,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         if (cloudPlan) {
           loadPlan(cloudPlan);
         } else {
-          // First login — save current local plan to cloud
           const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder } = store;
           savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder });
         }
@@ -95,6 +102,12 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     };
   }, [user]);
 
+  function handleResetToDefault() {
+    if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
+      resetToDefault();
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
@@ -103,8 +116,26 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             <h1 className="text-lg font-bold text-gray-900">מתכנן לימודים – הטכניון</h1>
             <p className="text-sm text-gray-500">{trackDef.name}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <LoginButton />
+            {/* Undo last action */}
+            <button
+              onClick={undo}
+              disabled={_history.length === 0}
+              className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
+            >
+              ↩ בטל
+            </button>
+            {/* Reset to recommended schedule */}
+            <button
+              onClick={handleResetToDefault}
+              className="text-sm text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 px-3 py-1.5 rounded-lg transition-colors"
+              title="החזר את המערכת לתכנית הלימודים המומלצת"
+            >
+              ⟳ מומלצת
+            </button>
+            {/* Switch track */}
             <button
               onClick={resetPlan}
               className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"

@@ -3,6 +3,12 @@ import { persist } from 'zustand/middleware';
 import type { TrackId, StudentPlan } from '../types';
 
 interface PlanState extends StudentPlan {
+  // Ephemeral — NOT persisted
+  _history: StudentPlan[];
+  _initKey: number;
+  // Persisted extra
+  savedTracks: Record<string, StudentPlan>;
+
   setTrack: (trackId: TrackId) => void;
   addCourseToSemester: (courseId: string, semester: number) => void;
   removeCourseFromSemester: (courseId: string, semester: number) => void;
@@ -23,11 +29,12 @@ interface PlanState extends StudentPlan {
   toggleSemesterWarnings: (sem: number) => void;
   toggleDoubleSpecialization: (groupId: string) => void;
   toggleEnglishExemption: () => void;
-  setManualSapAverage: (courseId: string, avg: number | null) => void;
   setBinaryPass: (courseId: string, value: boolean | null) => void;
   reorderSemesters: (newOrder: number[]) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
+  resetToDefault: () => void;
+  undo: () => void;
 }
 
 // Courses that can appear in multiple semesters simultaneously (pool-style)
@@ -61,51 +68,99 @@ const initialState: StudentPlan = {
   binaryPass: {},
 };
 
+/** Shallow snapshot of all plan fields for undo history */
+function captureSnapshot(state: PlanState): StudentPlan {
+  return {
+    trackId: state.trackId,
+    semesters: Object.fromEntries(Object.entries(state.semesters).map(([k, v]) => [k, [...v]])),
+    completedCourses: [...state.completedCourses],
+    selectedSpecializations: [...state.selectedSpecializations],
+    favorites: [...state.favorites],
+    grades: { ...state.grades },
+    substitutions: { ...state.substitutions },
+    maxSemester: state.maxSemester,
+    selectedPrereqGroups: { ...state.selectedPrereqGroups },
+    summerSemesters: [...state.summerSemesters],
+    currentSemester: state.currentSemester,
+    semesterOrder: [...state.semesterOrder],
+    semesterTypeOverrides: { ...(state.semesterTypeOverrides ?? {}) },
+    semesterWarningsIgnored: [...(state.semesterWarningsIgnored ?? [])],
+    doubleSpecializations: [...(state.doubleSpecializations ?? [])],
+    hasEnglishExemption: state.hasEnglishExemption ?? false,
+    manualSapAverages: { ...(state.manualSapAverages ?? {}) },
+    binaryPass: { ...(state.binaryPass ?? {}) },
+  };
+}
+
+function pushHistory(state: PlanState): StudentPlan[] {
+  return [...(state._history ?? []).slice(-19), captureSnapshot(state)];
+}
+
 export const usePlanStore = create<PlanState>()(
   persist(
     (set) => ({
       ...initialState,
+      _history: [],
+      _initKey: 0,
+      savedTracks: {},
 
-      setTrack: (trackId) =>
-        set(() => ({
-          trackId,
-          semesters: { ...DEFAULT_SEMESTER_MAP },
-          completedCourses: [],
-          selectedSpecializations: [],
-          maxSemester: DEFAULT_SEMESTERS,
-          summerSemesters: [],
-          currentSemester: null,
-          semesterOrder: [...DEFAULT_ORDER],
-          semesterTypeOverrides: {},
-          semesterWarningsIgnored: [],
-          doubleSpecializations: [],
-          hasEnglishExemption: false,
-          manualSapAverages: {},
-        })),
+      setTrack: (newTrackId) =>
+        set((state) => {
+          // Save current track state
+          const savedTracks = { ...state.savedTracks };
+          if (state.trackId) {
+            savedTracks[state.trackId] = captureSnapshot(state);
+          }
+          // Restore previously saved state for this track
+          if (savedTracks[newTrackId]) {
+            const saved = savedTracks[newTrackId];
+            return {
+              ...saved,
+              savedTracks,
+              _history: [],
+              _initKey: state._initKey,
+            };
+          }
+          // New track — reset plan fields
+          return {
+            trackId: newTrackId,
+            semesters: { ...DEFAULT_SEMESTER_MAP },
+            completedCourses: [],
+            selectedSpecializations: [],
+            maxSemester: DEFAULT_SEMESTERS,
+            summerSemesters: [],
+            currentSemester: null,
+            semesterOrder: [...DEFAULT_ORDER],
+            semesterTypeOverrides: {},
+            semesterWarningsIgnored: [],
+            doubleSpecializations: [],
+            hasEnglishExemption: false,
+            manualSapAverages: {},
+            savedTracks,
+            _history: [],
+          };
+        }),
 
       addCourseToSemester: (courseId, semester) =>
         set((state) => {
+          const history = pushHistory(state);
           const newSemesters: Record<number, string[]> = {};
           if (REPEATABLE_COURSES.has(courseId)) {
-            // Repeatable: just add to target, never remove from other semesters
-            for (const [k, v] of Object.entries(state.semesters)) {
-              newSemesters[Number(k)] = v;
-            }
+            for (const [k, v] of Object.entries(state.semesters)) newSemesters[Number(k)] = v;
             newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
           } else {
-            // Regular: remove from all semesters first, then add
             for (const [k, v] of Object.entries(state.semesters)) {
               newSemesters[Number(k)] = v.filter((id) => id !== courseId);
             }
             newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
           }
-          return { semesters: newSemesters };
+          return { semesters: newSemesters, _history: history };
         }),
 
       removeCourseFromSemester: (courseId, semester) =>
         set((state) => {
+          const history = pushHistory(state);
           const list = state.semesters[semester] ?? [];
-          // For repeatable: remove only first occurrence; for others: remove all
           let newList: string[];
           if (REPEATABLE_COURSES.has(courseId)) {
             const idx = list.indexOf(courseId);
@@ -116,22 +171,19 @@ export const usePlanStore = create<PlanState>()(
           return {
             semesters: { ...state.semesters, [semester]: newList },
             completedCourses: state.completedCourses.filter((id) => id !== courseId),
+            _history: history,
           };
         }),
 
       moveCourse: (courseId, from, toSemester) =>
         set((state) => {
+          const history = pushHistory(state);
           const newSemesters: Record<number, string[]> = {};
           if (REPEATABLE_COURSES.has(courseId)) {
-            // Repeatable: remove one copy from source, add to target
-            for (const [k, v] of Object.entries(state.semesters)) {
-              newSemesters[Number(k)] = v;
-            }
+            for (const [k, v] of Object.entries(state.semesters)) newSemesters[Number(k)] = v;
             const fromList = newSemesters[from] ?? [];
             const idx = fromList.indexOf(courseId);
-            if (idx >= 0) {
-              newSemesters[from] = [...fromList.slice(0, idx), ...fromList.slice(idx + 1)];
-            }
+            if (idx >= 0) newSemesters[from] = [...fromList.slice(0, idx), ...fromList.slice(idx + 1)];
             newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           } else {
             for (const [k, v] of Object.entries(state.semesters)) {
@@ -139,21 +191,21 @@ export const usePlanStore = create<PlanState>()(
             }
             newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           }
-          return { semesters: newSemesters };
+          return { semesters: newSemesters, _history: history };
         }),
 
       toggleCompleted: (courseId) =>
         set((state) => {
+          const history = pushHistory(state);
           const isCompleted = state.completedCourses.includes(courseId);
           if (isCompleted) {
-            return { completedCourses: state.completedCourses.filter((id) => id !== courseId) };
+            return { completedCourses: state.completedCourses.filter((id) => id !== courseId), _history: history };
           }
-          // If not in any semester, also add to unassigned pool so it's visible
           const inAnySemester = Object.values(state.semesters).some((ids) => ids.includes(courseId));
           const newSemesters = inAnySemester
             ? state.semesters
             : { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] };
-          return { completedCourses: [...state.completedCourses, courseId], semesters: newSemesters };
+          return { completedCourses: [...state.completedCourses, courseId], semesters: newSemesters, _history: history };
         }),
 
       toggleSpecialization: (groupId) =>
@@ -173,12 +225,8 @@ export const usePlanStore = create<PlanState>()(
       setGrade: (courseId, grade) =>
         set((state) => {
           const newGrades = { ...state.grades };
-          if (grade === null) {
-            delete newGrades[courseId];
-          } else {
-            newGrades[courseId] = grade;
-          }
-          // Numeric grade and binary pass are mutually exclusive
+          if (grade === null) delete newGrades[courseId];
+          else newGrades[courseId] = grade;
           const newBinaryPass = { ...(state.binaryPass ?? {}) };
           delete newBinaryPass[courseId];
           return { grades: newGrades, binaryPass: newBinaryPass };
@@ -204,10 +252,12 @@ export const usePlanStore = create<PlanState>()(
         set((state) => {
           const next = state.maxSemester + 1;
           if (next > 16) return state;
+          const history = pushHistory(state);
           return {
             maxSemester: next,
             semesters: { ...state.semesters, [next]: [] },
             semesterOrder: [...state.semesterOrder, next],
+            _history: history,
           };
         }),
 
@@ -215,26 +265,27 @@ export const usePlanStore = create<PlanState>()(
         set((state) => {
           const next = state.maxSemester + 1;
           if (next > 16) return state;
+          const history = pushHistory(state);
           return {
             maxSemester: next,
             semesters: { ...state.semesters, [next]: [] },
             summerSemesters: [...state.summerSemesters, next],
             semesterOrder: [...state.semesterOrder, next],
+            _history: history,
           };
         }),
 
       removeSemester: () =>
         set((state) => {
-          // Remove the last non-summer semester from semesterOrder
           const lastRegular = [...state.semesterOrder].reverse().find(
             (s) => !state.summerSemesters.includes(s)
           );
           if (lastRegular === undefined) return state;
+          const history = pushHistory(state);
           const coursesInLast = state.semesters[lastRegular] ?? [];
           const newSemesters = { ...state.semesters };
           newSemesters[0] = [...(newSemesters[0] ?? []), ...coursesInLast];
           delete newSemesters[lastRegular];
-          // Compact: renumber if lastRegular === maxSemester
           const newMax = lastRegular === state.maxSemester ? state.maxSemester - 1 : state.maxSemester;
           return {
             maxSemester: newMax,
@@ -242,13 +293,14 @@ export const usePlanStore = create<PlanState>()(
             semesterOrder: state.semesterOrder.filter((s) => s !== lastRegular),
             summerSemesters: state.summerSemesters.filter((s) => s !== lastRegular),
             currentSemester: state.currentSemester === lastRegular ? null : state.currentSemester,
+            _history: history,
           };
         }),
 
       removeSummerSemester: () =>
         set((state) => {
           if (state.summerSemesters.length === 0) return state;
-          // Remove the last summer semester
+          const history = pushHistory(state);
           const lastSummer = state.summerSemesters[state.summerSemesters.length - 1];
           const coursesInLast = state.semesters[lastSummer] ?? [];
           const newSemesters = { ...state.semesters };
@@ -261,6 +313,7 @@ export const usePlanStore = create<PlanState>()(
             semesterOrder: state.semesterOrder.filter((s) => s !== lastSummer),
             summerSemesters: state.summerSemesters.filter((s) => s !== lastSummer),
             currentSemester: state.currentSemester === lastSummer ? null : state.currentSemester,
+            _history: history,
           };
         }),
 
@@ -305,14 +358,6 @@ export const usePlanStore = create<PlanState>()(
       toggleEnglishExemption: () =>
         set((state) => ({ hasEnglishExemption: !state.hasEnglishExemption })),
 
-      setManualSapAverage: (courseId, avg) =>
-        set((state) => {
-          const m = { ...(state.manualSapAverages ?? {}) };
-          if (avg === null) delete m[courseId];
-          else m[courseId] = avg;
-          return { manualSapAverages: m };
-        }),
-
       setBinaryPass: (courseId, value) =>
         set((state) => {
           const bp = { ...(state.binaryPass ?? {}) };
@@ -321,7 +366,6 @@ export const usePlanStore = create<PlanState>()(
             delete bp[courseId];
           } else {
             bp[courseId] = value;
-            // Clear numeric grade when binary pass is set
             delete newGrades[courseId];
           }
           return { binaryPass: bp, grades: newGrades };
@@ -329,10 +373,9 @@ export const usePlanStore = create<PlanState>()(
 
       reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
 
-      loadPlan: (plan) => set(() => ({
+      loadPlan: (plan) => set((state) => ({
         ...initialState,
         ...plan,
-        // Migrate old plans without semesterOrder
         semesterOrder: plan.semesterOrder?.length
           ? plan.semesterOrder
           : Array.from({ length: plan.maxSemester }, (_, i) => i + 1),
@@ -342,10 +385,64 @@ export const usePlanStore = create<PlanState>()(
         hasEnglishExemption: plan.hasEnglishExemption ?? false,
         manualSapAverages: plan.manualSapAverages ?? {},
         binaryPass: plan.binaryPass ?? {},
+        savedTracks: state.savedTracks,  // preserve per-track saves
+        _history: [],
+        _initKey: state._initKey,
       })),
 
-      resetPlan: () => set(() => ({ ...initialState })),
+      resetPlan: () => set(() => ({ ...initialState, _history: [], _initKey: 0, savedTracks: {} })),
+
+      resetToDefault: () =>
+        set((state) => {
+          // Remove saved state for current track so it re-initializes fresh
+          const savedTracks = { ...state.savedTracks };
+          if (state.trackId) delete savedTracks[state.trackId];
+          return {
+            trackId: state.trackId,
+            semesters: { ...DEFAULT_SEMESTER_MAP },
+            completedCourses: [],
+            selectedSpecializations: [],
+            favorites: [],
+            grades: {},
+            substitutions: {},
+            maxSemester: DEFAULT_SEMESTERS,
+            selectedPrereqGroups: {},
+            summerSemesters: [],
+            currentSemester: null,
+            semesterOrder: [...DEFAULT_ORDER],
+            semesterTypeOverrides: {},
+            semesterWarningsIgnored: [],
+            doubleSpecializations: [],
+            hasEnglishExemption: false,
+            manualSapAverages: {},
+            binaryPass: {},
+            savedTracks,
+            _history: [],
+            _initKey: state._initKey + 1,  // triggers re-initialization in App.tsx
+          };
+        }),
+
+      undo: () =>
+        set((state) => {
+          const history = state._history ?? [];
+          if (history.length === 0) return state;
+          const prev = history[history.length - 1];
+          return {
+            ...prev,
+            savedTracks: state.savedTracks,
+            _history: history.slice(0, -1),
+            _initKey: state._initKey,
+          };
+        }),
     }),
-    { name: 'technion-ee-planner' }
+    {
+      name: 'technion-ee-planner',
+      partialize: (state) => {
+        // Exclude ephemeral fields from localStorage
+        const { _history: _h, _initKey: _ik, ...rest } = state as PlanState;
+        void _h; void _ik;
+        return rest;
+      },
+    }
   )
 );
