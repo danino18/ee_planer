@@ -7,13 +7,28 @@ const STYLES = {
   cs:    { dot: 'bg-purple-500', badge: 'bg-purple-100 text-purple-700' },
 };
 
-// Fallback palette for unrecognized faculties
+// Selectable palette for user color overrides
+export const COLOR_OPTIONS: { key: string; dot: string; badge: string }[] = [
+  { key: 'blue',   dot: 'bg-blue-500',   badge: 'bg-blue-100 text-blue-700' },
+  { key: 'green',  dot: 'bg-green-500',  badge: 'bg-green-100 text-green-700' },
+  { key: 'purple', dot: 'bg-purple-500', badge: 'bg-purple-100 text-purple-700' },
+  { key: 'orange', dot: 'bg-orange-500', badge: 'bg-orange-100 text-orange-700' },
+  { key: 'yellow', dot: 'bg-yellow-500', badge: 'bg-yellow-100 text-yellow-700' },
+  { key: 'red',    dot: 'bg-red-500',    badge: 'bg-red-100 text-red-700' },
+  { key: 'teal',   dot: 'bg-teal-500',   badge: 'bg-teal-100 text-teal-700' },
+  { key: 'pink',   dot: 'bg-pink-500',   badge: 'bg-pink-100 text-pink-700' },
+  { key: 'indigo', dot: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-700' },
+  { key: 'cyan',   dot: 'bg-cyan-500',   badge: 'bg-cyan-100 text-cyan-700' },
+  { key: 'gray',   dot: 'bg-gray-500',   badge: 'bg-gray-100 text-gray-700' },
+];
+
+// Fallback palette for unrecognized faculties (uses COLOR_OPTIONS entries)
 const FALLBACK_PALETTE = [
-  { dot: 'bg-teal-500',   badge: 'bg-teal-100 text-teal-700' },
-  { dot: 'bg-red-500',    badge: 'bg-red-100 text-red-700' },
-  { dot: 'bg-indigo-500', badge: 'bg-indigo-100 text-indigo-700' },
-  { dot: 'bg-pink-500',   badge: 'bg-pink-100 text-pink-700' },
-  { dot: 'bg-cyan-500',   badge: 'bg-cyan-100 text-cyan-700' },
+  COLOR_OPTIONS.find(c => c.key === 'teal')!,
+  COLOR_OPTIONS.find(c => c.key === 'red')!,
+  COLOR_OPTIONS.find(c => c.key === 'indigo')!,
+  COLOR_OPTIONS.find(c => c.key === 'pink')!,
+  COLOR_OPTIONS.find(c => c.key === 'cyan')!,
 ];
 
 function hashFaculty(faculty: string): number {
@@ -22,7 +37,16 @@ function hashFaculty(faculty: string): number {
   return Math.abs(h);
 }
 
-export function getFacultyStyle(faculty: string, courseId?: string) {
+export function getFacultyStyle(
+  faculty: string,
+  courseId?: string,
+  overrides?: Record<string, string>
+) {
+  // User override takes top priority
+  if (overrides?.[faculty]) {
+    const option = COLOR_OPTIONS.find(o => o.key === overrides[faculty]);
+    if (option) return option;
+  }
   // Course ID prefix takes priority (most reliable)
   if (courseId) {
     const prefix = courseId.substring(0, 3);

@@ -33,6 +33,7 @@ interface PlanState extends StudentPlan {
   setMiluimCredits: (n: number | null) => void;
   setEnglishScore: (score: number | null) => void;
   toggleEnglishTaughtCourse: (courseId: string) => void;
+  setFacultyColorOverride: (faculty: string, colorKey: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
@@ -72,6 +73,7 @@ const initialState: StudentPlan = {
   miluimCredits: undefined,
   englishScore: undefined,
   englishTaughtCourses: [],
+  facultyColorOverrides: {},
 };
 
 /** Shallow snapshot of all plan fields for undo history */
@@ -396,6 +398,11 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      setFacultyColorOverride: (faculty, colorKey) =>
+        set((state) => ({
+          facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}), [faculty]: colorKey },
+        })),
+
       setBinaryPass: (courseId, value) =>
         set((state) => {
           const bp = { ...(state.binaryPass ?? {}) };
@@ -439,6 +446,7 @@ export const usePlanStore = create<PlanState>()(
         miluimCredits: plan.miluimCredits,
         englishScore: plan.englishScore,
         englishTaughtCourses: plan.englishTaughtCourses ?? [],
+        facultyColorOverrides: plan.facultyColorOverrides ?? {},
         // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
         savedTracks: plan.savedTracks ?? state.savedTracks ?? {},
         _history: [],
@@ -474,6 +482,7 @@ export const usePlanStore = create<PlanState>()(
             miluimCredits: undefined,
             englishScore: undefined,
             englishTaughtCourses: [],
+            facultyColorOverrides: {},
             savedTracks,
             _history: [],
             _initKey: state._initKey + 1,  // triggers re-initialization in App.tsx

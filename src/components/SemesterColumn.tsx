@@ -32,14 +32,16 @@ interface Props {
   onToggleWarnings?: () => void;
   semesterAverage?: number | null;
   courseChainMap?: Map<string, string>;
+  isDragging?: boolean;
 }
 
-function getColumnStyle(isOver: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
-  if (isOver)    return 'border-blue-400 bg-blue-50/50';
-  if (isSummer)  return 'border-amber-300 bg-amber-50/40';
-  if (isCurrent) return 'border-blue-500 bg-blue-50/30';
-  if (isPast)    return 'border-green-300 bg-green-50/30';
-  if (isFuture)  return 'border-gray-200 bg-gray-50/20 opacity-80';
+function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
+  if (isOver)     return 'border-blue-500 bg-blue-100/70 ring-2 ring-blue-400 ring-offset-1';
+  if (isDragging) return isSummer ? 'border-amber-400 border-dashed bg-amber-50/60' : 'border-blue-300 border-dashed bg-blue-50/20';
+  if (isSummer)   return 'border-amber-300 bg-amber-50/40';
+  if (isCurrent)  return 'border-blue-500 bg-blue-50/30';
+  if (isPast)     return 'border-green-300 bg-green-50/30';
+  if (isFuture)   return 'border-gray-200 bg-gray-50/20 opacity-80';
   return 'border-gray-200 bg-gray-50/50';
 }
 
@@ -47,7 +49,7 @@ export function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode,
-  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap,
+  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, isDragging: isDraggingActive,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const {
@@ -58,7 +60,7 @@ export function SemesterColumn({
   const [search, setSearch] = useState('');
 
   const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
-  const columnStyle = getColumnStyle(isOver, isSummer, isCurrent, isPast, isFuture);
+  const columnStyle = getColumnStyle(isOver, !!(isDraggingActive && semester > 0), isSummer, isCurrent, isPast, isFuture);
 
   const semesterLabel = semester === 0
     ? 'לא משובץ'
@@ -196,12 +198,21 @@ export function SemesterColumn({
             />
           );
         })}
-        {filteredIds.length === 0 && (
+        {filteredIds.length === 0 && !isOver && (
           <p className="text-xs text-gray-400 text-center py-6 italic">
             {semester === 0
               ? (search.trim() ? 'אין קורסים תואמים' : 'כל הקורסים משובצים')
-              : 'גרור קורסים לכאן'}
+              : isDraggingActive ? '' : 'גרור קורסים לכאן'}
           </p>
+        )}
+        {isDraggingActive && isOver && (
+          <div className="mt-1 mb-1 flex items-center justify-center gap-1.5 text-blue-600 text-xs font-semibold py-2 bg-blue-100 rounded-lg border-2 border-blue-400 border-dashed">
+            <span>📥</span>
+            <span>שחרר כאן</span>
+          </div>
+        )}
+        {isDraggingActive && !isOver && semester > 0 && filteredIds.length === 0 && (
+          <p className="text-xs text-blue-400 text-center py-6 italic">גרור לכאן</p>
         )}
       </div>
     </div>

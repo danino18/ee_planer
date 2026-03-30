@@ -10,7 +10,7 @@ import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
 import { usePlanStore, REPEATABLE_COURSES } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
-import { getFacultyStyle, getFacultyShortName } from '../utils/faculty';
+import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 
 function computeSemesterAverage(
   courseIds: string[],
@@ -45,7 +45,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
-    grades, binaryPass, selectedSpecializations,
+    grades, binaryPass, selectedSpecializations, facultyColorOverrides, setFacultyColorOverride,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
@@ -69,18 +69,22 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   const [showSummerSemesters, setShowSummerSemesters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [gridCols, setGridCols] = useState<3 | 4 | 5 | 6 | 7 | 8>(4);
+  const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
 
   // Compute unique faculties from placed courses for legend
   const placedFaculties = useMemo(() => {
-    const seen = new Map<string, string>(); // faculty → dot class
+    const seen = new Map<string, string>(); // faculty → first courseId (for prefix lookup)
     for (const ids of Object.values(semesters)) {
       for (const id of ids) {
         const f = courses.get(id)?.faculty;
-        if (f && !seen.has(f)) seen.set(f, getFacultyStyle(f, id).dot);
+        if (f && !seen.has(f)) seen.set(f, id);
       }
     }
-    return [...seen.entries()].map(([faculty, dot]) => ({ faculty, dot }));
-  }, [semesters, courses]);
+    return [...seen.entries()].map(([faculty, firstId]) => ({
+      faculty,
+      dot: getFacultyStyle(faculty, firstId, facultyColorOverrides ?? {}).dot,
+    }));
+  }, [semesters, courses, facultyColorOverrides]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -176,6 +180,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
       onToggleWarnings: () => toggleSemesterWarnings(sem),
       semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses, binaryPass ?? {}) : null,
       courseChainMap,
+      isDragging: !!activeCourseId,
     };
   };
 
@@ -269,13 +274,34 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
 
       {/* Faculty legend */}
       {showLegend && placedFaculties.length > 0 && (
-        <div className="mb-3 p-2.5 bg-white border border-gray-200 rounded-xl flex flex-wrap gap-x-4 gap-y-1.5">
-          {placedFaculties.map(({ faculty, dot }) => (
-            <div key={faculty} className="flex items-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dot}`} />
-              <span className="text-xs text-gray-600">{getFacultyShortName(faculty)}</span>
-            </div>
-          ))}
+        <div className="mb-3 p-2.5 bg-white border border-gray-200 rounded-xl">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {placedFaculties.map(({ faculty, dot }) => (
+              <div key={faculty} className="relative flex items-center gap-1.5">
+                <button
+                  onClick={() => setColorPickerFor(colorPickerFor === faculty ? null : faculty)}
+                  className={`w-3 h-3 rounded-full shrink-0 ${dot} hover:ring-2 hover:ring-offset-1 hover:ring-gray-400 transition-all`}
+                  title="לחץ לשינוי צבע"
+                />
+                <span className="text-xs text-gray-600">{getFacultyShortName(faculty)}</span>
+                {colorPickerFor === faculty && (
+                  <div className="absolute top-5 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-xl p-2 flex flex-wrap gap-1.5 w-44">
+                    {COLOR_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.key}
+                        onClick={() => { setFacultyColorOverride(faculty, opt.key); setColorPickerFor(null); }}
+                        className={`w-5 h-5 rounded-full ${opt.dot} hover:ring-2 hover:ring-offset-1 hover:ring-gray-400 transition-all ${(facultyColorOverrides ?? {})[faculty] === opt.key ? 'ring-2 ring-offset-1 ring-gray-600' : ''}`}
+                        title={opt.key}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {colorPickerFor && (
+            <p className="text-xs text-gray-400 mt-1.5">לחץ על עיגול צבע לשינוי · לחץ שוב לסגירה</p>
+          )}
         </div>
       )}
 

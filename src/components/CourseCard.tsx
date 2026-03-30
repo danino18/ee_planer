@@ -30,6 +30,7 @@ export function CourseCard({
     data: { course },
   });
   const { favorites, toggleFavorite, toggleCompleted, grades, binaryPass, removeCourseFromSemester } = usePlanStore();
+  const facultyColorOverrides = usePlanStore((s) => s.facultyColorOverrides ?? {});
   const isFavorite = favorites.includes(course.id);
   const grade = grades[course.id];
   const isBinaryPass = !!(binaryPass ?? {})[course.id];
@@ -56,7 +57,7 @@ export function CourseCard({
   const displayedNames = bestGroup.slice(0, 2).map(id => courses.get(id)?.name ?? id);
   const hasMoreInGroup = bestGroup.length > 2;
 
-  const facultyStyle = course.faculty ? getFacultyStyle(course.faculty, course.id) : null;
+  const facultyStyle = course.faculty ? getFacultyStyle(course.faculty, course.id, facultyColorOverrides) : null;
 
   const seasonLabel = course.teachingSemester === 'winter' ? '❄️' : course.teachingSemester === 'spring' ? '🌸' : null;
 
