@@ -139,7 +139,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
             <h3 className="text-base font-bold text-gray-900 leading-snug">{course.name}</h3>
             <p className="text-xs text-gray-400 mt-0.5">{course.id} · {course.credits} נ״ז</p>
             <a
-              href={`https://portalex.technion.ac.il/ovv/?sap-theme=sap_belize#/search/sm?query=${course.id}`}
+              href={`https://portalex.technion.ac.il/ovv/?sap-theme=sap_belize#/details/2025/201/SM/${course.id}`}
               target="_blank"
               rel="noopener noreferrer"
               onPointerDown={(e) => e.stopPropagation()}
