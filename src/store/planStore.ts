@@ -225,11 +225,27 @@ export const usePlanStore = create<PlanState>()(
       setGrade: (courseId, grade) =>
         set((state) => {
           const newGrades = { ...state.grades };
-          if (grade === null) delete newGrades[courseId];
-          else newGrades[courseId] = grade;
           const newBinaryPass = { ...(state.binaryPass ?? {}) };
-          delete newBinaryPass[courseId];
-          return { grades: newGrades, binaryPass: newBinaryPass };
+          if (grade === null) {
+            delete newGrades[courseId];
+            // removing grade → unmark completed (only if no binary pass either)
+            const completedCourses = newBinaryPass[courseId]
+              ? state.completedCourses
+              : state.completedCourses.filter((id) => id !== courseId);
+            return { grades: newGrades, binaryPass: newBinaryPass, completedCourses };
+          }
+          newGrades[courseId] = grade;
+          delete newBinaryPass[courseId]; // grade and binary pass are mutually exclusive
+          // auto-mark completed; if not in any semester, add to unassigned pool
+          const alreadyCompleted = state.completedCourses.includes(courseId);
+          const inAnySemester = Object.values(state.semesters).some((ids) => ids.includes(courseId));
+          const newSemesters = (!alreadyCompleted && !inAnySemester)
+            ? { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] }
+            : state.semesters;
+          const completedCourses = alreadyCompleted
+            ? state.completedCourses
+            : [...state.completedCourses, courseId];
+          return { grades: newGrades, binaryPass: newBinaryPass, completedCourses, semesters: newSemesters };
         }),
 
       setSubstitution: (fromId, toId) =>
@@ -364,11 +380,24 @@ export const usePlanStore = create<PlanState>()(
           const newGrades = { ...state.grades };
           if (value === null) {
             delete bp[courseId];
-          } else {
-            bp[courseId] = value;
-            delete newGrades[courseId];
+            // removing pass → unmark completed (only if no numeric grade either)
+            const completedCourses = newGrades[courseId] !== undefined
+              ? state.completedCourses
+              : state.completedCourses.filter((id) => id !== courseId);
+            return { binaryPass: bp, grades: newGrades, completedCourses };
           }
-          return { binaryPass: bp, grades: newGrades };
+          bp[courseId] = value;
+          delete newGrades[courseId]; // binary pass and grade are mutually exclusive
+          // auto-mark completed; if not in any semester, add to unassigned pool
+          const alreadyCompleted = state.completedCourses.includes(courseId);
+          const inAnySemester = Object.values(state.semesters).some((ids) => ids.includes(courseId));
+          const newSemesters = (!alreadyCompleted && !inAnySemester)
+            ? { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] }
+            : state.semesters;
+          const completedCourses = alreadyCompleted
+            ? state.completedCourses
+            : [...state.completedCourses, courseId];
+          return { binaryPass: bp, grades: newGrades, completedCourses, semesters: newSemesters };
         }),
 
       reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
