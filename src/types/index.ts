@@ -57,4 +57,5 @@ export interface StudentPlan {
   hasEnglishExemption?: boolean;  // student has English language exemption
   manualSapAverages?: Record<string, number>;  // manual SAP average overrides per courseId
   binaryPass?: Record<string, boolean>;  // courseId → true = passed, not counted in weighted average
+  savedTracks?: Record<string, StudentPlan>;  // per-track saved state for track switching
 }

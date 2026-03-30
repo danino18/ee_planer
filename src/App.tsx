@@ -22,6 +22,31 @@ import type { SapCourse, TrackDefinition, SpecializationGroup } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
+
+/** Extract all persistable fields from the store for cloud save */
+function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('./types').StudentPlan {
+  return {
+    trackId: state.trackId,
+    semesters: state.semesters,
+    completedCourses: state.completedCourses,
+    selectedSpecializations: state.selectedSpecializations,
+    favorites: state.favorites,
+    grades: state.grades,
+    substitutions: state.substitutions,
+    maxSemester: state.maxSemester,
+    selectedPrereqGroups: state.selectedPrereqGroups,
+    summerSemesters: state.summerSemesters,
+    currentSemester: state.currentSemester,
+    semesterOrder: state.semesterOrder,
+    semesterTypeOverrides: state.semesterTypeOverrides,
+    semesterWarningsIgnored: state.semesterWarningsIgnored,
+    doubleSpecializations: state.doubleSpecializations,
+    hasEnglishExemption: state.hasEnglishExemption,
+    manualSapAverages: state.manualSapAverages,
+    binaryPass: state.binaryPass,
+    savedTracks: state.savedTracks,
+  };
+}
 const SPECS: Record<string, SpecializationGroup[]> = {
   ee: eeSpecializations, cs: csSpecializations,
   ee_math: eeSpecializations, ee_physics: eeSpecializations,
@@ -79,8 +104,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         if (cloudPlan) {
           loadPlan(cloudPlan);
         } else {
-          const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder } = store;
-          savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder });
+          // First login — save current local plan to cloud
+          savePlanToCloud(user.uid, extractPlan(store));
         }
       })
       .catch(console.error);
@@ -92,8 +117,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     const unsubscribe = usePlanStore.subscribe((state) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        const { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder } = state;
-        savePlanToCloud(user.uid, { trackId, semesters, completedCourses, selectedSpecializations, favorites, grades, maxSemester, substitutions, selectedPrereqGroups, summerSemesters, currentSemester, semesterOrder }).catch(console.error);
+        savePlanToCloud(user.uid, extractPlan(state)).catch(console.error);
       }, 2000);
     });
     return () => {

@@ -385,7 +385,8 @@ export const usePlanStore = create<PlanState>()(
         hasEnglishExemption: plan.hasEnglishExemption ?? false,
         manualSapAverages: plan.manualSapAverages ?? {},
         binaryPass: plan.binaryPass ?? {},
-        savedTracks: state.savedTracks,  // preserve per-track saves
+        // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
+        savedTracks: plan.savedTracks ?? state.savedTracks ?? {},
         _history: [],
         _initKey: state._initKey,
       })),
