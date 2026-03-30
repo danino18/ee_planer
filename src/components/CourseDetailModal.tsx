@@ -13,10 +13,11 @@ const TRACK_SPECS: Record<string, SpecializationGroup[]> = {
 interface Props {
   course: SapCourse;
   courses: Map<string, SapCourse>;
+  semester?: number;
   onClose: () => void;
 }
 
-export function CourseDetailModal({ course, courses, onClose }: Props) {
+export function CourseDetailModal({ course, courses, semester, onClose }: Props) {
   const {
     grades, setGrade,
     substitutions, setSubstitution,
@@ -25,6 +26,7 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
     trackId,
     manualSapAverages, setManualSapAverage,
     binaryPass, setBinaryPass,
+    removeCourseFromSemester,
   } = usePlanStore();
 
   // Chains this course can contribute to
@@ -431,28 +433,38 @@ export function CourseDetailModal({ course, courses, onClose }: Props) {
         </div>
 
         {/* Buttons */}
-        <div className="flex gap-2">
-          <button
-            onClick={handleSaveGrade}
-            disabled={!isBinaryMode && (!isValid || gradeInput === '')}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            {isBinaryMode ? 'שמור עובר' : 'שמור ציון'}
-          </button>
-          {(currentGrade !== undefined || isBinaryPass) && (
+        <div className="flex flex-col gap-2">
+          {semester !== undefined && (
             <button
-              onClick={() => { setGrade(course.id, null); setBinaryPass(course.id, null); onClose(); }}
-              className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-2 rounded-lg transition-colors"
+              onClick={() => { removeCourseFromSemester(course.id, semester); onClose(); }}
+              className="w-full text-sm text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-400 px-4 py-2 rounded-lg transition-colors font-medium"
             >
-              מחק
+              {semester === 0 ? '✕ הסר מהתכנית' : '✕ הסר מהסמסטר'}
             </button>
           )}
-          <button
-            onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors"
-          >
-            סגור
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSaveGrade}
+              disabled={!isBinaryMode && (!isValid || gradeInput === '')}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {isBinaryMode ? 'שמור עובר' : 'שמור ציון'}
+            </button>
+            {(currentGrade !== undefined || isBinaryPass) && (
+              <button
+                onClick={() => { setGrade(course.id, null); setBinaryPass(course.id, null); onClose(); }}
+                className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-2 rounded-lg transition-colors"
+              >
+                מחק ציון
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors"
+            >
+              סגור
+            </button>
+          </div>
         </div>
       </div>
     </div>

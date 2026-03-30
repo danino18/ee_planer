@@ -168,8 +168,8 @@ export function CourseCard({
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => { e.stopPropagation(); removeCourseFromSemester(course.id, semester); }}
-            className="absolute bottom-1.5 left-1.5 text-gray-300 hover:text-red-500 text-xs leading-none transition-colors"
-            title="הסר מהסמסטר"
+            className="absolute bottom-0 left-0 w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 text-sm transition-colors"
+            title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
           >
             ✕
           </button>
@@ -180,6 +180,7 @@ export function CourseCard({
         <CourseDetailModal
           course={course}
           courses={courses}
+          semester={semester}
           onClose={() => setModalOpen(false)}
         />
       )}
