@@ -27,11 +27,16 @@ export function SpecializationPanel({ groups, courses }: Props) {
   function handleDoubleClick(e: React.MouseEvent, group: SpecializationGroup) {
     e.stopPropagation();
     const isSelected = selectedSpecializations.includes(group.id);
+    const isDouble = doubles.includes(group.id);
     if (!isSelected) {
-      // auto-select first, then mark as double
+      // select the group first
       toggleSpecialization(group.id);
+      // if not yet double, mark as double; if already double (edge case), leave it
+      if (!isDouble) toggleDoubleSpecialization(group.id);
+    } else {
+      // already selected — just toggle double
+      toggleDoubleSpecialization(group.id);
     }
-    toggleDoubleSpecialization(group.id);
   }
 
   return (
