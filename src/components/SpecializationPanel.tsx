@@ -35,7 +35,9 @@ export function SpecializationPanel({ groups, courses }: Props) {
             const done = all.filter((id) => allPlaced.has(id)).length;
             const allMandatoryDone = group.mandatoryCourses.length === 0 ||
               group.mandatoryCourses.every((id) => allPlaced.has(id));
-            const complete = allMandatoryDone && done >= effectiveMin;
+            const mandatoryOptionsDone = !group.mandatoryOptions ||
+              group.mandatoryOptions.every((opts) => opts.some((id) => allPlaced.has(id)));
+            const complete = allMandatoryDone && mandatoryOptionsDone && done >= effectiveMin;
             const pct = Math.min(100, (done / effectiveMin) * 100);
 
             return (
@@ -61,17 +63,23 @@ export function SpecializationPanel({ groups, courses }: Props) {
                     >
                       ✓
                     </button>
-                    {/* Double toggle — only for eligible, selected groups */}
-                    {isSelected && group.canBeDouble && (
+                    {/* Double toggle — visible for all canBeDouble groups, disabled when not selected */}
+                    {group.canBeDouble && (
                       <button
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => { e.stopPropagation(); toggleDoubleSpecialization(group.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isSelected) toggleDoubleSpecialization(group.id);
+                        }}
+                        disabled={!isSelected}
                         className={`text-xs leading-none px-1 py-0.5 rounded border transition-colors ${
                           isDouble
                             ? 'bg-purple-500 border-purple-500 text-white'
-                            : 'border-gray-300 text-gray-400 hover:border-purple-400 hover:text-purple-500'
+                            : isSelected
+                              ? 'border-gray-300 text-gray-400 hover:border-purple-400 hover:text-purple-500'
+                              : 'border-gray-200 text-gray-300 cursor-not-allowed'
                         }`}
-                        title={isDouble ? 'בטל התמחות כפולה' : 'הגדר כהתמחות כפולה'}
+                        title={!isSelected ? 'בחר קבוצה תחילה' : isDouble ? 'בטל התמחות כפולה' : 'הגדר כהתמחות כפולה'}
                       >
                         כ׳
                       </button>
@@ -108,6 +116,21 @@ export function SpecializationPanel({ groups, courses }: Props) {
                             </ul>
                           </div>
                         )}
+                        {group.mandatoryOptions && group.mandatoryOptions.map((opts, i) => (
+                          <div key={i} className="mb-2">
+                            <p className="text-xs font-semibold text-orange-600 mb-1">
+                              חובה — לפחות אחד{group.mandatoryOptions!.length > 1 ? ` (קבוצה ${i + 1})` : ''}:
+                            </p>
+                            <ul className="space-y-0.5">
+                              {opts.map((id) => (
+                                <li key={id} className={`text-xs flex items-center gap-1 ${allPlaced.has(id) ? 'text-green-700' : 'text-orange-500'}`}>
+                                  <span>{allPlaced.has(id) ? '✓' : '◇'}</span>
+                                  <span>{courses.get(id)?.name ?? id}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
                         <div>
                           <p className="text-xs font-semibold text-gray-600 mb-1">בחירה ({group.electiveCourses.length} קורסים):</p>
                           <ul className="space-y-0.5 max-h-40 overflow-y-auto">

@@ -173,10 +173,14 @@ export function useRequirementsProgress(
 
     // #12: chain complete only when ALL mandatory courses done first, then min count met
     // #4: double specialization uses doubleMinCoursesToComplete
+    // mandatoryOptions: at least 1 from each inner array must be completed
     const completedGroupsList = selectedGroups.filter((g) => {
       const allMandatoryDone = g.mandatoryCourses.length === 0 ||
         g.mandatoryCourses.every((id) => allPlaced.has(id));
       if (!allMandatoryDone) return false;
+      const mandatoryOptionsDone = !g.mandatoryOptions ||
+        g.mandatoryOptions.every((opts) => opts.some((id) => allPlaced.has(id)));
+      if (!mandatoryOptionsDone) return false;
       const effectiveMin = (doubleSpecializations.includes(g.id) && g.doubleMinCoursesToComplete)
         ? g.doubleMinCoursesToComplete
         : g.minCoursesToComplete;
@@ -199,7 +203,9 @@ export function useRequirementsProgress(
       const effectiveMin = (doubleSpecializations.includes(g.id) && g.doubleMinCoursesToComplete)
         ? g.doubleMinCoursesToComplete
         : g.minCoursesToComplete;
-      return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id) };
+      const mandatoryOptionsDone = !g.mandatoryOptions ||
+        g.mandatoryOptions.every((opts) => opts.some((id) => allPlaced.has(id)));
+      return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id), mandatoryOptionsDone };
     });
 
     // #13: Sport credits (039xxx courses)

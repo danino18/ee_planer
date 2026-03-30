@@ -31,6 +31,7 @@ export interface SpecializationGroup {
   trackId: TrackId | TrackId[];
   name: string;
   mandatoryCourses: string[];
+  mandatoryOptions?: string[][];  // at least 1 from each inner array must be completed
   electiveCourses: string[];
   minCoursesToComplete: number;
   doubleMinCoursesToComplete?: number;
