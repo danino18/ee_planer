@@ -233,17 +233,6 @@ export function useRequirementsProgress(
       if (id.startsWith('032')) generalCredits += courses.get(id)?.credits ?? 0;
     }
 
-    // #13: Labs — mandatory courses whose name contains "מעבד"
-    const labs = trackDef.semesterSchedule
-      .flatMap((s) => s.courses)
-      .reduce<{ id: string; name: string; done: boolean }[]>((acc, id) => {
-        const c = courses.get(id);
-        if (c && c.name.includes('מעבד')) {
-          acc.push({ id, name: c.name, done: allPlaced.has(id) });
-        }
-        return acc;
-      }, []);
-
     // #13: English courses placed (courses whose name contains "אנגלית")
     const englishPlaced: { id: string; name: string }[] = [];
     const seenEng = new Set<string>();
@@ -302,7 +291,6 @@ export function useRequirementsProgress(
       labPoolProgress: trackDef.labPool
         ? { earned: labPoolTaken, required: trackDef.labPool.required }
         : null,
-      labs,
       english: {
         placed: englishPlaced,
         hasExemption: hasEnglishExemption,

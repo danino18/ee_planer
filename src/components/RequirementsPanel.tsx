@@ -36,7 +36,6 @@ interface Props {
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
     labPoolProgress: { earned: number; required: number } | null;
-    labs: { id: string; name: string; done: boolean }[];
     english: {
       placed: { id: string; name: string }[];
       hasExemption: boolean;
@@ -51,15 +50,16 @@ interface Props {
 }
 
 export function RequirementsPanel({ progress, weightedAverage }: Props) {
-  const { toggleEnglishExemption, setMiluimCredits, setEnglishScore } = usePlanStore();
+  const { setMiluimCredits, setEnglishScore } = usePlanStore();
   const miluimCredits = usePlanStore((s) => s.miluimCredits);
   const englishScore = usePlanStore((s) => s.englishScore);
   const [miluimInput, setMiluimInput] = useState<string>(miluimCredits?.toString() ?? '');
   if (!progress) return null;
 
   const isMiluim = miluimCredits !== undefined;
-  const englishOk = progress.english.hasExemption || progress.english.placed.length > 0 ||
-    (progress.english.requirements.length > 0 && progress.english.requirements.every((r) => r.done));
+  const englishOk = progress.english.requirements.length > 0
+    ? progress.english.requirements.every((r) => r.done)
+    : progress.english.placed.length > 0;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -141,45 +141,13 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
           </div>
         )}
 
-        {/* Labs checklist */}
-        {progress.labs.length > 0 && (
-          <div>
-            <p className="text-sm text-gray-700 mb-1">מעבדות</p>
-            <div className="space-y-0.5 pr-1">
-              {progress.labs.map(lab => (
-                <div key={lab.id} className="flex items-center gap-1.5">
-                  <span className={`text-xs font-bold ${lab.done ? 'text-green-600' : 'text-gray-400'}`}>
-                    {lab.done ? '✓' : '○'}
-                  </span>
-                  <span className={`text-xs truncate ${lab.done ? 'text-green-700' : 'text-gray-500'}`} title={lab.name}>
-                    {lab.name}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* English */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <span className="text-sm text-gray-700">אנגלית</span>
-            <div className="flex items-center gap-1">
-              {englishOk && !progress.english.hasExemption && (
-                <span className="text-xs text-green-600 font-bold">✓</span>
-              )}
-              <button
-                onClick={toggleEnglishExemption}
-                className={`shrink-0 text-xs px-1.5 py-0.5 rounded border transition-colors ${
-                  progress.english.hasExemption
-                    ? 'bg-green-100 border-green-300 text-green-700'
-                    : 'border-gray-200 text-gray-400 hover:border-gray-300'
-                }`}
-                title={progress.english.hasExemption ? 'בטל פטור' : 'סמן כפטור'}
-              >
-                {progress.english.hasExemption ? '✓ פטור' : 'פטור?'}
-              </button>
-            </div>
+            {englishOk && (
+              <span className="text-xs text-green-600 font-bold">✓</span>
+            )}
           </div>
           {/* Amiram score input */}
           <div className="flex items-center gap-1.5 mb-1">
@@ -210,15 +178,7 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
               ))}
             </div>
           )}
-          {/* Fallback: list placed English-named courses */}
-          {progress.english.score === undefined && progress.english.placed.length > 0 && (
-            <div className="space-y-0.5 pr-1">
-              {progress.english.placed.map(c => (
-                <p key={c.id} className="text-xs text-green-700 truncate">✓ {c.name}</p>
-              ))}
-            </div>
-          )}
-          {progress.english.score === undefined && progress.english.placed.length === 0 && !progress.english.hasExemption && (
+          {progress.english.score === undefined && (
             <p className="text-xs text-gray-400">הזן ניקוד אמיר״ם לבקעת דרישות</p>
           )}
         </div>
