@@ -19,6 +19,21 @@ export function SpecializationPanel({ groups, courses }: Props) {
 
   const doubles = doubleSpecializations ?? [];
 
+  function handleOpenGroup(group: SpecializationGroup) {
+    setHoveredGroup(null); // close tooltip before opening modal
+    setOpenGroup(group);
+  }
+
+  function handleDoubleClick(e: React.MouseEvent, group: SpecializationGroup) {
+    e.stopPropagation();
+    const isSelected = selectedSpecializations.includes(group.id);
+    if (!isSelected) {
+      // auto-select first, then mark as double
+      toggleSpecialization(group.id);
+    }
+    toggleDoubleSpecialization(group.id);
+  }
+
   return (
     <>
       <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -43,7 +58,7 @@ export function SpecializationPanel({ groups, courses }: Props) {
             return (
               <div
                 key={group.id}
-                onClick={() => setOpenGroup(group)}
+                onClick={() => handleOpenGroup(group)}
                 className={`text-right p-2.5 rounded-lg border-2 transition-all cursor-pointer ${
                   isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
@@ -63,23 +78,17 @@ export function SpecializationPanel({ groups, courses }: Props) {
                     >
                       ✓
                     </button>
-                    {/* Double toggle — visible for all canBeDouble groups, disabled when not selected */}
+                    {/* Double toggle — always clickable for canBeDouble groups */}
                     {group.canBeDouble && (
                       <button
                         onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isSelected) toggleDoubleSpecialization(group.id);
-                        }}
-                        disabled={!isSelected}
-                        className={`text-xs leading-none px-1 py-0.5 rounded border transition-colors ${
+                        onClick={(e) => handleDoubleClick(e, group)}
+                        className={`text-xs leading-none px-1.5 py-0.5 rounded border transition-colors ${
                           isDouble
                             ? 'bg-purple-500 border-purple-500 text-white'
-                            : isSelected
-                              ? 'border-gray-300 text-gray-400 hover:border-purple-400 hover:text-purple-500'
-                              : 'border-gray-200 text-gray-300 cursor-not-allowed'
+                            : 'border-gray-300 text-gray-400 hover:border-purple-400 hover:text-purple-500'
                         }`}
-                        title={!isSelected ? 'בחר קבוצה תחילה' : isDouble ? 'בטל התמחות כפולה' : 'הגדר כהתמחות כפולה'}
+                        title={isDouble ? 'בטל התמחות כפולה' : 'הגדר כהתמחות כפולה'}
                       >
                         כ׳
                       </button>
@@ -96,11 +105,12 @@ export function SpecializationPanel({ groups, courses }: Props) {
                       {done}/{effectiveMin}{complete ? ' ✓' : ''}
                     </span>
                     {isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפולה</span>}
-                    {/* Hover tooltip */}
-                    {hoveredGroup === group.id && (
+                    {/* Hover tooltip — z-[60] so it's above panel content but below modals */}
+                    {hoveredGroup === group.id && !openGroup && (
                       <div
-                        className="absolute z-50 top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64 text-right"
+                        className="absolute z-[60] top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64 text-right"
                         onMouseEnter={() => setHoveredGroup(group.id)}
+                        onMouseLeave={() => setHoveredGroup(null)}
                       >
                         <p className="text-xs font-bold text-gray-700 mb-1.5">{group.name}</p>
                         {group.mandatoryCourses.length > 0 && (
