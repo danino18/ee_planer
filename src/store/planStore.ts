@@ -290,11 +290,24 @@ export const usePlanStore = create<PlanState>()(
           const next = state.maxSemester + 1;
           if (next > 16) return state;
           const history = pushHistory(state);
+          // Insert summer BEFORE the last regular (non-summer) semester so that
+          // courses placed in it are recognized as prereqs by subsequent semesters.
+          // Appending at the end (old behavior) put summer after sem 8, making it
+          // invisible to prereq checks for semesters 1-8.
+          const order = [...state.semesterOrder];
+          let insertAt = order.length; // fallback: append
+          for (let i = order.length - 1; i >= 0; i--) {
+            if (!state.summerSemesters.includes(order[i])) {
+              insertAt = i; // just before this last regular semester
+              break;
+            }
+          }
+          order.splice(insertAt, 0, next);
           return {
             maxSemester: next,
             semesters: { ...state.semesters, [next]: [] },
             summerSemesters: [...state.summerSemesters, next],
-            semesterOrder: [...state.semesterOrder, next],
+            semesterOrder: order,
             _history: history,
           };
         }),
