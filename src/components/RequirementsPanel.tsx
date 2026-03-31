@@ -35,7 +35,7 @@ interface Props {
     groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean }[];
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
-    labPoolProgress: { earned: number; required: number } | null;
+    labPoolProgress: { earned: number; required: number; mandatory: boolean; max?: number } | null;
     english: {
       placed: { id: string; name: string }[];
       hasExemption: boolean;
@@ -112,8 +112,28 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
         )}
       </div>
       <ProgressRow label="ספורט" earned={progress.sport.earned} required={progress.sport.required} color="bg-green-400" />
-      {progress.labPoolProgress && (
-        <ProgressRow label="מעבדות בחירה" earned={progress.labPoolProgress.earned} required={progress.labPoolProgress.required} color="bg-cyan-500" />
+      {progress.labPoolProgress && progress.labPoolProgress.mandatory && progress.labPoolProgress.required > 0 && (
+        <>
+          <ProgressRow
+            label="מעבדות חובה"
+            earned={Math.min(progress.labPoolProgress.earned, progress.labPoolProgress.required)}
+            required={progress.labPoolProgress.required}
+            color="bg-cyan-500"
+          />
+          {progress.labPoolProgress.earned > progress.labPoolProgress.required && (
+            <p className="text-xs text-teal-600 mb-2 -mt-1 pr-1">
+              +{progress.labPoolProgress.earned - progress.labPoolProgress.required} מעבדות נוספות — בחירה פקולטית
+            </p>
+          )}
+        </>
+      )}
+      {progress.labPoolProgress && !progress.labPoolProgress.mandatory && (
+        <ProgressRow
+          label={`מעבדות לבחירה (עד ${progress.labPoolProgress.max ?? progress.labPoolProgress.required})`}
+          earned={progress.labPoolProgress.earned}
+          required={progress.labPoolProgress.max ?? progress.labPoolProgress.required}
+          color="bg-cyan-500"
+        />
       )}
 
       <div className="border-t pt-3 mt-1 space-y-2">

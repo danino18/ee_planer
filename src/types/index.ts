@@ -24,7 +24,12 @@ export interface TrackDefinition {
   semesterSchedule: { semester: number; courses: string[] }[];
   specializationGroupsRequired: number;
   description: string;
-  labPool?: { courses: string[]; required: number };  // choose-N lab requirement
+  labPool?: {
+    courses: string[];
+    required: number;     // mandatory minimum (0 = purely optional)
+    mandatory?: boolean;  // true → first `required` placed labs count as mandatory credits
+    max?: number;         // max labs that count for any credit (beyond this = uncredited)
+  };
 }
 
 export interface SpecializationGroup {

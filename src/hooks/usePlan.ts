@@ -149,6 +149,7 @@ export function useRequirementsProgress(
   const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
   const englishScore = usePlanStore((s) => s.englishScore);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
+  const semesterOrder = usePlanStore((s) => s.semesterOrder);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -158,6 +159,45 @@ export function useRequirementsProgress(
       ...Object.values(semesters).flat(),
     ]);
 
+    // Compute ordered placed lab pool courses (in semester order, capped at max)
+    const orderedLabPool: string[] = [];
+    if (trackDef.labPool) {
+      const labSet = new Set(trackDef.labPool.courses);
+      const max = trackDef.labPool.max ?? trackDef.labPool.courses.length;
+      const seen = new Set<string>();
+      // completedCourses first, then by semesterOrder
+      for (const id of completedCourses) {
+        if (labSet.has(id) && !seen.has(id)) { orderedLabPool.push(id); seen.add(id); }
+      }
+      for (const sem of semesterOrder) {
+        for (const id of semesters[sem] ?? []) {
+          if (labSet.has(id) && !seen.has(id)) { orderedLabPool.push(id); seen.add(id); }
+        }
+        if (orderedLabPool.length >= max) break;
+      }
+      if (orderedLabPool.length > max) orderedLabPool.splice(max);
+    }
+
+    // Which placed labs are "mandatory" (first `required` when mandatory=true)
+    const mandatoryLabIdSet = new Set<string>();
+    const excessLabIdSet = new Set<string>(); // beyond max — don't count for any credit
+    if (trackDef.labPool) {
+      const required = trackDef.labPool.required;
+      const max = trackDef.labPool.max ?? trackDef.labPool.courses.length;
+      if (trackDef.labPool.mandatory) {
+        for (let i = 0; i < Math.min(required, orderedLabPool.length); i++) {
+          mandatoryLabIdSet.add(orderedLabPool[i]);
+        }
+      }
+      // Labs placed beyond max don't count for credit
+      const labSet = new Set(trackDef.labPool.courses);
+      for (const id of allPlaced) {
+        if (labSet.has(id) && !orderedLabPool.includes(id)) {
+          excessLabIdSet.add(id);
+        }
+      }
+    }
+
     const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
     let mandatoryDone = 0;
     for (const { courses: semCourseIds } of trackDef.semesterSchedule) {
@@ -165,11 +205,16 @@ export function useRequirementsProgress(
         if (allPlaced.has(id)) mandatoryDone += courses.get(id)?.credits ?? 0;
       }
     }
+    // Add mandatory lab credits
+    for (const id of mandatoryLabIdSet) {
+      mandatoryDone += courses.get(id)?.credits ?? 0;
+    }
 
     let electiveCredits = 0;
     const counted = new Set<string>();
     for (const id of allPlaced) {
-      if (!mandatoryIds.has(id) && !counted.has(id)) {
+      // Exclude: schedule mandatories, mandatory labs (already in mandatoryDone), excess labs
+      if (!mandatoryIds.has(id) && !mandatoryLabIdSet.has(id) && !excessLabIdSet.has(id) && !counted.has(id)) {
         electiveCredits += courses.get(id)?.credits ?? 0;
         counted.add(id);
       }
@@ -216,10 +261,8 @@ export function useRequirementsProgress(
       return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id), mandatoryOptionsDone };
     });
 
-    // Lab pool: count how many pool labs the student has placed
-    const labPoolTaken = trackDef.labPool
-      ? trackDef.labPool.courses.filter((id) => allPlaced.has(id)).length
-      : 0;
+    // Lab pool: how many counted (= orderedLabPool.length, already capped at max)
+    const labPoolTaken = orderedLabPool.length;
 
     // #13: Sport credits (039xxx courses)
     let sportCredits = 0;
@@ -289,7 +332,12 @@ export function useRequirementsProgress(
       sport: { earned: sportCredits, required: 2 },
       general: { earned: generalCredits, required: generalRequired },
       labPoolProgress: trackDef.labPool
-        ? { earned: labPoolTaken, required: trackDef.labPool.required }
+        ? {
+            earned: labPoolTaken,
+            required: trackDef.labPool.required,
+            mandatory: trackDef.labPool.mandatory ?? false,
+            max: trackDef.labPool.max,
+          }
         : null,
       english: {
         placed: englishPlaced,
@@ -305,7 +353,7 @@ export function useRequirementsProgress(
         completedCount >= trackDef.specializationGroupsRequired &&
         totalCredits >= trackDef.totalCreditsRequired,
     };
-  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses]);
+  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder]);
 }
 
 export function useChainRecommendations(

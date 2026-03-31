@@ -9,6 +9,18 @@ export const eePhysicsTrack: TrackDefinition = {
   electiveCreditsRequired: 25.5,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 2,
+  labPool: {
+    required: 3,
+    mandatory: true,
+    max: 4,
+    courses: [
+      '00450100','00450101','00450102','00450103','00450104',
+      '00450105','00450106','00450107','00450108','00450109',
+      '00450110','00450111','00450112','00450113','00450114',
+      '00450115','00450116','00450117','00450118','00450119',
+      '00450120',
+    ],
+  },
   semesterSchedule: [
     {
       semester: 1,

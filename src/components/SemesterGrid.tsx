@@ -48,7 +48,28 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     grades, binaryPass, selectedSpecializations, facultyColorOverrides, setFacultyColorOverride,
   } = usePlanStore();
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
-  const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
+
+  // Mandatory lab IDs: first `required` placed lab pool courses in semester order
+  const mandatoryLabIds = useMemo(() => {
+    const result = new Set<string>();
+    if (!trackDef.labPool?.mandatory || trackDef.labPool.required <= 0) return result;
+    const labSet = new Set(trackDef.labPool.courses);
+    const required = trackDef.labPool.required;
+    for (const sem of (semesterOrder?.length ? semesterOrder : [])) {
+      for (const id of semesters[sem] ?? []) {
+        if (labSet.has(id) && !result.has(id)) {
+          result.add(id);
+          if (result.size >= required) return result;
+        }
+      }
+    }
+    return result;
+  }, [trackDef, semesters, semesterOrder]);
+
+  const mandatoryIds = new Set([
+    ...trackDef.semesterSchedule.flatMap((s) => s.courses),
+    ...mandatoryLabIds,
+  ]);
   const completedSet = new Set(completedCourses);
 
   // Map courseId → chain name for selected specializations

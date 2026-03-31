@@ -11,6 +11,8 @@ export const eeTrack: TrackDefinition = {
   specializationGroupsRequired: 3,
   labPool: {
     required: 3,
+    mandatory: true,
+    max: 4,
     courses: [
       '00450100','00450101','00450102','00450103','00450104',
       '00450105','00450106','00450107','00450108','00450109',
