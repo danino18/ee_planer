@@ -48,6 +48,7 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('.
     miluimCredits: state.miluimCredits,
     englishScore: state.englishScore,
     englishTaughtCourses: state.englishTaughtCourses,
+    facultyColorOverrides: state.facultyColorOverrides ?? {},
   };
 }
 const SPECS: Record<string, SpecializationGroup[]> = {
@@ -69,7 +70,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didLoadCloud = useRef(false);
+  const lastLoadedUid = useRef<string | null>(null);
 
   // Initialize plan with track's semester schedule + sport course pool
   // Re-runs when trackId changes OR when resetToDefault increments _initKey
@@ -98,34 +99,65 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     }
   }, [trackId, _initKey]);
 
-  // Cloud sync: load plan from Firestore on login
+  // Cloud sync: load plan from Firestore on login.
+  // Uses lastLoadedUid so that logout → re-login always fetches fresh cloud data.
   useEffect(() => {
-    if (!user || didLoadCloud.current) return;
-    didLoadCloud.current = true;
+    if (!user) {
+      lastLoadedUid.current = null; // reset so next login re-loads
+      return;
+    }
+    if (lastLoadedUid.current === user.uid) return; // already loaded for this session
+    lastLoadedUid.current = user.uid;
     loadPlanFromCloud(user.uid)
       .then((cloudPlan) => {
         if (cloudPlan) {
           loadPlan(cloudPlan);
         } else {
           // First login — save current local plan to cloud
-          savePlanToCloud(user.uid, extractPlan(store));
+          savePlanToCloud(user.uid, extractPlan(usePlanStore.getState()));
         }
       })
       .catch(console.error);
   }, [user]);
 
-  // Cloud sync: auto-save on plan changes (debounced 2s)
+  // Cloud sync: auto-save on plan changes (debounced 2s).
+  // Also saves immediately when the tab becomes hidden (user switches away / closes tab)
+  // so that changes are not lost if the page unloads before the timer fires.
   useEffect(() => {
     if (!user) return;
-    const unsubscribe = usePlanStore.subscribe((state) => {
+    const uid = user.uid;
+
+    const flushSave = () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      savePlanToCloud(uid, extractPlan(usePlanStore.getState())).catch(console.error);
+    };
+
+    const unsubscribe = usePlanStore.subscribe(() => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        savePlanToCloud(user.uid, extractPlan(state)).catch(console.error);
+        saveTimer.current = null;
+        savePlanToCloud(uid, extractPlan(usePlanStore.getState())).catch(console.error);
       }, 2000);
     });
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && saveTimer.current) {
+        flushSave();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       unsubscribe();
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      // Final save when the effect tears down (logout or component unmount)
+      // so any pending debounced changes are not lost.
+      if (saveTimer.current) {
+        flushSave();
+      }
     };
   }, [user]);
 
