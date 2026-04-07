@@ -97,6 +97,10 @@ function captureSnapshot(state: PlanState): StudentPlan {
     hasEnglishExemption: state.hasEnglishExemption ?? false,
     manualSapAverages: { ...(state.manualSapAverages ?? {}) },
     binaryPass: { ...(state.binaryPass ?? {}) },
+    miluimCredits: state.miluimCredits,
+    englishScore: state.englishScore,
+    englishTaughtCourses: [...(state.englishTaughtCourses ?? [])],
+    facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}) },
   };
 }
 
@@ -123,6 +127,7 @@ export const usePlanStore = create<PlanState>()(
           if (savedTracks[newTrackId]) {
             const saved = savedTracks[newTrackId];
             return {
+              ...initialState,
               ...saved,
               savedTracks,
               _history: [],
@@ -131,21 +136,13 @@ export const usePlanStore = create<PlanState>()(
           }
           // New track — reset plan fields
           return {
+            ...initialState,
             trackId: newTrackId,
             semesters: { ...DEFAULT_SEMESTER_MAP },
-            completedCourses: [],
-            selectedSpecializations: [],
-            maxSemester: DEFAULT_SEMESTERS,
-            summerSemesters: [],
-            currentSemester: null,
             semesterOrder: [...DEFAULT_ORDER],
-            semesterTypeOverrides: {},
-            semesterWarningsIgnored: [],
-            doubleSpecializations: [],
-            hasEnglishExemption: false,
-            manualSapAverages: {},
             savedTracks,
             _history: [],
+            _initKey: state._initKey,
           };
         }),
 

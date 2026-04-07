@@ -183,7 +183,6 @@ export function useRequirementsProgress(
     const excessLabIdSet = new Set<string>(); // beyond max — don't count for any credit
     if (trackDef.labPool) {
       const required = trackDef.labPool.required;
-      const max = trackDef.labPool.max ?? trackDef.labPool.courses.length;
       if (trackDef.labPool.mandatory) {
         for (let i = 0; i < Math.min(required, orderedLabPool.length); i++) {
           mandatoryLabIdSet.add(orderedLabPool[i]);

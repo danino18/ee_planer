@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { verifyAuth, AuthRequest } from "../middleware/auth";
 import { getPlan, savePlan } from "../services/firestoreService";
+import { PlanValidationError, sanitizePlanPayload } from "../services/planValidation";
 
 export const plansRouter = Router();
 
@@ -26,17 +27,16 @@ plansRouter.get("/", async (req: Request, res: Response): Promise<void> => {
 // POST /api/plans — save (upsert) the authenticated user's plan
 plansRouter.post("/", async (req: Request, res: Response): Promise<void> => {
   const uid = (req as AuthRequest).uid;
-  const plan = req.body;
-
-  if (!plan || typeof plan !== "object") {
-    res.status(400).json({ error: "Invalid plan payload" });
-    return;
-  }
 
   try {
+    const plan = sanitizePlanPayload(req.body);
     await savePlan(uid, plan);
     res.json({ success: true });
   } catch (err) {
+    if (err instanceof PlanValidationError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
     console.error("POST /plans error:", err);
     res.status(500).json({ error: "Failed to save plan" });
   }

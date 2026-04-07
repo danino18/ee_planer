@@ -10,18 +10,68 @@ admin.initializeApp();
 
 const app = express();
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getFirebaseConfigProjectId(): string | null {
+  const rawConfig = process.env.FIREBASE_CONFIG;
+  if (!rawConfig) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(rawConfig);
+    if (isRecord(parsed) && typeof parsed.projectId === "string") {
+      return parsed.projectId;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getAllowedOrigins(): Set<string> {
+  const configured = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const projectId = process.env.GCLOUD_PROJECT ?? process.env.GCP_PROJECT ?? getFirebaseConfigProjectId();
+  const defaults = ["http://localhost:5173", "http://127.0.0.1:5173"];
+
+  if (projectId) {
+    defaults.push(`https://${projectId}.web.app`, `https://${projectId}.firebaseapp.com`);
+  }
+
+  return new Set([...defaults, ...configured]);
+}
+
 // Parse JSON bodies
 app.use(express.json());
 
 // CORS — allow only your own domain in production
-app.use((_req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = getAllowedOrigins();
+  const isAllowedOrigin = origin ? allowedOrigins.has(origin) : true;
+
+  res.header("Vary", "Origin");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  if (_req.method === "OPTIONS") {
-    res.sendStatus(204);
+
+  if (origin && isAllowedOrigin) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(isAllowedOrigin ? 204 : 403);
     return;
   }
+
+  if (!isAllowedOrigin) {
+    res.status(403).json({ error: "Origin not allowed" });
+    return;
+  }
+
   next();
 });
 

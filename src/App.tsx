@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
-import { savePlanToCloud, loadPlanFromCloud } from './services/cloudSync';
+import { savePlanToCloud, subscribePlanFromCloud } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
@@ -18,13 +18,13 @@ import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
 import { eeSpecializations } from './data/specializations/ee_specializations';
 import { csSpecializations } from './data/specializations/cs_specializations';
-import type { SapCourse, TrackDefinition, SpecializationGroup } from './types';
+import type { SapCourse, TrackDefinition, SpecializationGroup, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
 /** Extract all persistable fields from the store for cloud save */
-function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('./types').StudentPlan {
+function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
   return {
     trackId: state.trackId,
     semesters: state.semesters,
@@ -48,8 +48,129 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('.
     miluimCredits: state.miluimCredits,
     englishScore: state.englishScore,
     englishTaughtCourses: state.englishTaughtCourses,
+    facultyColorOverrides: state.facultyColorOverrides,
   };
 }
+
+function getPlanSignature(plan: StudentPlan): string {
+  return JSON.stringify(plan);
+}
+
+const CLOUD_OWNER_KEY = 'technion-ee-planner-cloud-owner';
+
+function getCloudOwnerUid(): string | null {
+  try {
+    return localStorage.getItem(CLOUD_OWNER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setCloudOwnerUid(uid: string): void {
+  try {
+    localStorage.setItem(CLOUD_OWNER_KEY, uid);
+  } catch {
+    // Ignore private-mode/storage failures; cloud auth still protects the data.
+  }
+}
+
+function CloudSyncManager() {
+  const { user } = useAuth();
+  const loadPlan = usePlanStore((s) => s.loadPlan);
+  const resetPlan = usePlanStore((s) => s.resetPlan);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const applyingCloudPlan = useRef(false);
+  const activeCloudUid = useRef<string | null>(null);
+  const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
+
+  useEffect(() => {
+    if (user) return;
+    if (activeCloudUid.current === null) return;
+
+    activeCloudUid.current = null;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+
+    applyingCloudPlan.current = true;
+    resetPlan();
+    latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+    applyingCloudPlan.current = false;
+  }, [user, resetPlan]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    activeCloudUid.current = user.uid;
+    let didHandleMissingPlan = false;
+
+    const unsubscribe = subscribePlanFromCloud(
+      user.uid,
+      (cloudPlan) => {
+        setCloudOwnerUid(user.uid);
+        const cloudSignature = getPlanSignature(cloudPlan);
+        if (cloudSignature === latestLocalSignature.current) return;
+
+        applyingCloudPlan.current = true;
+        loadPlan(cloudPlan);
+        latestLocalSignature.current = cloudSignature;
+        applyingCloudPlan.current = false;
+      },
+      () => {
+        if (didHandleMissingPlan) return;
+        didHandleMissingPlan = true;
+
+        const previousOwnerUid = getCloudOwnerUid();
+        if (previousOwnerUid && previousOwnerUid !== user.uid) {
+          applyingCloudPlan.current = true;
+          resetPlan();
+          latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+          applyingCloudPlan.current = false;
+          setCloudOwnerUid(user.uid);
+          return;
+        }
+
+        const localPlan = extractPlan(usePlanStore.getState());
+        latestLocalSignature.current = getPlanSignature(localPlan);
+        savePlanToCloud(user.uid, localPlan)
+          .then(() => setCloudOwnerUid(user.uid))
+          .catch(console.error);
+      },
+      console.error
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user, loadPlan, resetPlan]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = usePlanStore.subscribe((state) => {
+      if (applyingCloudPlan.current) return;
+
+      const plan = extractPlan(state);
+      const signature = getPlanSignature(plan);
+      latestLocalSignature.current = signature;
+
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        savePlanToCloud(user.uid, plan)
+          .then(() => setCloudOwnerUid(user.uid))
+          .catch(console.error);
+      }, 2000);
+    });
+
+    return () => {
+      unsubscribe();
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    };
+  }, [user]);
+
+  return null;
+}
+
 const SPECS: Record<string, SpecializationGroup[]> = {
   ee: eeSpecializations, cs: csSpecializations,
   ee_math: eeSpecializations, ee_physics: eeSpecializations,
@@ -57,8 +178,7 @@ const SPECS: Record<string, SpecializationGroup[]> = {
 };
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
-  const store = usePlanStore();
-  const { trackId, resetPlan, resetToDefault, undo, semesters, addCourseToSemester, loadPlan } = store;
+  const { trackId, resetPlan, resetToDefault, undo, semesters, addCourseToSemester } = usePlanStore();
   const _history = usePlanStore((s) => s._history);
   const _initKey = usePlanStore((s) => s._initKey);
   const specs = SPECS[trackId ?? 'ee'] ?? [];
@@ -67,9 +187,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
   // Track which (trackId, initKey) combos have been initialized
   const initialized = useRef<Set<string>>(new Set());
-  const { user } = useAuth();
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const didLoadCloud = useRef(false);
 
   // Initialize plan with track's semester schedule + sport course pool
   // Re-runs when trackId changes OR when resetToDefault increments _initKey
@@ -80,6 +197,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     initialized.current.add(key);
 
     const allPlaced = new Set(Object.values(semesters).flat());
+    if (allPlaced.size > 0) return;
+
     const alreadyInitialized = new Set<string>();
     for (const { semester, courses: ids } of trackDef.semesterSchedule) {
       for (const id of ids) {
@@ -96,38 +215,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         addCourseToSemester(id, 0);
       }
     }
-  }, [trackId, _initKey]);
-
-  // Cloud sync: load plan from Firestore on login
-  useEffect(() => {
-    if (!user || didLoadCloud.current) return;
-    didLoadCloud.current = true;
-    loadPlanFromCloud(user.uid)
-      .then((cloudPlan) => {
-        if (cloudPlan) {
-          loadPlan(cloudPlan);
-        } else {
-          // First login — save current local plan to cloud
-          savePlanToCloud(user.uid, extractPlan(store));
-        }
-      })
-      .catch(console.error);
-  }, [user]);
-
-  // Cloud sync: auto-save on plan changes (debounced 2s)
-  useEffect(() => {
-    if (!user) return;
-    const unsubscribe = usePlanStore.subscribe((state) => {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        savePlanToCloud(user.uid, extractPlan(state)).catch(console.error);
-      }, 2000);
-    });
-    return () => {
-      unsubscribe();
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-    };
-  }, [user]);
+  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester]);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -194,6 +282,7 @@ function AppInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const trackId = usePlanStore((s) => s.trackId);
+  const { loading: authLoading } = useAuth();
 
   useEffect(() => {
     fetchCourses()
@@ -205,30 +294,46 @@ function AppInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-gray-600">טוען נתוני קורסים...</p>
+  if (authLoading || loading) return (
+    <>
+      <CloudSyncManager />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-600">טוען נתוני קורסים...</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow border border-red-200 max-w-md text-center">
-        <p className="text-red-600 font-semibold mb-2">⚠️ שגיאה בטעינה</p>
-        <p className="text-gray-600 text-sm">{error}</p>
+    <>
+      <CloudSyncManager />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow border border-red-200 max-w-md text-center">
+          <p className="text-red-600 font-semibold mb-2">⚠️ שגיאה בטעינה</p>
+          <p className="text-gray-600 text-sm">{error}</p>
+        </div>
       </div>
-    </div>
+    </>
   );
 
-  if (!trackId) return <TrackSelector tracks={ALL_TRACKS} />;
+  if (!trackId) return (
+    <>
+      <CloudSyncManager />
+      <TrackSelector tracks={ALL_TRACKS} />
+    </>
+  );
 
   const trackDef = ALL_TRACKS.find((t) => t.id === trackId);
-  if (!trackDef) return null;
+  if (!trackDef) return <CloudSyncManager />;
 
-  return <PlannerApp courses={courses} trackDef={trackDef} />;
+  return (
+    <>
+      <CloudSyncManager />
+      <PlannerApp courses={courses} trackDef={trackDef} />
+    </>
+  );
 }
 
 export default function App() {
