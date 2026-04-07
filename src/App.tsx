@@ -63,7 +63,16 @@ const SPECS: Record<string, SpecializationGroup[]> = {
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
   const store = usePlanStore();
-  const { trackId, resetPlan, resetToDefault, undo, semesters, addCourseToSemester, loadPlan } = store;
+  const {
+    trackId,
+    resetPlan,
+    resetToDefault,
+    undo,
+    semesters,
+    addCourseToSemester,
+    removeCourseFromSemester,
+    loadPlan,
+  } = store;
   const _history = usePlanStore((s) => s._history);
   const _initKey = usePlanStore((s) => s._initKey);
   const specs = SPECS[trackId ?? 'ee'] ?? [];
@@ -81,6 +90,12 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   // snapshot that bounces back from our own write (avoid feedback loop).
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+  useEffect(() => {
+    if (trackId === 'ce' && (semesters[4] ?? []).includes('01140073')) {
+      removeCourseFromSemester('01140073', 4);
+    }
+  }, [trackId, semesters, removeCourseFromSemester]);
 
   // Initialize plan with track's semester schedule + sport course pool
   // Re-runs when trackId changes OR when resetToDefault increments _initKey

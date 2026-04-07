@@ -51,6 +51,10 @@ const DEFAULT_ORDER = Array.from({ length: DEFAULT_SEMESTERS }, (_, i) => i + 1)
 const DEFAULT_SEMESTER_MAP: Record<number, string[]> = { 0: [] };
 for (let i = 1; i <= DEFAULT_SEMESTERS; i++) DEFAULT_SEMESTER_MAP[i] = [];
 
+const CE_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
+  4: ['01140073'],
+};
+
 const initialState: StudentPlan = {
   trackId: null,
   semesters: { ...DEFAULT_SEMESTER_MAP },
@@ -75,6 +79,31 @@ const initialState: StudentPlan = {
   englishTaughtCourses: [],
   facultyColorOverrides: {},
 };
+
+function applyPlanMigrations(plan: StudentPlan): StudentPlan {
+  const migrated: StudentPlan = {
+    ...plan,
+    semesters: { ...plan.semesters },
+    savedTracks: plan.savedTracks ? { ...plan.savedTracks } : plan.savedTracks,
+  };
+
+  if (migrated.trackId === 'ce') {
+    for (const [semester, courseIds] of Object.entries(CE_REMOVED_RECOMMENDED_COURSES)) {
+      const sem = Number(semester);
+      const existing = migrated.semesters[sem] ?? [];
+      migrated.semesters[sem] = existing.filter((id) => !courseIds.includes(id));
+    }
+  }
+
+  if (migrated.savedTracks?.ce) {
+    migrated.savedTracks.ce = applyPlanMigrations({
+      ...migrated.savedTracks.ce,
+      trackId: 'ce',
+    });
+  }
+
+  return migrated;
+}
 
 /** Shallow snapshot of all plan fields for undo history */
 function captureSnapshot(state: PlanState): StudentPlan {
@@ -125,7 +154,7 @@ export const usePlanStore = create<PlanState>()(
           }
           // Restore previously saved state for this track
           if (savedTracks[newTrackId]) {
-            const saved = savedTracks[newTrackId];
+            const saved = applyPlanMigrations(savedTracks[newTrackId]);
             return {
               ...initialState,
               ...saved,
@@ -441,27 +470,30 @@ export const usePlanStore = create<PlanState>()(
 
       reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
 
-      loadPlan: (plan) => set((state) => ({
-        ...initialState,
-        ...plan,
-        semesterOrder: plan.semesterOrder?.length
-          ? plan.semesterOrder
-          : Array.from({ length: plan.maxSemester }, (_, i) => i + 1),
-        semesterTypeOverrides: plan.semesterTypeOverrides ?? {},
-        semesterWarningsIgnored: plan.semesterWarningsIgnored ?? [],
-        doubleSpecializations: plan.doubleSpecializations ?? [],
-        hasEnglishExemption: plan.hasEnglishExemption ?? false,
-        manualSapAverages: plan.manualSapAverages ?? {},
-        binaryPass: plan.binaryPass ?? {},
-        miluimCredits: plan.miluimCredits,
-        englishScore: plan.englishScore,
-        englishTaughtCourses: plan.englishTaughtCourses ?? [],
-        facultyColorOverrides: plan.facultyColorOverrides ?? {},
-        // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
-        savedTracks: plan.savedTracks ?? state.savedTracks ?? {},
-        _history: [],
-        _initKey: state._initKey,
-      })),
+      loadPlan: (plan) => set((state) => {
+        const migratedPlan = applyPlanMigrations(plan);
+        return {
+          ...initialState,
+          ...migratedPlan,
+          semesterOrder: migratedPlan.semesterOrder?.length
+            ? migratedPlan.semesterOrder
+            : Array.from({ length: migratedPlan.maxSemester }, (_, i) => i + 1),
+          semesterTypeOverrides: migratedPlan.semesterTypeOverrides ?? {},
+          semesterWarningsIgnored: migratedPlan.semesterWarningsIgnored ?? [],
+          doubleSpecializations: migratedPlan.doubleSpecializations ?? [],
+          hasEnglishExemption: migratedPlan.hasEnglishExemption ?? false,
+          manualSapAverages: migratedPlan.manualSapAverages ?? {},
+          binaryPass: migratedPlan.binaryPass ?? {},
+          miluimCredits: migratedPlan.miluimCredits,
+          englishScore: migratedPlan.englishScore,
+          englishTaughtCourses: migratedPlan.englishTaughtCourses ?? [],
+          facultyColorOverrides: migratedPlan.facultyColorOverrides ?? {},
+          // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
+          savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
+          _history: [],
+          _initKey: state._initKey,
+        };
+      }),
 
       resetPlan: () => set(() => ({ ...initialState, _history: [], _initKey: 0, savedTracks: {} })),
 
