@@ -1,10 +1,13 @@
-import { doc, onSnapshot } from 'firebase/firestore';
-import { apiClient } from './apiClient';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import type { StudentPlan } from '../types';
 
-export async function savePlanToCloud(_uid: string, plan: StudentPlan): Promise<void> {
-  await apiClient.post('/plans', plan);
+/**
+ * Save the user's plan directly to Firestore (no Cloud Functions needed).
+ */
+export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<void> {
+  const planRef = doc(db, 'plans', uid);
+  await setDoc(planRef, plan);
 }
 
 /**
