@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
-import { savePlanToCloud, loadPlanFromCloud } from './services/cloudSync';
+import { savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
@@ -71,6 +71,10 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedUid = useRef<string | null>(null);
+  // Timestamp of our most recent cloud save — used to suppress the Firestore
+  // snapshot that bounces back from our own write (avoid feedback loop).
+  const lastSaveTime = useRef(0);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   // Initialize plan with track's semester schedule + sport course pool
   // Re-runs when trackId changes OR when resetToDefault increments _initKey
@@ -99,65 +103,70 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     }
   }, [trackId, _initKey]);
 
-  // Cloud sync: load plan from Firestore on login.
-  // Uses lastLoadedUid so that logout → re-login always fetches fresh cloud data.
+  // Cloud sync: real-time listener + auto-save.
+  //
+  // On login:
+  //   • subscribeToCloudPlan fires immediately with the current cloud data → loads it.
+  //   • If no cloud document exists yet (first ever login) → saves the local plan.
+  //
+  // While logged in:
+  //   • onSnapshot fires whenever *another device* saves a new version → auto-applied.
+  //   • Local changes are debounced 2 s and saved via Cloud Function.
+  //   • After our own save we suppress the echo snapshot for 5 s (feedback-loop guard).
+  //   • On tab-hide / logout / unmount any pending save is flushed immediately.
   useEffect(() => {
     if (!user) {
-      lastLoadedUid.current = null; // reset so next login re-loads
+      lastLoadedUid.current = null; // reset so next login re-subscribes
       return;
     }
-    if (lastLoadedUid.current === user.uid) return; // already loaded for this session
+    if (lastLoadedUid.current === user.uid) return; // already subscribed for this session
     lastLoadedUid.current = user.uid;
-    loadPlanFromCloud(user.uid)
-      .then((cloudPlan) => {
-        if (cloudPlan) {
-          loadPlan(cloudPlan);
-        } else {
-          // First login — save current local plan to cloud
-          savePlanToCloud(user.uid, extractPlan(usePlanStore.getState()));
-        }
-      })
-      .catch(console.error);
-  }, [user]);
-
-  // Cloud sync: auto-save on plan changes (debounced 2s).
-  // Also saves immediately when the tab becomes hidden (user switches away / closes tab)
-  // so that changes are not lost if the page unloads before the timer fires.
-  useEffect(() => {
-    if (!user) return;
     const uid = user.uid;
 
-    const flushSave = () => {
+    const doSave = () => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
         saveTimer.current = null;
       }
-      savePlanToCloud(uid, extractPlan(usePlanStore.getState())).catch(console.error);
+      setSyncStatus('saving');
+      lastSaveTime.current = Date.now();
+      savePlanToCloud(uid, extractPlan(usePlanStore.getState()))
+        .then(() => setSyncStatus('saved'))
+        .catch(() => setSyncStatus('error'));
     };
 
-    const unsubscribe = usePlanStore.subscribe(() => {
+    // Real-time Firestore listener
+    const unsubSnapshot = subscribeToCloudPlan(
+      uid,
+      (cloudPlan) => {
+        // Ignore snapshots that are the echo of our own recent save
+        if (Date.now() - lastSaveTime.current < 5000) return;
+        loadPlan(cloudPlan);
+        setSyncStatus('saved');
+      },
+      () => {
+        // No cloud plan yet → upload current local state
+        doSave();
+      },
+    );
+
+    // Auto-save on local state changes (debounced 2 s)
+    const unsubStore = usePlanStore.subscribe(() => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        saveTimer.current = null;
-        savePlanToCloud(uid, extractPlan(usePlanStore.getState())).catch(console.error);
-      }, 2000);
+      saveTimer.current = setTimeout(doSave, 2000);
     });
 
+    // Flush immediately when tab becomes hidden (user switches away / closes tab)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && saveTimer.current) {
-        flushSave();
-      }
+      if (document.visibilityState === 'hidden' && saveTimer.current) doSave();
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      unsubscribe();
+      unsubSnapshot();
+      unsubStore();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // Final save when the effect tears down (logout or component unmount)
-      // so any pending debounced changes are not lost.
-      if (saveTimer.current) {
-        flushSave();
-      }
+      if (saveTimer.current) doSave(); // flush on logout / unmount
     };
   }, [user]);
 
@@ -176,7 +185,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             <p className="text-sm text-gray-500">{trackDef.name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <LoginButton />
+            <LoginButton syncStatus={syncStatus} />
             {/* Undo last action */}
             <button
               onClick={undo}

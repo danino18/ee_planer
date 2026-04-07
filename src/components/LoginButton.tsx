@@ -1,7 +1,24 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-export function LoginButton() {
+const SYNC_LABEL: Record<string, string> = {
+  idle:   '☁ מסונכרן',
+  saved:  '☁ מסונכרן',
+  saving: '↑ שומר...',
+  error:  '⚠ שגיאת שמירה',
+};
+const SYNC_COLOR: Record<string, string> = {
+  idle:   'text-green-600',
+  saved:  'text-green-600',
+  saving: 'text-amber-500',
+  error:  'text-red-500',
+};
+
+interface LoginButtonProps {
+  syncStatus?: 'idle' | 'saving' | 'saved' | 'error';
+}
+
+export function LoginButton({ syncStatus = 'idle' }: LoginButtonProps) {
   const { user, loading, error, clearError, signInWithGoogle, signInWithMicrosoft, signOut } = useAuth();
   const [signingIn, setSigningIn] = useState<'google' | 'microsoft' | null>(null);
 
@@ -16,7 +33,9 @@ export function LoginButton() {
         <span className="text-sm text-gray-700 hidden sm:block max-w-[120px] truncate">
           {user.displayName ?? user.email}
         </span>
-        <span className="text-xs text-green-600 font-medium hidden sm:block">☁ מסונכרן</span>
+        <span className={`text-xs font-medium hidden sm:block ${SYNC_COLOR[syncStatus]}`}>
+          {SYNC_LABEL[syncStatus]}
+        </span>
         <button
           onClick={signOut}
           className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 px-2 py-1 rounded-lg transition-colors"
