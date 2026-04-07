@@ -10,6 +10,7 @@ import { SpecializationPanel } from './components/SpecializationPanel';
 import { CourseSearch } from './components/CourseSearch';
 import { ChainRecommendations } from './components/ChainRecommendations';
 import { LoginButton } from './components/LoginButton';
+import { Toast } from './components/Toast';
 import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
@@ -75,6 +76,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   // snapshot that bounces back from our own write (avoid feedback loop).
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleCourseAdded(courseName: string, semesterLabel: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ message: `${courseName} נוסף ל${semesterLabel}`, visible: true });
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2500);
+  }
 
   // Initialize plan with track's semester schedule + sport course pool
   // Re-runs when trackId changes OR when resetToDefault increments _initKey
@@ -178,6 +187,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <Toast message={toast.message} visible={toast.visible} />
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-5 py-3 flex items-center justify-between">
           <div>
@@ -221,7 +231,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             <ChainRecommendations groups={specs} courses={courses} />
           </div>
           <div className="flex-1 min-w-0">
-            <CourseSearch courses={courses} />
+            <CourseSearch courses={courses} onCourseAdded={handleCourseAdded} />
             <SemesterGrid courses={courses} trackDef={trackDef} specializations={specs} />
           </div>
         </div>
