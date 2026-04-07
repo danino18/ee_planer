@@ -54,7 +54,7 @@ export function CourseSearch({ courses }: Props) {
   // Build semester options for the picker
   const semesterOptions = [
     { label: 'ללא שיבוץ', value: 0 },
-    ...semesterOrder.map((sem, _) => ({
+    ...semesterOrder.map((sem) => ({
       label: summerSemesters.includes(sem)
         ? `קיץ`
         : `סמסטר ${SEM_LABELS[sem - 1] ?? sem}`,

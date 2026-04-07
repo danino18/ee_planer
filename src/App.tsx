@@ -18,13 +18,13 @@ import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
 import { eeSpecializations } from './data/specializations/ee_specializations';
 import { csSpecializations } from './data/specializations/cs_specializations';
-import type { SapCourse, TrackDefinition, SpecializationGroup } from './types';
+import type { SapCourse, TrackDefinition, SpecializationGroup, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
 /** Extract all persistable fields from the store for cloud save */
-function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('./types').StudentPlan {
+function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
   return {
     trackId: state.trackId,
     semesters: state.semesters,
@@ -51,6 +51,10 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): import('.
     facultyColorOverrides: state.facultyColorOverrides ?? {},
   };
 }
+
+function getPlanSignature(plan: StudentPlan): string {
+  return JSON.stringify(plan);
+}
 const SPECS: Record<string, SpecializationGroup[]> = {
   ee: eeSpecializations, cs: csSpecializations,
   ee_math: eeSpecializations, ee_physics: eeSpecializations,
@@ -71,6 +75,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedUid = useRef<string | null>(null);
+  const applyingCloudPlan = useRef(false);
+  const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
   // Timestamp of our most recent cloud save — used to suppress the Firestore
   // snapshot that bounces back from our own write (avoid feedback loop).
   const lastSaveTime = useRef(0);
@@ -101,7 +107,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         addCourseToSemester(id, 0);
       }
     }
-  }, [trackId, _initKey]);
+  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester]);
 
   // Cloud sync: real-time listener + auto-save.
   //
@@ -116,8 +122,20 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   //   • On tab-hide / logout / unmount any pending save is flushed immediately.
   useEffect(() => {
     if (!user) {
+      if (lastLoadedUid.current !== null) {
+        applyingCloudPlan.current = true;
+        resetPlan();
+        latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+        applyingCloudPlan.current = false;
+      }
       lastLoadedUid.current = null; // reset so next login re-subscribes
       return;
+    }
+    if (lastLoadedUid.current && lastLoadedUid.current !== user.uid) {
+      applyingCloudPlan.current = true;
+      resetPlan();
+      latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+      applyingCloudPlan.current = false;
     }
     if (lastLoadedUid.current === user.uid) return; // already subscribed for this session
     lastLoadedUid.current = user.uid;
@@ -130,7 +148,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       }
       setSyncStatus('saving');
       lastSaveTime.current = Date.now();
-      savePlanToCloud(uid, extractPlan(usePlanStore.getState()))
+      const localPlan = extractPlan(usePlanStore.getState());
+      latestLocalSignature.current = getPlanSignature(localPlan);
+      savePlanToCloud(uid, localPlan)
         .then(() => setSyncStatus('saved'))
         .catch(() => setSyncStatus('error'));
     };
@@ -141,7 +161,12 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       (cloudPlan) => {
         // Ignore snapshots that are the echo of our own recent save
         if (Date.now() - lastSaveTime.current < 5000) return;
+        const cloudSignature = getPlanSignature(cloudPlan);
+        if (cloudSignature === latestLocalSignature.current) return;
+        applyingCloudPlan.current = true;
         loadPlan(cloudPlan);
+        latestLocalSignature.current = cloudSignature;
+        applyingCloudPlan.current = false;
         setSyncStatus('saved');
       },
       () => {
@@ -152,6 +177,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
     // Auto-save on local state changes (debounced 2 s)
     const unsubStore = usePlanStore.subscribe(() => {
+      if (applyingCloudPlan.current) return;
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(doSave, 2000);
     });
@@ -168,7 +194,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (saveTimer.current) doSave(); // flush on logout / unmount
     };
-  }, [user]);
+  }, [user, loadPlan, resetPlan]);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -235,6 +261,8 @@ function AppInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const trackId = usePlanStore((s) => s.trackId);
+  const loadPlan = usePlanStore((s) => s.loadPlan);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     fetchCourses()
@@ -246,7 +274,17 @@ function AppInner() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
+  useEffect(() => {
+    if (!user || trackId) return;
+
+    return subscribeToCloudPlan(
+      user.uid,
+      (cloudPlan) => loadPlan(cloudPlan),
+      () => undefined,
+    );
+  }, [user, trackId, loadPlan]);
+
+  if (authLoading || loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
         <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />

@@ -1,6 +1,83 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedInOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function optionalNumber(field, min, max) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is number &&
+          request.resource.data[field] >= min &&
+          request.resource.data[field] <= max);
+    }
+
+    function optionalMap(field, maxEntries) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is map &&
+          request.resource.data[field].keys().size() <= maxEntries);
+    }
+
+    function optionalList(field, maxItems) {
+      return !(field in request.resource.data) ||
+        (request.resource.data[field] is list &&
+          request.resource.data[field].size() <= maxItems);
+    }
+
+    function optionalBool(field) {
+      return !(field in request.resource.data) ||
+        request.resource.data[field] is bool;
+    }
+
+    function isValidPlan() {
+      return request.resource.data.keys().hasOnly([
+          'trackId',
+          'semesters',
+          'completedCourses',
+          'selectedSpecializations',
+          'favorites',
+          'grades',
+          'substitutions',
+          'maxSemester',
+          'selectedPrereqGroups',
+          'summerSemesters',
+          'currentSemester',
+          'semesterOrder',
+          'semesterTypeOverrides',
+          'semesterWarningsIgnored',
+          'doubleSpecializations',
+          'hasEnglishExemption',
+          'manualSapAverages',
+          'binaryPass',
+          'savedTracks',
+          'miluimCredits',
+          'englishScore',
+          'englishTaughtCourses',
+          'facultyColorOverrides'
+        ]) &&
+        optionalMap('semesters', 17) &&
+        optionalList('completedCourses', 600) &&
+        optionalList('selectedSpecializations', 100) &&
+        optionalList('favorites', 600) &&
+        optionalMap('grades', 600) &&
+        optionalMap('substitutions', 600) &&
+        optionalNumber('maxSemester', 1, 16) &&
+        optionalMap('selectedPrereqGroups', 600) &&
+        optionalList('summerSemesters', 16) &&
+        optionalNumber('currentSemester', 0, 16) &&
+        optionalList('semesterOrder', 16) &&
+        optionalMap('semesterTypeOverrides', 16) &&
+        optionalList('semesterWarningsIgnored', 16) &&
+        optionalList('doubleSpecializations', 100) &&
+        optionalBool('hasEnglishExemption') &&
+        optionalMap('manualSapAverages', 600) &&
+        optionalMap('binaryPass', 600) &&
+        optionalMap('savedTracks', 6) &&
+        optionalNumber('miluimCredits', 0, 10) &&
+        optionalNumber('englishScore', 0, 150) &&
+        optionalList('englishTaughtCourses', 600) &&
+        optionalMap('facultyColorOverrides', 100);
+    }
 
     // Block everything by default — only Cloud Functions (Admin SDK) can write
     match /{document=**} {
@@ -15,7 +92,9 @@ service cloud.firestore {
 
     // Users can read and write their own plan
     match /plans/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if isSignedInOwner(uid);
+      allow create, update: if isSignedInOwner(uid) && isValidPlan();
+      allow delete: if false;
     }
   }
 }

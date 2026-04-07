@@ -28,9 +28,8 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
     removeCourseFromSemester,
   } = usePlanStore();
 
-  // Chains this course can contribute to
-  const allSpecs = TRACK_SPECS[trackId ?? 'ee'] ?? [];
   const chainMemberships = useMemo(() => {
+    const allSpecs = TRACK_SPECS[trackId ?? 'ee'] ?? [];
     return allSpecs
       .filter((g) =>
         g.mandatoryCourses.includes(course.id) || g.electiveCourses.includes(course.id)
@@ -39,7 +38,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
         name: g.name,
         role: g.mandatoryCourses.includes(course.id) ? 'mandatory' as const : 'elective' as const,
       }));
-  }, [allSpecs, course.id]);
+  }, [trackId, course.id]);
 
   const currentGrade = grades[course.id];
   const currentSubTarget = substitutions[course.id];

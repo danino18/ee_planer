@@ -26,8 +26,9 @@ export interface AiRecommendationResponse {
  * Replace with real OpenAI / Anthropic SDK calls when keys are set up.
  */
 export async function getAiRecommendations(
-  _req: AiRecommendationRequest
+  req: AiRecommendationRequest
 ): Promise<AiRecommendationResponse> {
+  void req;
   // TODO: Replace with actual AI call, e.g.:
   //
   // import OpenAI from "openai";
