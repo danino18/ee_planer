@@ -10,9 +10,10 @@ const SEM_LABELS = [
 
 interface Props {
   courses: Map<string, SapCourse>;
+  onCourseAdded?: (courseName: string, semesterLabel: string) => void;
 }
 
-export function CourseSearch({ courses }: Props) {
+export function CourseSearch({ courses, onCourseAdded }: Props) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'search' | 'favorites'>('search');
@@ -65,6 +66,15 @@ export function CourseSearch({ courses }: Props) {
   function addToSemester(courseId: string, semValue: number) {
     addCourseToSemester(courseId, semValue);
     setPickerFor(null);
+    if (onCourseAdded) {
+      const course = courses.get(courseId);
+      const semLabel = semValue === 0
+        ? 'ללא שיבוץ'
+        : summerSemesters.includes(semValue)
+          ? 'סמסטר קיץ'
+          : `סמסטר ${SEM_LABELS[semValue - 1] ?? semValue}`;
+      onCourseAdded(course?.name ?? courseId, semLabel);
+    }
   }
 
   function renderAddButton(courseId: string) {

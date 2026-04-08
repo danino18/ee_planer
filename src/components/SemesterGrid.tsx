@@ -87,7 +87,6 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   }, [specializations, selectedSpecializations]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
-  const [showSummerSemesters, setShowSummerSemesters] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [gridCols, setGridCols] = useState<3 | 4 | 5 | 6 | 7 | 8>(4);
   const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
@@ -107,7 +106,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     }));
   }, [semesters, courses, facultyColorOverrides]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
 
   // Effective completed: explicit completedCourses + all courses in semesters before currentSemester
   const effectiveCompleted = new Set<string>(completedCourses);
@@ -205,9 +204,8 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     };
   };
 
-  // Build semester list, filtering out summer semesters when hidden
-  const semesterList = displayOrder
-    .filter((s) => showSummerSemesters || !summerSemesters.includes(s));
+  // Summer semesters auto-show when added (no manual toggle needed)
+  const semesterList = displayOrder;
 
   // Build rows based on view mode
   const rows: number[][] = [];
@@ -240,19 +238,6 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
         >
           <span>{viewMode === 'grid' ? '☰' : '⊞'}</span>
           <span>{viewMode === 'grid' ? 'תצוגת שורות' : 'תצוגת גריד'}</span>
-        </button>
-
-        <button
-          onClick={() => setShowSummerSemesters(!showSummerSemesters)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-sm border rounded-lg transition-colors ${
-            showSummerSemesters
-              ? 'border-amber-400 bg-amber-50 text-amber-700'
-              : 'border-gray-300 text-gray-500 hover:bg-gray-100'
-          }`}
-          title={showSummerSemesters ? 'הסתר סמסטרי קיץ' : 'הצג סמסטרי קיץ'}
-        >
-          <span>☀️</span>
-          <span>{showSummerSemesters ? 'הסתר קיץ' : 'הצג קיץ'}</span>
         </button>
 
         {viewMode === 'grid' && (
@@ -385,7 +370,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
 
       <DragOverlay dropAnimation={null}>
         {activeCourse && activeCourseId && (
-          <div className="rotate-2 scale-105 shadow-2xl">
+          <div className="w-44 shadow-xl opacity-90 pointer-events-none">
             <CourseCard
               course={activeCourse}
               courses={courses}
