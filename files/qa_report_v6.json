@@ -1,0 +1,454 @@
+{
+  "summary": {
+    "courses_strict": 250,
+    "courses_review": 588,
+    "tracks": 19,
+    "rules": 49,
+    "unique_codes_strict": 109
+  },
+  "strict_courses_per_track": {
+    "המסלול להנדסת חשמל": 66,
+    "המסלול להנדסת חשמל ומתמטיקה": 43,
+    "המסלול להנדסת חשמל ופיזיקה": 32,
+    "המסלול להנדסת מחשבים": 29,
+    "המסלול להנדסת מחשבים ותוכנה": 39,
+    "מסלול משולב לתואר מוסמך למדעים בהנדסת חשמל ובפיזיקה": 41
+  },
+  "review_rejection_reasons": {
+    "missing_semester": 564,
+    "missing_points": 424,
+    "missing_name": 7
+  },
+  "strict_missing_hours_breakdown": {
+    "lecture_hours": 54,
+    "tutorial_hours": 64,
+    "lab_hours": 234,
+    "project_hours": 227
+  },
+  "key_course_presence": {
+    "044101": {
+      "expected_name": "אלגברה א",
+      "found": false
+    },
+    "01040012": {
+      "expected_name": "חדו״א 1ת׳",
+      "found": true
+    },
+    "00440102": {
+      "expected_name": "בטיחות במעבדות חשמל",
+      "found": false
+    },
+    "00440131": {
+      "expected_name": "אותות ומערכות",
+      "found": true
+    },
+    "00440137": {
+      "expected_name": "מעגלים אלקטרוניים",
+      "found": true
+    }
+  },
+  "review_sample": [
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00340034",
+      "course_name": "הנע חשמלי",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": null,
+      "source": "azure_table",
+      "table_id": 15,
+      "pages": [
+        7
+      ],
+      "raw_row": "00340034 הנע חשמלי",
+      "rejection_reasons": [
+        "missing_semester",
+        "missing_points"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00340035",
+      "course_name": "תרמודינמיקה 1",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 1.0,
+      "source": "azure_table",
+      "table_id": 15,
+      "pages": [
+        7
+      ],
+      "raw_row": "00340035 תרמודינמיקה 1",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00350001",
+      "course_name": "מבוא לרובוטיקה",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": null,
+      "source": "azure_table",
+      "table_id": 10,
+      "pages": [
+        5
+      ],
+      "raw_row": "00350001 מבוא לרובוטיקה",
+      "rejection_reasons": [
+        "missing_semester",
+        "missing_points"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": 1,
+      "course_code": "00440102",
+      "course_name": "בטיחות במעבדות חשמל",
+      "lecture_hours": 4.0,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": null,
+      "source": "azure_table",
+      "table_id": 3,
+      "pages": [
+        3
+      ],
+      "raw_row": "00440102 בטיחות במעבדות חשמל *** 4 - - -",
+      "rejection_reasons": [
+        "missing_points"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450100",
+      "course_name": "מעבדה לא״מ בתקשורת",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450100 מעבדה לא״מ בתקשורת 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450101",
+      "course_name": "מעבדה בתקשורת ספרתית",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450101 מעבדה בתקשורת ספרתית 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450102",
+      "course_name": "מעבדה בבקרה לינארית",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450102 מעבדה בבקרה לינארית 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450103",
+      "course_name": "מעבדה בפוטוניקה",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450103 מעבדה בפוטוניקה 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450104",
+      "course_name": "מעבדה במערכות ספרתיות",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450104 מעבדה במערכות ספרתיות 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450105",
+      "course_name": "מעבדה ברשתות מחשבים",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450105 מעבדה ברשתות מחשבים 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450106",
+      "course_name": "מעבדה באנרגיה ומערכות הספק",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450106 מעבדה באנרגיה ומערכות הספק 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450107",
+      "course_name": "מעבדה בלמידה עמוקה",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450107 מעבדה בלמידה עמוקה 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450108",
+      "course_name": "מעבדה בעיבוד תמונות",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450108 מעבדה בעיבוד תמונות 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450109",
+      "course_name": "מעבדה בעיבוד אותות",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450109 מעבדה בעיבוד אותות 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450110",
+      "course_name": "מעבדה ב-VLSI אנלוגי",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450110 מעבדה ב-VLSI אנלוגי 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450111",
+      "course_name": "מעבדה ב-VLSI ספרתי",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450111 מעבדה ב-VLSI ספרתי 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450112",
+      "course_name": "מעבדה באבטחת סייבר",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450112 מעבדה באבטחת סייבר 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450113",
+      "course_name": "מעבדה בסיסית בתכנה",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450113 מעבדה בסיסית בתכנה 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450114",
+      "course_name": "מעבדה מתקדמת בתכנה",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450114 מעבדה מתקדמת בתכנה 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    },
+    {
+      "track_title": "המסלול להנדסת חשמל",
+      "semester": null,
+      "course_code": "00450115",
+      "course_name": "מעבדה בראייה ממוחשבת",
+      "lecture_hours": null,
+      "tutorial_hours": null,
+      "lab_hours": null,
+      "project_hours": null,
+      "points": 3.0,
+      "source": "azure_table",
+      "table_id": 8,
+      "pages": [
+        5
+      ],
+      "raw_row": "00450115 מעבדה בראייה ממוחשבת 3 1.0",
+      "rejection_reasons": [
+        "missing_semester"
+      ]
+    }
+  ]
+}
