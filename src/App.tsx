@@ -69,6 +69,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const {
     trackId,
     resetPlan,
+    beginTrackSwitch,
+    finishTrackSwitch,
     resetToDefault,
     undo,
     semesters,
@@ -78,6 +80,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   } = store;
   const _history = usePlanStore((s) => s._history);
   const _initKey = usePlanStore((s) => s._initKey);
+  const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
   const specs = SPECS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
@@ -148,6 +151,10 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   //   • After our own save we suppress the echo snapshot for 5 s (feedback-loop guard).
   //   • On tab-hide / logout / unmount any pending save is flushed immediately.
   useEffect(() => {
+    if (isSwitchingTrack && !trackId) {
+      lastLoadedUid.current = null;
+      return;
+    }
     if (!user) {
       if (lastLoadedUid.current !== null) {
         applyingCloudPlan.current = true;
@@ -181,6 +188,41 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         .then(() => setSyncStatus('saved'))
         .catch(() => setSyncStatus('error'));
     };
+
+    if (isSwitchingTrack) {
+      const doSaveSwitchedPlan = () => {
+        if (saveTimer.current) {
+          clearTimeout(saveTimer.current);
+          saveTimer.current = null;
+        }
+        setSyncStatus('saving');
+        lastSaveTime.current = Date.now();
+        const localPlan = extractPlan(usePlanStore.getState());
+        latestLocalSignature.current = getPlanSignature(localPlan);
+        savePlanToCloud(uid, localPlan)
+          .then(() => {
+            setSyncStatus('saved');
+            finishTrackSwitch();
+          })
+          .catch(() => setSyncStatus('error'));
+      };
+
+      const unsubStore = usePlanStore.subscribe(() => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
+      });
+
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
+
+      return () => {
+        unsubStore();
+        if (saveTimer.current) {
+          clearTimeout(saveTimer.current);
+          saveTimer.current = null;
+        }
+      };
+    }
 
     // Real-time Firestore listener
     const unsubSnapshot = subscribeToCloudPlan(
@@ -219,9 +261,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       unsubSnapshot();
       unsubStore();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (saveTimer.current) doSave(); // flush on logout / unmount
+      if (saveTimer.current && !usePlanStore.getState().isSwitchingTrack) doSave(); // flush on logout / unmount
     };
-  }, [user, loadPlan, resetPlan]);
+  }, [user, trackId, loadPlan, resetPlan, finishTrackSwitch, isSwitchingTrack]);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -259,7 +301,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             </button>
             {/* Switch track */}
             <button
-              onClick={resetPlan}
+              onClick={beginTrackSwitch}
               className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
             >
               החלף מסלול
@@ -290,6 +332,7 @@ function AppInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const trackId = usePlanStore((s) => s.trackId);
+  const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
   const loadPlan = usePlanStore((s) => s.loadPlan);
   const { user, loading: authLoading } = useAuth();
 
@@ -304,14 +347,14 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
-    if (!user || trackId) return;
+    if (!user || trackId || isSwitchingTrack) return;
 
     return subscribeToCloudPlan(
       user.uid,
       (cloudPlan) => loadPlan(cloudPlan),
       () => undefined,
     );
-  }, [user, trackId, loadPlan]);
+  }, [user, trackId, isSwitchingTrack, loadPlan]);
 
   if (authLoading || loading) return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
