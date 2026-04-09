@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import type { SpecializationGroup, SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
+import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
 
 interface Props {
   group: SpecializationGroup;
@@ -10,16 +11,35 @@ interface Props {
 
 export function SpecializationGroupModal({ group, courses, onClose }: Props) {
   const { favorites, toggleFavorite, semesters, completedCourses, addCourseToSemester } = usePlanStore();
+  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
 
   const renderCourse = (id: string) => {
     const course = courses.get(id);
     const inPlan = allPlaced.has(id);
     const isFav = favorites.includes(id);
+    const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
+    const seasonLabel = course?.teachingSemester === 'winter'
+      ? '❄️'
+      : course?.teachingSemester === 'spring'
+        ? '🌸'
+        : null;
     return (
       <div key={id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
         <div className="flex-1 min-w-0 ml-2">
           <p className="text-sm text-gray-800 truncate">{course?.name ?? id}</p>
+          <div className="flex items-center gap-1 flex-wrap mt-0.5">
+            {seasonLabel && (
+              <span className="text-xs leading-none" title={course?.teachingSemester === 'winter' ? 'חורף בלבד' : 'אביב בלבד'}>
+                {seasonLabel}
+              </span>
+            )}
+            {showsEnglishBadge && (
+              <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס באנגלית">
+                EN
+              </span>
+            )}
+          </div>
           <p className="text-xs text-gray-400">{id} · {course?.credits ?? '?'} נ״ז</p>
         </div>
         <div className="flex items-center gap-2">

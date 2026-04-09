@@ -5,7 +5,7 @@ import type { GeneralRequirementProgress } from '../domain/generalRequirements/t
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
 import {
   isCourseTaughtInEnglish,
-  isMelagCourseId,
+  isFreeElectiveCourseId,
   isSportCourseId,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
@@ -235,7 +235,7 @@ export function useRequirementsProgress(
         !excessLabIdSet.has(id) &&
         !counted.has(id) &&
         !isSportCourseId(id) &&
-        !isMelagCourseId(id)
+        !isFreeElectiveCourseId(id)
       ) {
         electiveCredits += courses.get(id)?.credits ?? 0;
         counted.add(id);
@@ -301,9 +301,11 @@ export function useRequirementsProgress(
       trackDef,
       semesters,
       completedCourses,
+      miluimCredits,
       englishTaughtCourses,
     });
-    const melagRequirement = getRequirement(generalRequirements, 'melag');
+    const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
+    const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
     const englishRequirement = getRequirement(generalRequirements, 'english');
     const sportRequirement = getRequirement(generalRequirements, 'sport');
     const labsRequirement = getRequirement(generalRequirements, 'labs');
@@ -379,8 +381,12 @@ export function useRequirementsProgress(
         required: sportRequirement?.targetValue ?? 2,
       },
       general: {
-        earned: melagRequirement?.completedValue ?? 0,
-        required: generalRequired,
+        earned: generalElectivesRequirement?.completedValue ?? 0,
+        required: generalElectivesRequirement?.targetValue ?? generalRequired,
+      },
+      freeElective: {
+        earned: freeElectiveRequirement?.completedValue ?? 0,
+        required: freeElectiveRequirement?.targetValue ?? 6,
       },
       generalRequirements,
       labPoolProgress: trackDef.labPool && labsRequirement

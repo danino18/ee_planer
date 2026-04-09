@@ -5,6 +5,28 @@ import { fileURLToPath } from 'node:url';
 const ENGLISH_URL = 'https://ugportal.technion.ac.il/%D7%94%D7%95%D7%A8%D7%90%D7%94-%D7%95%D7%91%D7%97%D7%99%D7%A0%D7%95%D7%AA/%D7%AA%D7%A7%D7%A0%D7%94-1-3-3-%D7%97%D7%95%D7%91%D7%AA-%D7%9C%D7%99%D7%9E%D7%95%D7%93-%D7%A7%D7%95%D7%A8%D7%A1%D7%99%D7%9D-%D7%91%D7%A9%D7%A4%D7%94-%D7%94%D7%90%D7%A0%D7%92%D7%9C%D7%99%D7%AA-compuls/';
 const MELAG_URL = 'https://ugportal.technion.ac.il/%D7%94%D7%95%D7%A8%D7%90%D7%94-%D7%95%D7%91%D7%97%D7%99%D7%A0%D7%95%D7%AA/%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99-%D7%94%D7%A2%D7%A9%D7%A8%D7%94/';
 const SOMETIMES_ENGLISH_MELAG_IDS = ['03240527'];
+const HUMANITIES_FREE_ELECTIVE_COURSES = [
+  { id: '03240227', name: "אלתור ג'אז מתחילים", credits: 2 },
+  { id: '03240228', name: "אלתור ג'אז מתקדמים", credits: 2 },
+  { id: '03240236', name: 'תזמורת כלי נשיפה', credits: 2 },
+  { id: '03240481', name: 'רישום למתחילים', credits: 2 },
+  { id: '03240483', name: 'ציור למתחילים', credits: 2 },
+  { id: '03240513', name: 'תקשורת בין אישית באמצעות התיאטרון', credits: 2 },
+  { id: '03240567', name: 'סדנת צילום X 2', credits: 2 },
+  { id: '03240600', name: 'גרמנית למתחילים', credits: 2 },
+  { id: '03240602', name: 'יפנית מתחילים', credits: 2 },
+  { id: '03240609', name: 'צרפתית מתחילים', credits: 2 },
+  { id: '03240621', name: 'רוסית מתחילים', credits: 2 },
+  { id: '03240630', name: 'איטלקית מתחילים', credits: 2 },
+  { id: '03240675', name: 'ספרדית מתחילים', credits: 2 },
+  { id: '03240697', name: 'עקרונות מעשיים לעיבוד תמונה', credits: 2 },
+  { id: '03250001', name: 'אומן בקמפוס – 1 (סאונד)', credits: 2 },
+  { id: '03250013', name: 'סטודיו אומן בקמפוס 5 (אמנות)', credits: 2 },
+  { id: '03250027', name: 'שיחה באיטלקית מתחילים', credits: 2 },
+  { id: '03250037', name: 'יסודות שפת הסימנים הישראלית ותרבות קהילת החרשים', credits: 2 },
+  { id: '03260015', name: "קב' קריאה בפילוסופיה", credits: 2 },
+  { id: '03940582', name: 'תיזמורת סימפונית', credits: 2 },
+];
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 const targetPath = path.resolve(rootDir, '../src/data/generalRequirements/generatedCourseLists.ts');
 
@@ -44,6 +66,13 @@ function renderSet(name, ids) {
   const sorted = [...ids].sort();
   const body = sorted.map((id) => `  '${id}',`).join('\n');
   return `export const ${name} = new Set<string>([\n${body}\n]);`;
+}
+
+function renderCourseList(name, courses) {
+  const body = courses
+    .map((course) => `  { id: '${course.id}', name: ${JSON.stringify(course.name)}, credits: ${course.credits} },`)
+    .join('\n');
+  return `export const ${name} = [\n${body}\n] as const;`;
 }
 
 async function fetchHtml(url) {
@@ -106,6 +135,8 @@ ${renderSet('englishCourseIds', englishIds)}
 ${renderSet('melagCourseIds', melagIds)}
 
 ${renderSet('sometimesEnglishMelagCourseIds', SOMETIMES_ENGLISH_MELAG_IDS)}
+
+${renderCourseList('humanitiesFreeElectiveCourses', HUMANITIES_FREE_ELECTIVE_COURSES)}
 `;
 }
 

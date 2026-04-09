@@ -11,6 +11,7 @@ import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
 import { usePlanStore, REPEATABLE_COURSES, gradeKey } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
+import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
 
 function computeSemesterAverage(
   courseIds: string[],
@@ -90,7 +91,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showLegend, setShowLegend] = useState(false);
-  const [gridCols, setGridCols] = useState<3 | 4 | 5 | 6 | 7 | 8>(4);
+  const [gridCols, setGridCols] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>(4);
   const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
 
   // Compute unique faculties from placed courses for legend
@@ -187,8 +188,8 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
       const sem = Number(semStr);
       if (sem === 0) continue; // skip unassigned pool
       const w: ('melag' | 'sport')[] = [];
-      const melagCount = ids.filter((id) => id.startsWith('032')).length;
-      const sportCount = ids.filter((id) => id.startsWith('039')).length;
+      const melagCount = ids.filter((id) => isFreeElectiveCourseId(id)).length;
+      const sportCount = ids.filter((id) => isSportCourseId(id)).length;
       if (melagCount > 2) w.push('melag');
       if (sportCount > 1) w.push('sport');
       if (w.length > 0) warnings[sem] = w;
@@ -262,14 +263,14 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
         {viewMode === 'grid' && (
           <div className="flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
             <button
-              onClick={() => setGridCols(gridCols > 3 ? (gridCols - 1) as 3 | 4 | 5 | 6 | 7 | 8 : 3)}
-              disabled={gridCols <= 3}
+              onClick={() => setGridCols(gridCols > 1 ? (gridCols - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 : 1)}
+              disabled={gridCols <= 1}
               className="px-2.5 py-1.5 hover:bg-gray-100 disabled:opacity-30 transition-colors"
               title="הצג יותר עמודות (קטן יותר)"
             >−</button>
             <span className="px-1 py-1.5 text-xs border-x border-gray-200 select-none">{gridCols}</span>
             <button
-              onClick={() => setGridCols(gridCols < 8 ? (gridCols + 1) as 3 | 4 | 5 | 6 | 7 | 8 : 8)}
+              onClick={() => setGridCols(gridCols < 8 ? (gridCols + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 : 8)}
               disabled={gridCols >= 8}
               className="px-2.5 py-1.5 hover:bg-gray-100 disabled:opacity-30 transition-colors"
               title="הצג פחות עמודות (גדול יותר)"
@@ -335,7 +336,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
           <div
             key={rowIdx}
             className={viewMode === 'grid'
-              ? `grid gap-3 mb-3 ${{3:'grid-cols-3',4:'grid-cols-4',5:'grid-cols-5',6:'grid-cols-6',7:'grid-cols-7',8:'grid-cols-8'}[gridCols] ?? 'grid-cols-4'}`
+              ? `grid gap-3 mb-3 ${{1:'grid-cols-1',2:'grid-cols-2',3:'grid-cols-3',4:'grid-cols-4',5:'grid-cols-5',6:'grid-cols-6',7:'grid-cols-7',8:'grid-cols-8'}[gridCols] ?? 'grid-cols-4'}`
               : 'flex flex-col gap-3 mb-3'}
           >
             {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}

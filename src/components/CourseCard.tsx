@@ -4,7 +4,7 @@ import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { CourseDetailModal } from './CourseDetailModal';
 import { getFacultyStyle } from '../utils/faculty';
-import { isCourseTaughtInEnglish, isMelagCourseId } from '../data/generalRequirements/courseClassification';
+import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
 
 interface Props {
   course: SapCourse;
@@ -50,7 +50,7 @@ export function CourseCard({
     : isCompleted;
   const [modalOpen, setModalOpen] = useState(false);
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
-  const showsMelagBadge = isMelagCourseId(course.id);
+  const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id);
 
   const style = transform
     ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 }
@@ -161,9 +161,9 @@ export function CourseCard({
                 EN
               </span>
             )}
-            {showsMelagBadge && (
-              <span className="text-xs bg-amber-50 text-amber-700 px-1 py-0.5 rounded font-semibold leading-none" title="מל&quot;ג / לימודי העשרה">
-                מל"ג
+            {showsFreeElectiveBadge && (
+              <span className="text-xs bg-amber-50 text-amber-700 px-1 py-0.5 rounded font-semibold leading-none" title="בחירה חופשית">
+                ב"ח
               </span>
             )}
             <span

@@ -49,6 +49,23 @@ interface CompactRequirementRowProps {
   englishRequirementItems?: EnglishRequirementItem[];
 }
 
+function getRequirementDisplayLabel(req: GeneralRequirementProgress): string {
+  switch (req.requirementId) {
+    case 'free_elective':
+      return 'בחירה חופשית';
+    case 'general_electives':
+      return 'קורסי בחירה כלל טכניונים';
+    case 'english':
+      return 'קורסים באנגלית';
+    case 'sport':
+      return 'ספורט / חינוך גופני';
+    case 'labs':
+      return 'מעבדות';
+    default:
+      return req.title;
+  }
+}
+
 function formatRequirementValue(req: GeneralRequirementProgress, targetValue: number): string {
   const unit = req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים';
   const completed = req.completedValue % 1 === 0 ? req.completedValue : req.completedValue.toFixed(1);
@@ -95,7 +112,7 @@ function CompactRequirementRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-800">{req.title}</span>
+            <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">{missingText}</p>
@@ -193,6 +210,7 @@ interface Props {
     groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean }[];
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
+    freeElective: { earned: number; required: number };
     generalRequirements: GeneralRequirementProgress[];
     labPoolProgress: { earned: number; required: number; mandatory: boolean; max?: number } | null;
     coreRequirementProgress: { completed: number; required: number; total: number } | null;
@@ -218,7 +236,8 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
 
   const isMiluim = miluimCredits !== undefined;
   const compactRequirements = progress.generalRequirements.filter((req) => (
-    req.requirementId === 'melag' ||
+    req.requirementId === 'free_elective' ||
+    req.requirementId === 'general_electives' ||
     req.requirementId === 'english' ||
     req.requirementId === 'sport' ||
     req.requirementId === 'labs'
@@ -234,7 +253,7 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
       )}
 
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
-      <ProgressRow label="קורסי בחירה" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
+      <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
       {progress.coreRequirementProgress && (() => {
         const { completed, required } = progress.coreRequirementProgress!;
         const done = completed >= required;
@@ -319,7 +338,7 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
 
         <div className="space-y-2 pt-1">
           {compactRequirements.map((req) => {
-            const manualEnglishCourseIds = req.requirementId === 'melag'
+            const manualEnglishCourseIds = req.requirementId === 'free_elective'
               ? req.countedCourses
                 .filter((course) => isManualEnglishEligible(course.courseId))
                 .map((course) => course.courseId)
@@ -330,14 +349,18 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
                 key={req.requirementId}
                 req={req}
                 targetValue={
-                  req.requirementId === 'melag'
+                  req.requirementId === 'free_elective'
+                    ? progress.freeElective.required
+                    : req.requirementId === 'general_electives'
                     ? progress.general.required
                     : req.requirementId === 'english'
                       ? req.targetValue
                       : undefined
                 }
                 missingValue={
-                  req.requirementId === 'melag'
+                  req.requirementId === 'free_elective'
+                    ? Math.max(0, progress.freeElective.required - req.completedValue)
+                    : req.requirementId === 'general_electives'
                     ? Math.max(0, progress.general.required - req.completedValue)
                     : req.requirementId === 'english'
                       ? Math.max(0, req.targetValue - req.completedValue)

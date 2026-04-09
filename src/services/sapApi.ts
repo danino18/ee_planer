@@ -1,5 +1,6 @@
 import type { SapCourse } from '../types';
 import {
+  humanitiesFreeElectiveCourses,
   isEnglishCourseId,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
@@ -106,6 +107,18 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   for (const [id, info] of Object.entries(LEGACY_COURSES)) {
     if (!merged.has(id)) {
       merged.set(id, { id, name: info.name, credits: info.credits, prerequisites: [], faculty: '' });
+    }
+  }
+
+  for (const course of humanitiesFreeElectiveCourses) {
+    if (!merged.has(course.id)) {
+      merged.set(course.id, {
+        id: course.id,
+        name: course.name,
+        credits: course.credits,
+        prerequisites: [],
+        faculty: 'לימודים הומניסטיים ואומנויות',
+      });
     }
   }
 

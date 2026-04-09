@@ -12,6 +12,7 @@ interface BuildParams {
   semesters: Record<number, string[]>;
   completedCourses: string[];
   englishTaughtCourses: string[];
+  miluimCredits: number;
 }
 
 export function buildGeneralRequirementsProgress({
@@ -20,6 +21,7 @@ export function buildGeneralRequirementsProgress({
   semesters,
   completedCourses,
   englishTaughtCourses,
+  miluimCredits,
 }: BuildParams): GeneralRequirementProgress[] {
   const allPlacedIds = new Set<string>([
     ...completedCourses,
@@ -53,6 +55,13 @@ export function buildGeneralRequirementsProgress({
       };
     }
 
+    if (rule.id === 'general_electives') {
+      return {
+        ...rule,
+        targetValue: Math.max(0, trackDef.generalCreditsRequired - miluimCredits),
+      };
+    }
+
     return rule;
   });
 
@@ -70,6 +79,7 @@ export function useGeneralRequirements(
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
+  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
 
   return useMemo(() => {
     if (!trackDef) return [];
@@ -80,6 +90,7 @@ export function useGeneralRequirements(
       semesters,
       completedCourses,
       englishTaughtCourses,
+      miluimCredits,
     });
-  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses]);
+  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses, miluimCredits]);
 }

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
-import { isCourseTaughtInEnglish, isMelagCourseId } from '../data/generalRequirements/courseClassification';
+import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
 
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
@@ -65,7 +65,7 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
       return false;
     }
 
-    if (filters.melag && !isMelagCourseId(course.id)) {
+    if (filters.melag && !isFreeElectiveCourseId(course.id)) {
       return false;
     }
 
@@ -215,7 +215,7 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
             filters.melag ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
           }`}
         >
-          מל"ג
+          ב"ח
         </button>
         <button
           onClick={() => toggleFilter('winter')}

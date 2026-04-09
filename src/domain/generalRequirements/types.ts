@@ -1,5 +1,7 @@
 export type GeneralRequirementType =
   | 'MELAG'
+  | 'FREE_ELECTIVE'
+  | 'GENERAL_ELECTIVE'
   | 'ENGLISH'
   | 'SPORT'
   | 'LAB';

@@ -1,19 +1,29 @@
 import type { GeneralRequirementRule } from '../../domain/generalRequirements/types';
-import { isMelagCourseId } from './courseClassification';
+import { isFreeElectiveCourseId, isSportCourseId } from './courseClassification';
 
 // Seed rules for Technion general requirements.
-// Course lists are synced from Technion UG Portal at build time.
-// Sport still relies on the existing 039xxx convention.
+// Course lists are synced from Technion data sources at build time.
 export const GENERAL_REQUIREMENTS_RULES: GeneralRequirementRule[] = [
   {
-    id: 'melag',
-    type: 'MELAG',
-    title: 'מל"ג / לימודי העשרה',
+    id: 'free_elective',
+    type: 'FREE_ELECTIVE',
+    title: 'בחירה חופשית',
     scope: 'global',
     targetValue: 6,
     targetUnit: 'credits',
     courseMatcher: {
-      predicate: (c) => isMelagCourseId(c.courseId),
+      predicate: (c) => isFreeElectiveCourseId(c.courseId),
+    },
+  },
+  {
+    id: 'general_electives',
+    type: 'GENERAL_ELECTIVE',
+    title: 'קורסי בחירה כלל טכניונים',
+    scope: 'global',
+    targetValue: 12,
+    targetUnit: 'credits',
+    courseMatcher: {
+      predicate: (c) => isFreeElectiveCourseId(c.courseId) || isSportCourseId(c.courseId),
     },
   },
   {
@@ -35,7 +45,7 @@ export const GENERAL_REQUIREMENTS_RULES: GeneralRequirementRule[] = [
     targetValue: 2,
     targetUnit: 'credits',
     courseMatcher: {
-      predicate: (c) => c.courseId.startsWith('039'),
+      predicate: (c) => isSportCourseId(c.courseId),
     },
   },
   {

@@ -382,3 +382,26 @@ export const melagCourseIds = new Set<string>([
 export const sometimesEnglishMelagCourseIds = new Set<string>([
   '03240527',
 ]);
+
+export const humanitiesFreeElectiveCourses = [
+  { id: '03240227', name: "אלתור ג'אז מתחילים", credits: 2 },
+  { id: '03240228', name: "אלתור ג'אז מתקדמים", credits: 2 },
+  { id: '03240236', name: "תזמורת כלי נשיפה", credits: 2 },
+  { id: '03240481', name: "רישום למתחילים", credits: 2 },
+  { id: '03240483', name: "ציור למתחילים", credits: 2 },
+  { id: '03240513', name: "תקשורת בין אישית באמצעות התיאטרון", credits: 2 },
+  { id: '03240567', name: "סדנת צילום X 2", credits: 2 },
+  { id: '03240600', name: "גרמנית למתחילים", credits: 2 },
+  { id: '03240602', name: "יפנית מתחילים", credits: 2 },
+  { id: '03240609', name: "צרפתית מתחילים", credits: 2 },
+  { id: '03240621', name: "רוסית מתחילים", credits: 2 },
+  { id: '03240630', name: "איטלקית מתחילים", credits: 2 },
+  { id: '03240675', name: "ספרדית מתחילים", credits: 2 },
+  { id: '03240697', name: "עקרונות מעשיים לעיבוד תמונה", credits: 2 },
+  { id: '03250001', name: "אומן בקמפוס – 1 (סאונד)", credits: 2 },
+  { id: '03250013', name: "סטודיו אומן בקמפוס 5 (אמנות)", credits: 2 },
+  { id: '03250027', name: "שיחה באיטלקית מתחילים", credits: 2 },
+  { id: '03250037', name: "יסודות שפת הסימנים הישראלית ותרבות קהילת החרשים", credits: 2 },
+  { id: '03260015', name: "קב' קריאה בפילוסופיה", credits: 2 },
+  { id: '03940582', name: "תיזמורת סימפונית", credits: 2 },
+] as const;

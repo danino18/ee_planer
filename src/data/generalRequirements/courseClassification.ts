@@ -1,6 +1,7 @@
 import type { SapCourse } from '../../types';
 import {
   englishCourseIds,
+  humanitiesFreeElectiveCourses,
   melagCourseIds,
   sometimesEnglishMelagCourseIds,
 } from './generatedCourseLists';
@@ -39,6 +40,16 @@ export function isMelagCourseId(courseId: string): boolean {
   return melagCourseIds.has(courseId);
 }
 
-export function isSportCourseId(courseId: string): boolean {
-  return courseId.startsWith('039');
+export function isHumanitiesFreeElectiveCourseId(courseId: string): boolean {
+  return humanitiesFreeElectiveCourses.some((course) => course.id === courseId);
 }
+
+export function isFreeElectiveCourseId(courseId: string): boolean {
+  return isMelagCourseId(courseId) || isHumanitiesFreeElectiveCourseId(courseId);
+}
+
+export function isSportCourseId(courseId: string): boolean {
+  return /^(039408|039409)/.test(courseId) && !isHumanitiesFreeElectiveCourseId(courseId);
+}
+
+export { humanitiesFreeElectiveCourses };
