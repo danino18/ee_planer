@@ -15,7 +15,9 @@ export const GENERAL_REQUIREMENTS_RULES: GeneralRequirementRule[] = [
     targetValue: 6,
     targetUnit: 'credits',
     courseMatcher: {
-      predicate: (c) => c.courseId.startsWith('032'),
+      // Exclude English language courses: by isEnglish flag (language === 'EN') OR by name
+      // containing "אנגלית" (e.g. "אנגלית טכנית-מתקדמים ב'" has a 032 prefix but is not a מל"ג)
+      predicate: (c) => c.courseId.startsWith('032') && c.language !== 'EN' && !c.name.includes('אנגלית'),
     },
   },
   {

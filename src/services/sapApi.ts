@@ -150,6 +150,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '00460187': 'winter', // תכן מעגלים אנלוגיים
     '00460212': 'winter', // מבוא לרובוטיקה ח'
     '00460881': 'winter', // אימות פורמלי לחומרה
+    '03260002': 'winter', // אתיקה של טכנולוגיות חדשניות (הישאם)
     // Spring only
     '00460279': 'spring', // חישוב מקבילי מואץ
     '00460275': 'spring', // תרגול ואופטימיזציה דינמיים של קוד בינארי
@@ -158,6 +159,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '00460192': 'spring', // מערכות בקרה 2
     '00460968': 'spring', // מיקרו-עיבוד ומיקרו-מערכות אלקטרומכניות
     '00460205': 'spring', // מבוא לתורת הקידוד בתקשורת
+    '03260010': 'spring', // אופקים אתיים: חקר נוף המטאוורס (הישאם)
   };
   for (const [id, sem] of Object.entries(TEACHING_SEMESTER)) {
     const course = merged.get(id);
@@ -165,6 +167,8 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   }
 
   // English-taught courses (scraped from Technion ugportal, Winter 2024-2025)
+  // Note: 03240527 (יסודות היזמות) removed — only sometimes taught in English (user can toggle manually)
+  // Note: 03260002 (אתיקה של טכנולוגיות חדשניות) added — always taught in English
   const ENGLISH_COURSES = new Set([
     '00160203','00160210','00350147','00360087','00360101','00360104','00360106',
     '00460010','00460052','00460211','00460241','00470100','00560120','00560391',
@@ -176,7 +180,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '01140229','01140250','01140251','01140252','01270005','01340069','01340140',
     '01360042','01400733','01960013','01960015','02050598','02050923','02060841',
     '02060938','02060952','02360017','02360299','02360833','02740252','03150014',
-    '03150242','03240305','03240527','03250009','03250022','03260001','03260005',
+    '03150242','03240305','03250009','03250022','03260001','03260002','03260005',
     '03260006','03260009','03360502','03360546','03380002',
   ]);
   for (const [id, course] of merged) {

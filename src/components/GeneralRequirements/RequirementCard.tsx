@@ -1,4 +1,5 @@
 import type { GeneralRequirementProgress } from '../../domain/generalRequirements/types';
+import { usePlanStore } from '../../store/planStore';
 
 const STATUS_STYLES = {
   completed: 'bg-green-50 border-green-200',
@@ -32,7 +33,13 @@ interface Props {
   req: GeneralRequirementProgress;
 }
 
+// Courses in the מל"גים category that are only SOMETIMES taught in English — user can toggle manually
+const SOMETIMES_ENGLISH_MELAG_COURSES: Record<string, string> = {
+  '03240527': 'יסודות היזמות', // sometimes in English, sometimes not
+};
+
 export function RequirementCard({ req }: Props) {
+  const { englishTaughtCourses, toggleEnglishTaughtCourse } = usePlanStore();
   const pct = Math.min(100, req.targetValue > 0 ? (req.completedValue / req.targetValue) * 100 : 0);
   const unitLabel = req.targetUnit === 'credits' ? 'נ״ז' : 'קורסים';
 
@@ -80,6 +87,21 @@ export function RequirementCard({ req }: Props) {
           ))}
         </div>
       )}
+      {/* Manual English toggle for מל"גים courses that are only sometimes taught in English */}
+      {req.type === 'MELAG' && req.countedCourses
+        .filter((c) => SOMETIMES_ENGLISH_MELAG_COURSES[c.courseId] !== undefined)
+        .map((c) => (
+          <label key={c.courseId} className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer mt-1.5 select-none">
+            <input
+              type="checkbox"
+              checked={(englishTaughtCourses ?? []).includes(c.courseId)}
+              onChange={() => toggleEnglishTaughtCourse(c.courseId)}
+              className="rounded"
+            />
+            {c.name} — נלמד באנגלית (ספור כקורס אנגלית)
+          </label>
+        ))
+      }
     </div>
   );
 }

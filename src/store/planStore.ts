@@ -16,7 +16,7 @@ interface PlanState extends StudentPlan {
   toggleCompleted: (courseId: string) => void;
   toggleSpecialization: (groupId: string) => void;
   toggleFavorite: (courseId: string) => void;
-  setGrade: (courseId: string, grade: number | null) => void;
+  setGrade: (courseId: string, grade: number | null, semester?: number) => void;
   setSubstitution: (fromId: string, toId: string | null) => void;
   setSelectedPrereqGroup: (courseId: string, group: string[] | null) => void;
   addSemester: () => void;
@@ -45,6 +45,15 @@ interface PlanState extends StudentPlan {
 export const REPEATABLE_COURSES = new Set([
   '03940900', '03940901', '03940902', '03940800',
 ]);
+
+// Returns the grade storage key for a course.
+// For repeatable courses placed in a specific semester, uses courseId_semester
+// so each instance can have its own grade.
+export function gradeKey(courseId: string, semester?: number): string {
+  return REPEATABLE_COURSES.has(courseId) && semester !== undefined && semester > 0
+    ? `${courseId}_${semester}`
+    : courseId;
+}
 
 const DEFAULT_SEMESTERS = 8;
 const DEFAULT_ORDER = Array.from({ length: DEFAULT_SEMESTERS }, (_, i) => i + 1);
@@ -256,19 +265,20 @@ export const usePlanStore = create<PlanState>()(
             : [...state.favorites, courseId],
         })),
 
-      setGrade: (courseId, grade) =>
+      setGrade: (courseId, grade, semester) =>
         set((state) => {
+          const key = gradeKey(courseId, semester);
           const newGrades = { ...state.grades };
           const newBinaryPass = { ...(state.binaryPass ?? {}) };
           if (grade === null) {
-            delete newGrades[courseId];
+            delete newGrades[key];
             // removing grade → unmark completed (only if no binary pass either)
             const completedCourses = newBinaryPass[courseId]
               ? state.completedCourses
               : state.completedCourses.filter((id) => id !== courseId);
             return { grades: newGrades, binaryPass: newBinaryPass, completedCourses };
           }
-          newGrades[courseId] = grade;
+          newGrades[key] = grade;
           delete newBinaryPass[courseId]; // grade and binary pass are mutually exclusive
           // auto-mark completed; if not in any semester, add to unassigned pool
           const alreadyCompleted = state.completedCourses.includes(courseId);

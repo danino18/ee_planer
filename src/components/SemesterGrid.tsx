@@ -8,7 +8,7 @@ import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortab
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
-import { usePlanStore, REPEATABLE_COURSES } from '../store/planStore';
+import { usePlanStore, REPEATABLE_COURSES, gradeKey } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 
@@ -16,13 +16,15 @@ function computeSemesterAverage(
   courseIds: string[],
   grades: Record<string, number>,
   courses: Map<string, SapCourse>,
-  binaryPass: Record<string, boolean>
+  binaryPass: Record<string, boolean>,
+  semester?: number
 ): number | null {
   let weightedSum = 0;
   let totalCredits = 0;
   for (const id of courseIds) {
     if (binaryPass[id]) continue; // binary pass courses excluded from weighted average
-    const grade = grades[id];
+    const key = gradeKey(id, semester);
+    const grade = grades[key];
     const credits = courses.get(id)?.credits ?? 0;
     if (grade !== undefined && credits > 0) {
       weightedSum += grade * credits;
@@ -178,6 +180,22 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     return pos % 2 === 0 ? 'winter' : 'spring';
   };
 
+  // Per-semester Technion rule warnings
+  const semesterRuleWarnings = useMemo(() => {
+    const warnings: Record<number, ('melag' | 'sport')[]> = {};
+    for (const [semStr, ids] of Object.entries(semesters)) {
+      const sem = Number(semStr);
+      if (sem === 0) continue; // skip unassigned pool
+      const w: ('melag' | 'sport')[] = [];
+      const melagCount = ids.filter((id) => id.startsWith('032')).length;
+      const sportCount = ids.filter((id) => id.startsWith('039')).length;
+      if (melagCount > 2) w.push('melag');
+      if (sportCount > 1) w.push('sport');
+      if (w.length > 0) warnings[sem] = w;
+    }
+    return warnings;
+  }, [semesters]);
+
   const semColProps = (sem: number) => {
     return {
       semester: sem,
@@ -198,9 +216,10 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
       onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
       onToggleWarnings: () => toggleSemesterWarnings(sem),
-      semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses, binaryPass ?? {}) : null,
+      semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses, binaryPass ?? {}, sem) : null,
       courseChainMap,
       isDragging: !!activeCourseId,
+      ruleWarnings: semesterRuleWarnings[sem] ?? [],
     };
   };
 

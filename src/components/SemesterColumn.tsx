@@ -33,6 +33,7 @@ interface Props {
   semesterAverage?: number | null;
   courseChainMap?: Map<string, string>;
   isDragging?: boolean;
+  ruleWarnings?: ('melag' | 'sport')[];
 }
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -50,6 +51,7 @@ export function SemesterColumn({
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode,
   semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, isDragging: isDraggingActive,
+  ruleWarnings = [],
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const {
@@ -169,6 +171,22 @@ export function SemesterColumn({
           </div>
         )}
       </div>
+
+      {/* Technion rule warnings */}
+      {ruleWarnings.length > 0 && semester > 0 && (
+        <div className="px-2 pb-1 space-y-1">
+          {ruleWarnings.includes('melag') && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              ⚠️ בטכניון ניתן לקחת עד 2 מל&quot;גים בסמסטר אחד
+            </p>
+          )}
+          {ruleWarnings.includes('sport') && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              ⚠️ בטכניון ניתן לקחת קורס ספורט אחד בסמסטר
+            </p>
+          )}
+        </div>
+      )}
 
       <div ref={setNodeRef} className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
         {filteredIds.map((id, idx) => {

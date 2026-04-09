@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import type { SapCourse, SpecializationGroup } from '../types';
-import { usePlanStore } from '../store/planStore';
+import { usePlanStore, gradeKey } from '../store/planStore';
 import { eeSpecializations } from '../data/specializations/ee_specializations';
 import { csSpecializations } from '../data/specializations/cs_specializations';
 
@@ -40,7 +40,8 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
       }));
   }, [trackId, course.id]);
 
-  const currentGrade = grades[course.id];
+  const gKey = gradeKey(course.id, semester);
+  const currentGrade = grades[gKey];
   const currentSubTarget = substitutions[course.id];
   const isBinaryPass = !!(binaryPass ?? {})[course.id];
   const [isBinaryMode, setIsBinaryMode] = useState(isBinaryPass);
@@ -114,7 +115,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
       setBinaryPass(course.id, true);
     } else {
       const val = parseFloat(gradeInput);
-      if (!isNaN(val) && val >= 0 && val <= 100) setGrade(course.id, val);
+      if (!isNaN(val) && val >= 0 && val <= 100) setGrade(course.id, val, semester);
     }
     onClose();
   }
@@ -405,7 +406,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
             </button>
             {(currentGrade !== undefined || isBinaryPass) && (
               <button
-                onClick={() => { setGrade(course.id, null); setBinaryPass(course.id, null); onClose(); }}
+                onClick={() => { setGrade(course.id, null, semester); setBinaryPass(course.id, null); onClose(); }}
                 className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-2 rounded-lg transition-colors"
               >
                 מחק ציון

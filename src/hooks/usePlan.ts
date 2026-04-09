@@ -125,8 +125,10 @@ export function useWeightedAverage(courses: Map<string, SapCourse>): number | nu
   return useMemo(() => {
     let totalWeightedSum = 0;
     let totalCredits = 0;
-    for (const [id, grade] of Object.entries(grades)) {
-      const credits = courses.get(id)?.credits ?? 0;
+    for (const [key, grade] of Object.entries(grades)) {
+      // Handle per-instance grade keys: "courseId_semester" format for repeatable courses
+      const courseId = key.includes('_') ? key.split('_')[0] : key;
+      const credits = courses.get(courseId)?.credits ?? 0;
       if (credits > 0) {
         totalWeightedSum += grade * credits;
         totalCredits += credits;
@@ -212,8 +214,10 @@ export function useRequirementsProgress(
     let electiveCredits = 0;
     const counted = new Set<string>();
     for (const id of allPlaced) {
-      // Exclude: schedule mandatories, mandatory labs (already in mandatoryDone), excess labs
-      if (!mandatoryIds.has(id) && !mandatoryLabIdSet.has(id) && !excessLabIdSet.has(id) && !counted.has(id)) {
+      // Exclude: schedule mandatories, mandatory labs (already in mandatoryDone), excess labs,
+      // sport courses (039xxx — counted separately), מל"גים (032xxx — counted separately)
+      if (!mandatoryIds.has(id) && !mandatoryLabIdSet.has(id) && !excessLabIdSet.has(id) && !counted.has(id)
+          && !id.startsWith('039') && !id.startsWith('032')) {
         electiveCredits += courses.get(id)?.credits ?? 0;
         counted.add(id);
       }
@@ -263,25 +267,36 @@ export function useRequirementsProgress(
     // Lab pool: how many counted (= orderedLabPool.length, already capped at max)
     const labPoolTaken = orderedLabPool.length;
 
-    // #13: Sport credits (039xxx courses)
+    // #13: Sport credits (039xxx courses) — count ALL occurrences (same course in multiple semesters)
     let sportCredits = 0;
-    for (const id of allPlaced) {
+    const allPlacedFlat = [
+      ...completedCourses,
+      ...Object.values(semesters).flat(),
+    ];
+    for (const id of allPlacedFlat) {
       if (id.startsWith('039')) sportCredits += courses.get(id)?.credits ?? 0;
     }
 
-    // #13: General / מל"גים credits (032xxx courses — humanities, English, general education)
+    // #13: General / מל"גים credits (032xxx — exclude English language courses)
+    // Excludes: isEnglish flag, englishTaughtCourses list, or name contains "אנגלית"
     let generalCredits = 0;
     for (const id of allPlaced) {
-      if (id.startsWith('032')) generalCredits += courses.get(id)?.credits ?? 0;
+      if (id.startsWith('032')) {
+        const c = courses.get(id);
+        if (c && !c.isEnglish && !englishTaughtCourses.includes(id) && !c.name.includes('אנגלית')) {
+          generalCredits += c.credits;
+        }
+      }
     }
 
-    // #13: English courses placed (courses whose name contains "אנגלית")
+    // #13: English courses placed (name contains "אנגלית", or isEnglish + "מתקדמים" for courses
+    // where the SAP name may not include the word "אנגלית" explicitly)
     const englishPlaced: { id: string; name: string }[] = [];
     const seenEng = new Set<string>();
     for (const id of allPlaced) {
       if (!seenEng.has(id)) {
         const c = courses.get(id);
-        if (c && c.name.includes('אנגלית')) {
+        if (c && (c.name.includes('אנגלית') || (c.isEnglish && c.name.includes('מתקדמים')))) {
           englishPlaced.push({ id, name: c.name });
           seenEng.add(id);
         }

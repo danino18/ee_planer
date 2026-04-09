@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { SapCourse } from '../types';
-import { usePlanStore } from '../store/planStore';
+import { usePlanStore, gradeKey } from '../store/planStore';
 import { CourseDetailModal } from './CourseDetailModal';
 import { getFacultyStyle } from '../utils/faculty';
 
@@ -32,7 +32,7 @@ export function CourseCard({
   const { favorites, toggleFavorite, toggleCompleted, grades, binaryPass, removeCourseFromSemester } = usePlanStore();
   const facultyColorOverrides = usePlanStore((s) => s.facultyColorOverrides ?? {});
   const isFavorite = favorites.includes(course.id);
-  const grade = grades[course.id];
+  const grade = grades[gradeKey(course.id, semester)];
   const isBinaryPass = !!(binaryPass ?? {})[course.id];
   const [modalOpen, setModalOpen] = useState(false);
 
