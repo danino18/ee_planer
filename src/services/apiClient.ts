@@ -1,5 +1,28 @@
 import { auth } from './firebase';
 
+export class ApiRequestError extends Error {
+  status?: number;
+  isNetworkError: boolean;
+  url: string;
+
+  constructor(
+    message: string,
+    options: {
+      status?: number;
+      isNetworkError?: boolean;
+      url: string;
+      cause?: unknown;
+    },
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = options.status;
+    this.isNetworkError = options.isNetworkError ?? false;
+    this.url = options.url;
+    this.cause = options.cause;
+  }
+}
+
 /**
  * Base URL for the Firebase Cloud Functions API.
  * In development with the emulator, set VITE_FUNCTIONS_EMULATOR_URL in .env.local
@@ -7,17 +30,79 @@ import { auth } from './firebase';
  *
  * In production this is automatically derived from the Firebase project.
  */
-function getBaseUrl(): string {
-  return (
-    import.meta.env.VITE_FUNCTIONS_BASE_URL ??
-    `https://us-central1-${import.meta.env.VITE_FIREBASE_PROJECT_ID}.cloudfunctions.net/api`
-  );
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
-async function getIdToken(): Promise<string> {
+function getBaseUrls(): string[] {
+  const urls: string[] = [];
+  const configuredBaseUrl = import.meta.env.VITE_FUNCTIONS_BASE_URL;
+  if (configuredBaseUrl) {
+    urls.push(normalizeBaseUrl(configuredBaseUrl));
+  }
+
+  const projectId = import.meta.env.VITE_FIREBASE_PROJECT_ID;
+  if (projectId) {
+    urls.push(normalizeBaseUrl(`https://us-central1-${projectId}.cloudfunctions.net/api`));
+  }
+
+  if (typeof window !== 'undefined') {
+    const { hostname, origin } = window.location;
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.endsWith('.web.app') ||
+      hostname.endsWith('.firebaseapp.com')
+    ) {
+      urls.push(normalizeBaseUrl(`${origin}/api`));
+    }
+  }
+
+  return [...new Set(urls)];
+}
+
+async function getIdToken(forceRefresh = false): Promise<string> {
   const user = auth.currentUser;
   if (!user) throw new Error('Not authenticated');
-  return user.getIdToken();
+  return user.getIdToken(forceRefresh);
+}
+
+async function sendRequest<T>(
+  baseUrl: string,
+  token: string,
+  method: 'GET' | 'POST' | 'DELETE',
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const url = `${baseUrl}${path}`;
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (error) {
+    throw new ApiRequestError('Failed to reach sync service', {
+      isNetworkError: true,
+      url,
+      cause: error,
+    });
+  }
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: response.statusText }));
+    throw new ApiRequestError(err.error ?? `HTTP ${response.status}`, {
+      status: response.status,
+      url,
+    });
+  }
+
+  return response.json() as Promise<T>;
 }
 
 async function request<T>(
@@ -25,22 +110,42 @@ async function request<T>(
   path: string,
   body?: unknown
 ): Promise<T> {
-  const token = await getIdToken();
-  const response = await fetch(`${getBaseUrl()}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ error: response.statusText }));
-    throw new Error(err.error ?? `HTTP ${response.status}`);
+  const baseUrls = getBaseUrls();
+  if (baseUrls.length === 0) {
+    throw new ApiRequestError('Sync service is not configured', {
+      url: path,
+    });
   }
 
-  return response.json() as Promise<T>;
+  let token = await getIdToken();
+  let lastNetworkError: ApiRequestError | null = null;
+
+  for (const baseUrl of baseUrls) {
+    try {
+      return await sendRequest<T>(baseUrl, token, method, path, body);
+    } catch (error) {
+      if (!(error instanceof ApiRequestError)) {
+        throw error;
+      }
+
+      if (error.status === 401) {
+        token = await getIdToken(true);
+        return sendRequest<T>(baseUrl, token, method, path, body);
+      }
+
+      if (error.isNetworkError) {
+        lastNetworkError = error;
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw lastNetworkError ?? new ApiRequestError('Sync service is unavailable', {
+    isNetworkError: true,
+    url: path,
+  });
 }
 
 export const apiClient = {

@@ -1,6 +1,6 @@
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
-import { apiClient } from './apiClient';
+import { ApiRequestError, apiClient } from './apiClient';
 import type { StudentPlan } from '../types';
 
 function stripUndefined<T>(value: T): T {
@@ -19,39 +19,38 @@ function stripUndefined<T>(value: T): T {
   return value;
 }
 
-function isNetworkSaveError(error: unknown): boolean {
-  if (error instanceof TypeError) return true;
-  if (!(error instanceof Error)) return false;
-
-  const message = error.message.toLowerCase();
-  return (
-    message.includes('failed to fetch') ||
-    message.includes('networkerror') ||
-    message.includes('load failed')
-  );
+export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
+  void uid;
+  return apiClient.post<{ success: boolean }>('/plans', stripUndefined(plan));
 }
 
-export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
-  const sanitizedPlan = stripUndefined(plan);
+export async function loadPlanFromCloud(uid: string): Promise<StudentPlan | null> {
+  void uid;
 
   try {
-    return await apiClient.post<{ success: boolean }>('/plans', sanitizedPlan);
+    return await apiClient.get<StudentPlan>('/plans');
   } catch (error) {
-    if (!isNetworkSaveError(error)) {
-      throw error;
+    if (error instanceof ApiRequestError && error.status === 404) {
+      return null;
     }
 
-    console.warn('[cloudSync] API save failed, falling back to direct Firestore write:', error);
-    const planRef = doc(db, 'plans', uid);
-    await setDoc(planRef, sanitizedPlan);
-    return { success: true };
+    throw error;
   }
+}
+
+export function isRetryableSyncError(error: unknown): boolean {
+  if (error instanceof ApiRequestError) {
+    return error.isNetworkError || error.status === 408 || error.status === 429 || (error.status !== undefined && error.status >= 500);
+  }
+
+  return false;
 }
 
 export function subscribeToCloudPlan(
   uid: string,
   onData: (plan: StudentPlan) => void,
   onNotFound: () => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const planRef = doc(db, 'plans', uid);
   return onSnapshot(
@@ -63,6 +62,9 @@ export function subscribeToCloudPlan(
         onNotFound();
       }
     },
-    (error) => console.error('[cloudSync] onSnapshot error:', error),
+    (error) => {
+      console.error('[cloudSync] onSnapshot error:', error);
+      onError?.(error);
+    },
   );
 }

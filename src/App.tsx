@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
-import { savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
+import {
+  isRetryableSyncError,
+  loadPlanFromCloud,
+  savePlanToCloud,
+  subscribeToCloudPlan,
+} from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
@@ -87,6 +92,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedUid = useRef<string | null>(null);
   const applyingCloudPlan = useRef(false);
   const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
@@ -149,6 +155,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   //   • After our own save we suppress the echo snapshot for 5 s (feedback-loop guard).
   //   • On tab-hide / logout / unmount any pending save is flushed immediately.
   useEffect(() => {
+    return;
+
     if (isSwitchingTrack && !trackId) {
       lastLoadedUid.current = null;
       return;
@@ -163,15 +171,15 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       lastLoadedUid.current = null; // reset so next login re-subscribes
       return;
     }
-    if (lastLoadedUid.current && lastLoadedUid.current !== user.uid) {
+    if (lastLoadedUid.current && lastLoadedUid.current !== user!.uid) {
       applyingCloudPlan.current = true;
       resetPlan();
       latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
       applyingCloudPlan.current = false;
     }
-    if (lastLoadedUid.current === user.uid) return; // already subscribed for this session
-    lastLoadedUid.current = user.uid;
-    const uid = user.uid;
+    if (lastLoadedUid.current === user!.uid) return; // already subscribed for this session
+    lastLoadedUid.current = user!.uid;
+    const uid = user!.uid;
 
     const doSave = () => {
       if (saveTimer.current) {
@@ -218,11 +226,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       };
 
       const unsubStore = usePlanStore.subscribe(() => {
-        if (saveTimer.current) clearTimeout(saveTimer.current);
+        window.clearTimeout(saveTimer.current ?? undefined);
         saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
       });
 
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      window.clearTimeout(saveTimer.current ?? undefined);
       saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
 
       return () => {
@@ -258,7 +266,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     // Auto-save on local state changes (debounced 2 s)
     const unsubStore = usePlanStore.subscribe(() => {
       if (applyingCloudPlan.current) return;
-      if (saveTimer.current) clearTimeout(saveTimer.current);
+      window.clearTimeout(saveTimer.current ?? undefined);
       saveTimer.current = setTimeout(doSave, 2000);
     });
 
@@ -273,6 +281,196 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       unsubStore();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (saveTimer.current && !usePlanStore.getState().isSwitchingTrack) doSave(); // flush on logout / unmount
+    };
+  }, [user, trackId, loadPlan, resetPlan, finishTrackSwitch, isSwitchingTrack]);
+
+  useEffect(() => {
+    const clearSyncTimers = () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      if (retryTimer.current) {
+        clearTimeout(retryTimer.current);
+        retryTimer.current = null;
+      }
+    };
+
+    if (isSwitchingTrack && !trackId) {
+      lastLoadedUid.current = null;
+      clearSyncTimers();
+      return;
+    }
+
+    if (!user) {
+      if (lastLoadedUid.current !== null) {
+        applyingCloudPlan.current = true;
+        resetPlan();
+        latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+        applyingCloudPlan.current = false;
+      }
+      lastLoadedUid.current = null;
+      clearSyncTimers();
+      return;
+    }
+
+    if (lastLoadedUid.current && lastLoadedUid.current !== user!.uid) {
+      applyingCloudPlan.current = true;
+      resetPlan();
+      latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+      applyingCloudPlan.current = false;
+    }
+
+    if (lastLoadedUid.current === user.uid && !isSwitchingTrack) return;
+    lastLoadedUid.current = user.uid;
+
+    const uid = user.uid;
+    let disposed = false;
+
+    const scheduleRetrySave = (delay: number, onSuccess?: () => void) => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      retryTimer.current = setTimeout(() => {
+        void doSave(onSuccess);
+      }, delay);
+    };
+
+    const handleSaveError = (error: unknown, onSuccess?: () => void) => {
+      const message = error instanceof Error ? error.message : 'שגיאת שמירה';
+      if (isRetryableSyncError(error)) {
+        setSyncStatus('error');
+        setSyncErrorMessage(`${message}. ננסה שוב אוטומטית.`);
+        scheduleRetrySave(5000, onSuccess);
+        return;
+      }
+
+      setSyncStatus('error');
+      setSyncErrorMessage(message);
+    };
+
+    const doSave = async (onSuccess?: () => void) => {
+      clearSyncTimers();
+      setSyncStatus('saving');
+      setSyncErrorMessage(null);
+
+      const localPlan = extractPlan(usePlanStore.getState());
+      latestLocalSignature.current = getPlanSignature(localPlan);
+      lastSaveTime.current = Date.now();
+
+      try {
+        await savePlanToCloud(uid, localPlan);
+        if (disposed) return;
+        setSyncStatus('saved');
+        setSyncErrorMessage(null);
+        onSuccess?.();
+      } catch (error: unknown) {
+        if (disposed) return;
+        handleSaveError(error, onSuccess);
+      }
+    };
+
+    const scheduleSave = (delay: number, onSuccess?: () => void) => {
+      window.clearTimeout(saveTimer.current ?? undefined);
+      saveTimer.current = setTimeout(() => {
+        void doSave(onSuccess);
+      }, delay);
+    };
+
+    if (isSwitchingTrack) {
+      const unsubStore = usePlanStore.subscribe(() => {
+        if (applyingCloudPlan.current) return;
+        scheduleSave(800, finishTrackSwitch);
+      });
+
+      scheduleSave(800, finishTrackSwitch);
+
+      return () => {
+        disposed = true;
+        unsubStore();
+        clearSyncTimers();
+      };
+    }
+
+    const unsubSnapshot = subscribeToCloudPlan(
+      uid,
+      (cloudPlan) => {
+        if (Date.now() - lastSaveTime.current < 5000) return;
+        const cloudSignature = getPlanSignature(cloudPlan);
+        if (cloudSignature === latestLocalSignature.current) return;
+        applyingCloudPlan.current = true;
+        loadPlan(cloudPlan);
+        latestLocalSignature.current = cloudSignature;
+        applyingCloudPlan.current = false;
+        setSyncStatus('saved');
+        setSyncErrorMessage(null);
+      },
+      () => undefined,
+      (error) => {
+        if (disposed) return;
+        setSyncStatus('error');
+        setSyncErrorMessage(error.message);
+      },
+    );
+
+    void loadPlanFromCloud(uid)
+      .then((cloudPlan) => {
+        if (disposed) return;
+        if (!cloudPlan) {
+          scheduleSave(0);
+          return;
+        }
+
+        const cloudSignature = getPlanSignature(cloudPlan);
+        if (cloudSignature === latestLocalSignature.current) return;
+        applyingCloudPlan.current = true;
+        loadPlan(cloudPlan);
+        latestLocalSignature.current = cloudSignature;
+        applyingCloudPlan.current = false;
+        setSyncStatus('saved');
+        setSyncErrorMessage(null);
+      })
+      .catch((error: unknown) => {
+        if (disposed) return;
+        const message = error instanceof Error ? error.message : 'שגיאת סנכרון';
+        if (isRetryableSyncError(error)) {
+          setSyncStatus('error');
+          setSyncErrorMessage(`${message}. ננסה שוב אוטומטית.`);
+          scheduleRetrySave(5000);
+          return;
+        }
+
+        setSyncStatus('error');
+        setSyncErrorMessage(message);
+      });
+
+    const unsubStore = usePlanStore.subscribe(() => {
+      if (applyingCloudPlan.current) return;
+      scheduleSave(2000);
+    });
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && saveTimer.current) {
+        void doSave();
+      }
+    };
+
+    const handleOnline = () => {
+      scheduleSave(0);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      disposed = true;
+      unsubSnapshot();
+      unsubStore();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      const hadPendingSave = saveTimer.current !== null;
+      clearSyncTimers();
+      if (hadPendingSave && !usePlanStore.getState().isSwitchingTrack) {
+        void doSave();
+      }
     };
   }, [user, trackId, loadPlan, resetPlan, finishTrackSwitch, isSwitchingTrack]);
 
@@ -359,11 +557,30 @@ function AppInner() {
   useEffect(() => {
     if (!user || trackId || isSwitchingTrack) return;
 
-    return subscribeToCloudPlan(
-      user.uid,
-      (cloudPlan) => loadPlan(cloudPlan),
-      () => undefined,
-    );
+    let disposed = false;
+    let unsubscribeSnapshot: (() => void) | undefined;
+
+    void loadPlanFromCloud(user.uid)
+      .then((cloudPlan) => {
+        if (disposed || !cloudPlan) return;
+        loadPlan(cloudPlan);
+      })
+      .catch((syncError) => {
+        console.error('[AppInner] initial cloud load failed:', syncError);
+        unsubscribeSnapshot = subscribeToCloudPlan(
+          user.uid,
+          (cloudPlan) => {
+            if (disposed) return;
+            loadPlan(cloudPlan);
+          },
+          () => undefined,
+        );
+      });
+
+    return () => {
+      disposed = true;
+      unsubscribeSnapshot?.();
+    };
   }, [user, trackId, isSwitchingTrack, loadPlan]);
 
   if (authLoading || loading) return (
