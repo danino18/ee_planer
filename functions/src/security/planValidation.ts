@@ -68,7 +68,7 @@ function isFiniteNumber(value: unknown): value is number {
 }
 
 function isIntegerInRange(value: unknown, min: number, max: number): value is number {
-  return Number.isInteger(value) && value >= min && value <= max;
+  return isFiniteNumber(value) && Number.isInteger(value) && value >= min && value <= max;
 }
 
 function isTrackId(value: unknown): value is string {
