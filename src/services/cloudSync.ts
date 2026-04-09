@@ -1,7 +1,8 @@
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { ApiRequestError, apiClient } from './apiClient';
 import type { StudentPlan } from '../types';
+
+type FirestoreLikeError = Error & { code?: string };
 
 function stripUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -19,31 +20,21 @@ function stripUndefined<T>(value: T): T {
   return value;
 }
 
-export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
-  void uid;
-  return apiClient.post<{ success: boolean }>('/plans', stripUndefined(plan));
-}
-
-export async function loadPlanFromCloud(uid: string): Promise<StudentPlan | null> {
-  void uid;
-
-  try {
-    return await apiClient.get<StudentPlan>('/plans');
-  } catch (error) {
-    if (error instanceof ApiRequestError && error.status === 404) {
-      return null;
-    }
-
-    throw error;
-  }
-}
-
 export function isRetryableSyncError(error: unknown): boolean {
-  if (error instanceof ApiRequestError) {
-    return error.isNetworkError || error.status === 408 || error.status === 429 || (error.status !== undefined && error.status >= 500);
-  }
+  const code = (error as FirestoreLikeError | undefined)?.code;
+  return (
+    code === 'unavailable' ||
+    code === 'deadline-exceeded' ||
+    code === 'resource-exhausted' ||
+    code === 'aborted' ||
+    code === 'failed-precondition'
+  );
+}
 
-  return false;
+export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
+  const planRef = doc(db, 'plans', uid);
+  await setDoc(planRef, stripUndefined(plan));
+  return { success: true };
 }
 
 export function subscribeToCloudPlan(
