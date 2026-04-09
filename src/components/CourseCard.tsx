@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { SapCourse } from '../types';
-import { usePlanStore, gradeKey } from '../store/planStore';
+import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { CourseDetailModal } from './CourseDetailModal';
 import { getFacultyStyle } from '../utils/faculty';
 
@@ -29,11 +29,15 @@ export function CourseCard({
     id: draggableId,
     data: { course },
   });
-  const { favorites, toggleFavorite, toggleCompleted, grades, binaryPass, removeCourseFromSemester } = usePlanStore();
+  const { favorites, toggleFavorite, toggleCompleted, toggleCompletedInstance, grades, binaryPass, removeCourseFromSemester, completedInstances } = usePlanStore();
   const facultyColorOverrides = usePlanStore((s) => s.facultyColorOverrides ?? {});
   const isFavorite = favorites.includes(course.id);
   const grade = grades[gradeKey(course.id, semester)];
   const isBinaryPass = !!(binaryPass ?? {})[course.id];
+  const isRepeatable = REPEATABLE_COURSES.has(course.id);
+  const effectiveIsCompleted = isRepeatable && instanceKey
+    ? (completedInstances ?? []).includes(instanceKey)
+    : isCompleted;
   const [modalOpen, setModalOpen] = useState(false);
 
   const style = transform
@@ -42,7 +46,7 @@ export function CourseCard({
 
   let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
   if (wrongSemesterType) colorClass = 'bg-red-50 border-red-200 hover:border-red-300';
-  else if (isCompleted) colorClass = 'bg-green-50 border-green-300';
+  else if (effectiveIsCompleted) colorClass = 'bg-green-50 border-green-300';
   else if (hasPrereqWarning) colorClass = 'bg-orange-50 border-orange-300';
   else if (isMandatory) colorClass = 'bg-blue-50 border-blue-200 hover:border-blue-300';
 
@@ -91,11 +95,11 @@ export function CourseCard({
         {semester !== undefined && (
           <button
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); toggleCompleted(course.id); }}
-            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${isCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
-            title={isCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
+            onClick={(e) => { e.stopPropagation(); isRepeatable && instanceKey ? toggleCompletedInstance(instanceKey) : toggleCompleted(course.id); }}
+            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${effectiveIsCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
+            title={effectiveIsCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
           >
-            {isCompleted ? '✓' : '○'}
+            {effectiveIsCompleted ? '✓' : '○'}
           </button>
         )}
 

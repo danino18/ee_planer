@@ -63,6 +63,7 @@ export interface StudentPlan {
   hasEnglishExemption?: boolean;  // student has English language exemption
   manualSapAverages?: Record<string, number>;  // manual SAP average overrides per courseId
   binaryPass?: Record<string, boolean>;  // courseId → true = passed, not counted in weighted average
+  completedInstances?: string[];  // instance keys for repeatable courses: "courseId__semester__idx"
   savedTracks?: Record<string, StudentPlan>;  // per-track saved state for track switching
   miluimCredits?: number;  // 0–10: reserve duty credit reduction for כלל-טכניוני requirement
   englishScore?: number;   // 104–150: Amiram/Psychometric English score

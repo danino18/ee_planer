@@ -17,6 +17,7 @@ interface PlanState extends StudentPlan {
   removeCourseFromSemester: (courseId: string, semester: number) => void;
   moveCourse: (courseId: string, fromSemester: number, toSemester: number) => void;
   toggleCompleted: (courseId: string) => void;
+  toggleCompletedInstance: (instanceKey: string) => void;
   toggleSpecialization: (groupId: string) => void;
   toggleFavorite: (courseId: string) => void;
   setGrade: (courseId: string, grade: number | null, semester?: number) => void;
@@ -90,6 +91,7 @@ const initialState: StudentPlan = {
   englishScore: undefined,
   englishTaughtCourses: [],
   facultyColorOverrides: {},
+  completedInstances: [],
 };
 
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
@@ -142,6 +144,7 @@ function captureSnapshot(state: PlanState): StudentPlan {
     englishScore: state.englishScore,
     englishTaughtCourses: [...(state.englishTaughtCourses ?? [])],
     facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}) },
+    completedInstances: [...(state.completedInstances ?? [])],
   };
 }
 
@@ -273,6 +276,16 @@ export const usePlanStore = create<PlanState>()(
             ? state.semesters
             : { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] };
           return { completedCourses: [...state.completedCourses, courseId], semesters: newSemesters, _history: history };
+        }),
+
+      toggleCompletedInstance: (instanceKey) =>
+        set((state) => {
+          const list = state.completedInstances ?? [];
+          return {
+            completedInstances: list.includes(instanceKey)
+              ? list.filter((k) => k !== instanceKey)
+              : [...list, instanceKey],
+          };
         }),
 
       toggleSpecialization: (groupId) =>
@@ -522,6 +535,7 @@ export const usePlanStore = create<PlanState>()(
           englishScore: migratedPlan.englishScore,
           englishTaughtCourses: migratedPlan.englishTaughtCourses ?? [],
           facultyColorOverrides: migratedPlan.facultyColorOverrides ?? {},
+          completedInstances: migratedPlan.completedInstances ?? [],
           // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
           savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
           _history: [],
@@ -566,6 +580,7 @@ export const usePlanStore = create<PlanState>()(
             englishScore: undefined,
             englishTaughtCourses: [],
             facultyColorOverrides: {},
+            completedInstances: [],
             savedTracks,
             _history: [],
             _initKey: state._initKey + 1,
