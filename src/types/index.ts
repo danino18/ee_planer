@@ -12,7 +12,7 @@ export interface SapCourse {
   teachingSemester?: 'winter' | 'spring';  // undefined = both
   isEnglish?: boolean;
   sapAverage?: number;  // grade average from SAP data, if available
-  dismissedRecommendedCourses?: Record<string, string[]>;  // trackId -> auto-seeded course IDs removed intentionally by the user
+  dismissedRecommendedCourses?: Record<string, string[]>;
 }
 
 export interface TrackDefinition {
