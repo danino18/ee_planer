@@ -1,5 +1,8 @@
 import type { SapCourse } from '../types';
-import { isEnglishCourseId } from '../data/generalRequirements/courseClassification';
+import {
+  isEnglishCourseId,
+  isTechnicalEnglishCourseName,
+} from '../data/generalRequirements/courseClassification';
 
 const BASE_URL = 'https://raw.githubusercontent.com/michael-maltsev/technion-sap-info-fetcher/gh-pages';
 
@@ -171,7 +174,9 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   // Note: 03240527 (יסודות היזמות) removed — only sometimes taught in English (user can toggle manually)
   // Note: 03260002 (אתיקה של טכנולוגיות חדשניות) added — always taught in English
   for (const [id, course] of merged) {
-    if (isEnglishCourseId(id)) course.isEnglish = true;
+    if (isEnglishCourseId(id) || isTechnicalEnglishCourseName(course.name)) {
+      course.isEnglish = true;
+    }
   }
 
   courseCache = merged;
