@@ -1,23 +1,24 @@
 import { Router, Request, Response } from "express";
 import { verifyAuth } from "../middleware/auth";
 import { getAiRecommendations } from "../services/aiService";
+import { createRateLimitMiddleware } from "../security/http";
 
 export const aiRouter = Router();
 
-// All AI routes require authentication
 aiRouter.use(verifyAuth);
+aiRouter.use(createRateLimitMiddleware({ keyPrefix: "ai", windowMs: 60_000, maxRequests: 15 }));
 
-/**
- * POST /api/ai/recommend
- * Body: { takenCourseIds: string[], trackId: string }
- *
- * Proxies request to the AI provider using server-side API keys.
- * The client never sees or needs the API key.
- */
 aiRouter.post("/recommend", async (req: Request, res: Response): Promise<void> => {
   const { takenCourseIds, trackId } = req.body;
 
-  if (!Array.isArray(takenCourseIds) || typeof trackId !== "string") {
+  if (
+    !Array.isArray(takenCourseIds) ||
+    takenCourseIds.length > 600 ||
+    takenCourseIds.some((courseId) => typeof courseId !== "string" || courseId.length === 0 || courseId.length > 32) ||
+    typeof trackId !== "string" ||
+    trackId.length === 0 ||
+    trackId.length > 32
+  ) {
     res.status(400).json({ error: "Invalid request body" });
     return;
   }

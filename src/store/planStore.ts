@@ -6,10 +6,13 @@ interface PlanState extends StudentPlan {
   // Ephemeral — NOT persisted
   _history: StudentPlan[];
   _initKey: number;
+  isSwitchingTrack: boolean;
   // Persisted extra
   savedTracks: Record<string, StudentPlan>;
 
   setTrack: (trackId: TrackId) => void;
+  beginTrackSwitch: () => void;
+  finishTrackSwitch: () => void;
   addCourseToSemester: (courseId: string, semester: number) => void;
   removeCourseFromSemester: (courseId: string, semester: number) => void;
   moveCourse: (courseId: string, fromSemester: number, toSemester: number) => void;
@@ -152,6 +155,7 @@ export const usePlanStore = create<PlanState>()(
       ...initialState,
       _history: [],
       _initKey: 0,
+      isSwitchingTrack: false,
       savedTracks: {},
 
       setTrack: (newTrackId) =>
@@ -170,6 +174,7 @@ export const usePlanStore = create<PlanState>()(
               savedTracks,
               _history: [],
               _initKey: state._initKey,
+              isSwitchingTrack: state.isSwitchingTrack,
             };
           }
           // New track — reset plan fields
@@ -181,8 +186,27 @@ export const usePlanStore = create<PlanState>()(
             savedTracks,
             _history: [],
             _initKey: state._initKey,
+            isSwitchingTrack: state.isSwitchingTrack,
           };
         }),
+
+      beginTrackSwitch: () =>
+        set((state) => {
+          const savedTracks = { ...state.savedTracks };
+          if (state.trackId) {
+            savedTracks[state.trackId] = captureSnapshot(state);
+          }
+
+          return {
+            ...initialState,
+            savedTracks,
+            _history: [],
+            _initKey: 0,
+            isSwitchingTrack: true,
+          };
+        }),
+
+      finishTrackSwitch: () => set(() => ({ isSwitchingTrack: false })),
 
       addCourseToSemester: (courseId, semester) =>
         set((state) => {
@@ -502,10 +526,17 @@ export const usePlanStore = create<PlanState>()(
           savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
           _history: [],
           _initKey: state._initKey,
+          isSwitchingTrack: false,
         };
       }),
 
-      resetPlan: () => set(() => ({ ...initialState, _history: [], _initKey: 0, savedTracks: {} })),
+      resetPlan: () => set(() => ({
+        ...initialState,
+        _history: [],
+        _initKey: 0,
+        isSwitchingTrack: false,
+        savedTracks: {},
+      })),
 
       resetToDefault: () =>
         set((state) => {
@@ -537,7 +568,8 @@ export const usePlanStore = create<PlanState>()(
             facultyColorOverrides: {},
             savedTracks,
             _history: [],
-            _initKey: state._initKey + 1,  // triggers re-initialization in App.tsx
+            _initKey: state._initKey + 1,
+            isSwitchingTrack: false,
           };
         }),
 
@@ -551,6 +583,7 @@ export const usePlanStore = create<PlanState>()(
             savedTracks: state.savedTracks,
             _history: history.slice(0, -1),
             _initKey: state._initKey,
+            isSwitchingTrack: false,
           };
         }),
     }),
@@ -558,8 +591,8 @@ export const usePlanStore = create<PlanState>()(
       name: 'technion-ee-planner',
       partialize: (state) => {
         // Exclude ephemeral fields from localStorage
-        const { _history: _h, _initKey: _ik, ...rest } = state as PlanState;
-        void _h; void _ik;
+        const { _history: _h, _initKey: _ik, isSwitchingTrack: _st, ...rest } = state as PlanState;
+        void _h; void _ik; void _st;
         return rest;
       },
     }

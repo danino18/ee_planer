@@ -5,32 +5,128 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == uid;
     }
 
-    function optionalNumber(field, min, max) {
-      return !(field in request.resource.data) ||
-        (request.resource.data[field] is number &&
-          request.resource.data[field] >= min &&
-          request.resource.data[field] <= max);
+    function validTrackId(value) {
+      return value == 'ee' ||
+        value == 'cs' ||
+        value == 'ee_math' ||
+        value == 'ee_physics' ||
+        value == 'ee_combined' ||
+        value == 'ce';
     }
 
-    function optionalMap(field, maxEntries) {
-      return !(field in request.resource.data) ||
-        (request.resource.data[field] is map &&
-          request.resource.data[field].keys().size() <= maxEntries);
+    function optionalNumberIn(doc, field, min, max) {
+      return !(field in doc) ||
+        (doc[field] is number &&
+          doc[field] >= min &&
+          doc[field] <= max);
     }
 
-    function optionalList(field, maxItems) {
-      return !(field in request.resource.data) ||
-        (request.resource.data[field] is list &&
-          request.resource.data[field].size() <= maxItems);
+    function optionalNullableNumberIn(doc, field, min, max) {
+      return !(field in doc) ||
+        doc[field] == null ||
+        (doc[field] is number &&
+          doc[field] >= min &&
+          doc[field] <= max);
     }
 
-    function optionalBool(field) {
-      return !(field in request.resource.data) ||
-        request.resource.data[field] is bool;
+    function optionalMapIn(doc, field, maxEntries) {
+      return !(field in doc) ||
+        (doc[field] is map &&
+          doc[field].keys().size() <= maxEntries);
     }
 
-    function isValidPlan() {
-      return request.resource.data.keys().hasOnly([
+    function optionalListIn(doc, field, maxItems) {
+      return !(field in doc) ||
+        (doc[field] is list &&
+          doc[field].size() <= maxItems);
+    }
+
+    function optionalBoolIn(doc, field) {
+      return !(field in doc) ||
+        doc[field] is bool;
+    }
+
+    function optionalTrackIdIn(doc, field) {
+      return !(field in doc) ||
+        doc[field] == null ||
+        (doc[field] is string && validTrackId(doc[field]));
+    }
+
+    function optionalMapEntryList(doc, field, key, maxItems) {
+      return !(field in doc) ||
+        (doc[field] is map &&
+          (!(key in doc[field]) ||
+            (doc[field][key] is list &&
+              doc[field][key].size() <= maxItems)));
+    }
+
+    function optionalSemesterTypeOverride(doc, key) {
+      return !('semesterTypeOverrides' in doc) ||
+        (doc.semesterTypeOverrides is map &&
+          (!(key in doc.semesterTypeOverrides) ||
+            doc.semesterTypeOverrides[key] == 'winter' ||
+            doc.semesterTypeOverrides[key] == 'spring'));
+    }
+
+    function optionalSavedTrack(doc, key) {
+      return !('savedTracks' in doc) ||
+        (doc.savedTracks is map &&
+          (!(key in doc.savedTracks) ||
+            (doc.savedTracks[key] is map &&
+              isNestedPlan(doc.savedTracks[key], key))));
+    }
+
+    function hasValidSemesterMap(doc) {
+      return optionalMapIn(doc, 'semesters', 17) &&
+        (!('semesters' in doc) || doc.semesters.keys().hasOnly([
+          '0', '1', '2', '3', '4', '5', '6', '7', '8',
+          '9', '10', '11', '12', '13', '14', '15', '16'
+        ])) &&
+        optionalMapEntryList(doc, 'semesters', '0', 600) &&
+        optionalMapEntryList(doc, 'semesters', '1', 600) &&
+        optionalMapEntryList(doc, 'semesters', '2', 600) &&
+        optionalMapEntryList(doc, 'semesters', '3', 600) &&
+        optionalMapEntryList(doc, 'semesters', '4', 600) &&
+        optionalMapEntryList(doc, 'semesters', '5', 600) &&
+        optionalMapEntryList(doc, 'semesters', '6', 600) &&
+        optionalMapEntryList(doc, 'semesters', '7', 600) &&
+        optionalMapEntryList(doc, 'semesters', '8', 600) &&
+        optionalMapEntryList(doc, 'semesters', '9', 600) &&
+        optionalMapEntryList(doc, 'semesters', '10', 600) &&
+        optionalMapEntryList(doc, 'semesters', '11', 600) &&
+        optionalMapEntryList(doc, 'semesters', '12', 600) &&
+        optionalMapEntryList(doc, 'semesters', '13', 600) &&
+        optionalMapEntryList(doc, 'semesters', '14', 600) &&
+        optionalMapEntryList(doc, 'semesters', '15', 600) &&
+        optionalMapEntryList(doc, 'semesters', '16', 600);
+    }
+
+    function hasValidSemesterTypeOverrides(doc) {
+      return optionalMapIn(doc, 'semesterTypeOverrides', 16) &&
+        (!('semesterTypeOverrides' in doc) || doc.semesterTypeOverrides.keys().hasOnly([
+          '1', '2', '3', '4', '5', '6', '7', '8',
+          '9', '10', '11', '12', '13', '14', '15', '16'
+        ])) &&
+        optionalSemesterTypeOverride(doc, '1') &&
+        optionalSemesterTypeOverride(doc, '2') &&
+        optionalSemesterTypeOverride(doc, '3') &&
+        optionalSemesterTypeOverride(doc, '4') &&
+        optionalSemesterTypeOverride(doc, '5') &&
+        optionalSemesterTypeOverride(doc, '6') &&
+        optionalSemesterTypeOverride(doc, '7') &&
+        optionalSemesterTypeOverride(doc, '8') &&
+        optionalSemesterTypeOverride(doc, '9') &&
+        optionalSemesterTypeOverride(doc, '10') &&
+        optionalSemesterTypeOverride(doc, '11') &&
+        optionalSemesterTypeOverride(doc, '12') &&
+        optionalSemesterTypeOverride(doc, '13') &&
+        optionalSemesterTypeOverride(doc, '14') &&
+        optionalSemesterTypeOverride(doc, '15') &&
+        optionalSemesterTypeOverride(doc, '16');
+    }
+
+    function isPlanShape(doc) {
+      return doc.keys().hasOnly([
           'trackId',
           'semesters',
           'completedCourses',
@@ -55,42 +151,60 @@ service cloud.firestore {
           'englishTaughtCourses',
           'facultyColorOverrides'
         ]) &&
-        optionalMap('semesters', 17) &&
-        optionalList('completedCourses', 600) &&
-        optionalList('selectedSpecializations', 100) &&
-        optionalList('favorites', 600) &&
-        optionalMap('grades', 600) &&
-        optionalMap('substitutions', 600) &&
-        optionalNumber('maxSemester', 1, 16) &&
-        optionalMap('selectedPrereqGroups', 600) &&
-        optionalList('summerSemesters', 16) &&
-        optionalNumber('currentSemester', 0, 16) &&
-        optionalList('semesterOrder', 16) &&
-        optionalMap('semesterTypeOverrides', 16) &&
-        optionalList('semesterWarningsIgnored', 16) &&
-        optionalList('doubleSpecializations', 100) &&
-        optionalBool('hasEnglishExemption') &&
-        optionalMap('manualSapAverages', 600) &&
-        optionalMap('binaryPass', 600) &&
-        optionalMap('savedTracks', 6) &&
-        optionalNumber('miluimCredits', 0, 10) &&
-        optionalNumber('englishScore', 0, 150) &&
-        optionalList('englishTaughtCourses', 600) &&
-        optionalMap('facultyColorOverrides', 100);
+        optionalTrackIdIn(doc, 'trackId') &&
+        hasValidSemesterMap(doc) &&
+        optionalListIn(doc, 'completedCourses', 600) &&
+        optionalListIn(doc, 'selectedSpecializations', 100) &&
+        optionalListIn(doc, 'favorites', 600) &&
+        optionalMapIn(doc, 'grades', 600) &&
+        optionalMapIn(doc, 'substitutions', 600) &&
+        optionalNumberIn(doc, 'maxSemester', 1, 16) &&
+        optionalMapIn(doc, 'selectedPrereqGroups', 600) &&
+        optionalListIn(doc, 'summerSemesters', 16) &&
+        optionalNullableNumberIn(doc, 'currentSemester', 0, 16) &&
+        optionalListIn(doc, 'semesterOrder', 16) &&
+        hasValidSemesterTypeOverrides(doc) &&
+        optionalListIn(doc, 'semesterWarningsIgnored', 16) &&
+        optionalListIn(doc, 'doubleSpecializations', 100) &&
+        optionalBoolIn(doc, 'hasEnglishExemption') &&
+        optionalMapIn(doc, 'manualSapAverages', 600) &&
+        optionalMapIn(doc, 'binaryPass', 600) &&
+        optionalNumberIn(doc, 'miluimCredits', 0, 10) &&
+        optionalNumberIn(doc, 'englishScore', 0, 150) &&
+        optionalListIn(doc, 'englishTaughtCourses', 600) &&
+        optionalMapIn(doc, 'facultyColorOverrides', 100);
     }
 
-    // Block everything by default — only Cloud Functions (Admin SDK) can write
+    function isNestedPlan(doc, expectedTrackId) {
+      return isPlanShape(doc) &&
+        !('savedTracks' in doc) &&
+        (!('trackId' in doc) || doc.trackId == expectedTrackId);
+    }
+
+    function isValidPlan() {
+      return isPlanShape(request.resource.data) &&
+        optionalMapIn(request.resource.data, 'savedTracks', 6) &&
+        (!('savedTracks' in request.resource.data) ||
+          request.resource.data.savedTracks.keys().hasOnly([
+            'ee', 'cs', 'ee_math', 'ee_physics', 'ee_combined', 'ce'
+          ])) &&
+        optionalSavedTrack(request.resource.data, 'ee') &&
+        optionalSavedTrack(request.resource.data, 'cs') &&
+        optionalSavedTrack(request.resource.data, 'ee_math') &&
+        optionalSavedTrack(request.resource.data, 'ee_physics') &&
+        optionalSavedTrack(request.resource.data, 'ee_combined') &&
+        optionalSavedTrack(request.resource.data, 'ce');
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Users can read their own profile (written by Functions only)
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if false;
     }
 
-    // Users can read and write their own plan
     match /plans/{uid} {
       allow read: if isSignedInOwner(uid);
       allow create, update: if isSignedInOwner(uid) && isValidPlan();

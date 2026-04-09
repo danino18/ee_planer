@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
-import { savePlanToCloud, subscribePlanFromCloud } from './services/cloudSync';
+import { savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
@@ -58,123 +58,6 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPl
 function getPlanSignature(plan: StudentPlan): string {
   return JSON.stringify(plan);
 }
-
-const CLOUD_OWNER_KEY = 'technion-ee-planner-cloud-owner';
-
-function getCloudOwnerUid(): string | null {
-  try {
-    return localStorage.getItem(CLOUD_OWNER_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function setCloudOwnerUid(uid: string): void {
-  try {
-    localStorage.setItem(CLOUD_OWNER_KEY, uid);
-  } catch {
-    // Ignore private-mode/storage failures; cloud auth still protects the data.
-  }
-}
-
-function CloudSyncManager() {
-  const { user } = useAuth();
-  const loadPlan = usePlanStore((s) => s.loadPlan);
-  const resetPlan = usePlanStore((s) => s.resetPlan);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const applyingCloudPlan = useRef(false);
-  const activeCloudUid = useRef<string | null>(null);
-  const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
-
-  useEffect(() => {
-    if (user) return;
-    if (activeCloudUid.current === null) return;
-
-    activeCloudUid.current = null;
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = null;
-
-    applyingCloudPlan.current = true;
-    resetPlan();
-    latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
-    applyingCloudPlan.current = false;
-  }, [user, resetPlan]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    activeCloudUid.current = user.uid;
-    let didHandleMissingPlan = false;
-
-    const unsubscribe = subscribePlanFromCloud(
-      user.uid,
-      (cloudPlan) => {
-        setCloudOwnerUid(user.uid);
-        const cloudSignature = getPlanSignature(cloudPlan);
-        if (cloudSignature === latestLocalSignature.current) return;
-
-        applyingCloudPlan.current = true;
-        loadPlan(cloudPlan);
-        latestLocalSignature.current = cloudSignature;
-        applyingCloudPlan.current = false;
-      },
-      () => {
-        if (didHandleMissingPlan) return;
-        didHandleMissingPlan = true;
-
-        const previousOwnerUid = getCloudOwnerUid();
-        if (previousOwnerUid && previousOwnerUid !== user.uid) {
-          applyingCloudPlan.current = true;
-          resetPlan();
-          latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
-          applyingCloudPlan.current = false;
-          setCloudOwnerUid(user.uid);
-          return;
-        }
-
-        const localPlan = extractPlan(usePlanStore.getState());
-        latestLocalSignature.current = getPlanSignature(localPlan);
-        savePlanToCloud(user.uid, localPlan)
-          .then(() => setCloudOwnerUid(user.uid))
-          .catch(console.error);
-      },
-      console.error
-    );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [user, loadPlan, resetPlan]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = usePlanStore.subscribe((state) => {
-      if (applyingCloudPlan.current) return;
-
-      const plan = extractPlan(state);
-      const signature = getPlanSignature(plan);
-      latestLocalSignature.current = signature;
-
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        savePlanToCloud(user.uid, plan)
-          .then(() => setCloudOwnerUid(user.uid))
-          .catch(console.error);
-      }, 2000);
-    });
-
-    return () => {
-      unsubscribe();
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = null;
-    };
-  }, [user]);
-
-  return null;
-}
-
-
 const SPECS: Record<string, SpecializationGroup[]> = {
   ee: eeSpecializations, cs: csSpecializations,
   ee_math: eeSpecializations, ee_physics: eeSpecializations,
@@ -182,9 +65,22 @@ const SPECS: Record<string, SpecializationGroup[]> = {
 };
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
-  const { trackId, resetPlan, resetToDefault, undo, semesters, addCourseToSemester, removeCourseFromSemester } = usePlanStore();
+  const store = usePlanStore();
+  const {
+    trackId,
+    resetPlan,
+    beginTrackSwitch,
+    finishTrackSwitch,
+    resetToDefault,
+    undo,
+    semesters,
+    addCourseToSemester,
+    removeCourseFromSemester,
+    loadPlan,
+  } = store;
   const _history = usePlanStore((s) => s._history);
   const _initKey = usePlanStore((s) => s._initKey);
+  const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
   const specs = SPECS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
@@ -192,8 +88,15 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
   // Track which (trackId, initKey) combos have been initialized
   const initialized = useRef<Set<string>>(new Set());
+  const { user } = useAuth();
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastLoadedUid = useRef<string | null>(null);
+  const applyingCloudPlan = useRef(false);
+  const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
+  // Timestamp of our most recent cloud save — used to suppress the Firestore
+  // snapshot that bounces back from our own write (avoid feedback loop).
+  const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  void setSyncStatus; // managed by CloudSyncManager
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -218,8 +121,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     initialized.current.add(key);
 
     const allPlaced = new Set(Object.values(semesters).flat());
-    if (allPlaced.size > 0) return;
-
     const alreadyInitialized = new Set<string>();
     for (const { semester, courses: ids } of trackDef.semesterSchedule) {
       for (const id of ids) {
@@ -237,6 +138,132 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       }
     }
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester]);
+
+  // Cloud sync: real-time listener + auto-save.
+  //
+  // On login:
+  //   • subscribeToCloudPlan fires immediately with the current cloud data → loads it.
+  //   • If no cloud document exists yet (first ever login) → saves the local plan.
+  //
+  // While logged in:
+  //   • onSnapshot fires whenever *another device* saves a new version → auto-applied.
+  //   • Local changes are debounced 2 s and saved via Cloud Function.
+  //   • After our own save we suppress the echo snapshot for 5 s (feedback-loop guard).
+  //   • On tab-hide / logout / unmount any pending save is flushed immediately.
+  useEffect(() => {
+    if (isSwitchingTrack && !trackId) {
+      lastLoadedUid.current = null;
+      return;
+    }
+    if (!user) {
+      if (lastLoadedUid.current !== null) {
+        applyingCloudPlan.current = true;
+        resetPlan();
+        latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+        applyingCloudPlan.current = false;
+      }
+      lastLoadedUid.current = null; // reset so next login re-subscribes
+      return;
+    }
+    if (lastLoadedUid.current && lastLoadedUid.current !== user.uid) {
+      applyingCloudPlan.current = true;
+      resetPlan();
+      latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+      applyingCloudPlan.current = false;
+    }
+    if (lastLoadedUid.current === user.uid) return; // already subscribed for this session
+    lastLoadedUid.current = user.uid;
+    const uid = user.uid;
+
+    const doSave = () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      setSyncStatus('saving');
+      lastSaveTime.current = Date.now();
+      const localPlan = extractPlan(usePlanStore.getState());
+      latestLocalSignature.current = getPlanSignature(localPlan);
+      savePlanToCloud(uid, localPlan)
+        .then(() => setSyncStatus('saved'))
+        .catch(() => setSyncStatus('error'));
+    };
+
+    if (isSwitchingTrack) {
+      const doSaveSwitchedPlan = () => {
+        if (saveTimer.current) {
+          clearTimeout(saveTimer.current);
+          saveTimer.current = null;
+        }
+        setSyncStatus('saving');
+        lastSaveTime.current = Date.now();
+        const localPlan = extractPlan(usePlanStore.getState());
+        latestLocalSignature.current = getPlanSignature(localPlan);
+        savePlanToCloud(uid, localPlan)
+          .then(() => {
+            setSyncStatus('saved');
+            finishTrackSwitch();
+          })
+          .catch(() => setSyncStatus('error'));
+      };
+
+      const unsubStore = usePlanStore.subscribe(() => {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
+      });
+
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
+
+      return () => {
+        unsubStore();
+        if (saveTimer.current) {
+          clearTimeout(saveTimer.current);
+          saveTimer.current = null;
+        }
+      };
+    }
+
+    // Real-time Firestore listener
+    const unsubSnapshot = subscribeToCloudPlan(
+      uid,
+      (cloudPlan) => {
+        // Ignore snapshots that are the echo of our own recent save
+        if (Date.now() - lastSaveTime.current < 5000) return;
+        const cloudSignature = getPlanSignature(cloudPlan);
+        if (cloudSignature === latestLocalSignature.current) return;
+        applyingCloudPlan.current = true;
+        loadPlan(cloudPlan);
+        latestLocalSignature.current = cloudSignature;
+        applyingCloudPlan.current = false;
+        setSyncStatus('saved');
+      },
+      () => {
+        // No cloud plan yet → upload current local state
+        doSave();
+      },
+    );
+
+    // Auto-save on local state changes (debounced 2 s)
+    const unsubStore = usePlanStore.subscribe(() => {
+      if (applyingCloudPlan.current) return;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(doSave, 2000);
+    });
+
+    // Flush immediately when tab becomes hidden (user switches away / closes tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && saveTimer.current) doSave();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubSnapshot();
+      unsubStore();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (saveTimer.current && !usePlanStore.getState().isSwitchingTrack) doSave(); // flush on logout / unmount
+    };
+  }, [user, trackId, loadPlan, resetPlan, finishTrackSwitch, isSwitchingTrack]);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -274,7 +301,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             </button>
             {/* Switch track */}
             <button
-              onClick={resetPlan}
+              onClick={beginTrackSwitch}
               className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
             >
               החלף מסלול
@@ -305,7 +332,9 @@ function AppInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const trackId = usePlanStore((s) => s.trackId);
-  const { loading: authLoading } = useAuth();
+  const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
+  const loadPlan = usePlanStore((s) => s.loadPlan);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     fetchCourses()
@@ -317,46 +346,40 @@ function AppInner() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!user || trackId || isSwitchingTrack) return;
+
+    return subscribeToCloudPlan(
+      user.uid,
+      (cloudPlan) => loadPlan(cloudPlan),
+      () => undefined,
+    );
+  }, [user, trackId, isSwitchingTrack, loadPlan]);
+
   if (authLoading || loading) return (
-    <>
-      <CloudSyncManager />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-600">טוען נתוני קורסים...</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-gray-600">טוען נתוני קורסים...</p>
       </div>
-    </>
+    </div>
   );
 
   if (error) return (
-    <>
-      <CloudSyncManager />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-xl shadow border border-red-200 max-w-md text-center">
-          <p className="text-red-600 font-semibold mb-2">⚠️ שגיאה בטעינה</p>
-          <p className="text-gray-600 text-sm">{error}</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white p-8 rounded-xl shadow border border-red-200 max-w-md text-center">
+        <p className="text-red-600 font-semibold mb-2">⚠️ שגיאה בטעינה</p>
+        <p className="text-gray-600 text-sm">{error}</p>
       </div>
-    </>
+    </div>
   );
 
-  if (!trackId) return (
-    <>
-      <CloudSyncManager />
-      <TrackSelector tracks={ALL_TRACKS} />
-    </>
-  );
+  if (!trackId) return <TrackSelector tracks={ALL_TRACKS} />;
 
   const trackDef = ALL_TRACKS.find((t) => t.id === trackId);
-  if (!trackDef) return <CloudSyncManager />;
+  if (!trackDef) return null;
 
-  return (
-    <>
-      <CloudSyncManager />
-      <PlannerApp courses={courses} trackDef={trackDef} />
-    </>
-  );
+  return <PlannerApp courses={courses} trackDef={trackDef} />;
 }
 
 export default function App() {
