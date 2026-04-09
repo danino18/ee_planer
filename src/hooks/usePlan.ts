@@ -1,17 +1,18 @@
 import { useMemo } from 'react';
 import { usePlanStore } from '../store/planStore';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
+import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
+import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
+import {
+  isCourseTaughtInEnglish,
+  isMelagCourseId,
+  isSportCourseId,
+} from '../data/generalRequirements/courseClassification';
 
-// Bidirectional equivalences: having ANY course in a group satisfies prereqs for ALL in the group.
-// Handles Technion's parallel course numbering for the same subject across tracks.
 const PREREQ_EQUIVALENCES: string[][] = [
-  // Linear Algebra 1 variants
   ['01040064', '01040065', '01040016'],
-  // Calculus 1 variants
   ['01040012', '01040031', '01040041', '01040042', '01040018'],
-  // Physics 1 variants
   ['01140071', '01130013'],
-  // Physics 2 variants
   ['01140075', '01130014'],
 ];
 
@@ -31,9 +32,13 @@ export interface RecommendedChain {
   matchingCourses: string[];
 }
 
-// Returns Map<courseId, unsatisfiedOrGroups[][]>.
-// Empty array [] = prereqs satisfied (or no prereqs).
-// Non-empty = the OR-groups that are not yet fully satisfied.
+function getRequirement(
+  requirements: GeneralRequirementProgress[],
+  requirementId: string
+): GeneralRequirementProgress | undefined {
+  return requirements.find((requirement) => requirement.requirementId === requirementId);
+}
+
 export function usePrerequisiteStatus(
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null
@@ -49,8 +54,6 @@ export function usePrerequisiteStatus(
     const missingMap = new Map<string, string[][]>();
     if (!trackDef) return missingMap;
 
-    // Build base set: completedCourses + all courses in semesters before currentSemester
-    // Use semesterOrder to correctly handle summer semesters (which may have non-sequential IDs)
     const baseTaken = new Set<string>(completedCourses);
     if (currentSemester !== null) {
       const currentIdx = semesterOrder.indexOf(currentSemester);
@@ -61,15 +64,15 @@ export function usePrerequisiteStatus(
 
     for (const [semStr, courseIds] of Object.entries(semesters)) {
       const sem = Number(semStr);
-
       const alreadyTaken = new Set<string>(baseTaken);
+
       if (sem === 0) {
-        // For unassigned courses, consider ALL placed courses as available prereqs
         for (const [k, ids] of Object.entries(semesters)) {
-          if (Number(k) !== 0) for (const id of ids) alreadyTaken.add(id);
+          if (Number(k) !== 0) {
+            for (const id of ids) alreadyTaken.add(id);
+          }
         }
       } else {
-        // Use semesterOrder to include summer semesters in prereq chain
         const semIdx = semesterOrder.indexOf(sem);
         for (let i = 0; i < semIdx; i++) {
           for (const id of semesters[semesterOrder[i]] ?? []) {
@@ -77,11 +80,11 @@ export function usePrerequisiteStatus(
           }
         }
       }
-      // Expand with substitutions: if course A substitutes for course B, treat B as taken
+
       for (const [from, to] of Object.entries(substitutions)) {
         if (alreadyTaken.has(from)) alreadyTaken.add(to);
       }
-      // Expand with system equivalences (bidirectional: having any variant satisfies all)
+
       const expanded = expandWithEquivalents(alreadyTaken);
       for (const id of expanded) alreadyTaken.add(id);
 
@@ -92,23 +95,22 @@ export function usePrerequisiteStatus(
           continue;
         }
 
-        // If user selected a specific prereq path, use only that
         const selectedGroup = selectedPrereqGroups[courseId];
         if (selectedGroup !== undefined) {
-          const satisfied = selectedGroup.every(p => alreadyTaken.has(p));
+          const satisfied = selectedGroup.every((prereqId) => alreadyTaken.has(prereqId));
           missingMap.set(courseId, satisfied ? [] : [selectedGroup]);
           continue;
         }
 
-        // OR-logic: satisfied if ANY group has ALL its courses in alreadyTaken
         const isSatisfied = course.prerequisites.some(
-          orGroup => orGroup.every(p => alreadyTaken.has(p))
+          (orGroup) => orGroup.every((prereqId) => alreadyTaken.has(prereqId))
         );
+
         if (isSatisfied) {
           missingMap.set(courseId, []);
         } else {
           const unsatisfied = course.prerequisites.filter(
-            orGroup => !orGroup.every(p => alreadyTaken.has(p))
+            (orGroup) => !orGroup.every((prereqId) => alreadyTaken.has(prereqId))
           );
           missingMap.set(courseId, unsatisfied);
         }
@@ -126,7 +128,6 @@ export function useWeightedAverage(courses: Map<string, SapCourse>): number | nu
     let totalWeightedSum = 0;
     let totalCredits = 0;
     for (const [key, grade] of Object.entries(grades)) {
-      // Handle per-instance grade keys: "courseId_semester" format for repeatable courses
       const courseId = key.includes('_') ? key.split('_')[0] : key;
       const credits = courses.get(courseId)?.credits ?? 0;
       if (credits > 0) {
@@ -161,28 +162,34 @@ export function useRequirementsProgress(
       ...Object.values(semesters).flat(),
     ]);
 
-    // Compute ordered placed lab pool courses (in semester order, capped at max)
     const orderedLabPool: string[] = [];
     if (trackDef.labPool) {
       const labSet = new Set(trackDef.labPool.courses);
       const max = trackDef.labPool.max ?? trackDef.labPool.courses.length;
       const seen = new Set<string>();
-      // completedCourses first, then by semesterOrder
+
       for (const id of completedCourses) {
-        if (labSet.has(id) && !seen.has(id)) { orderedLabPool.push(id); seen.add(id); }
+        if (labSet.has(id) && !seen.has(id)) {
+          orderedLabPool.push(id);
+          seen.add(id);
+        }
       }
+
       for (const sem of semesterOrder) {
         for (const id of semesters[sem] ?? []) {
-          if (labSet.has(id) && !seen.has(id)) { orderedLabPool.push(id); seen.add(id); }
+          if (labSet.has(id) && !seen.has(id)) {
+            orderedLabPool.push(id);
+            seen.add(id);
+          }
         }
         if (orderedLabPool.length >= max) break;
       }
+
       if (orderedLabPool.length > max) orderedLabPool.splice(max);
     }
 
-    // Which placed labs are "mandatory" (first `required` when mandatory=true)
     const mandatoryLabIdSet = new Set<string>();
-    const excessLabIdSet = new Set<string>(); // beyond max — don't count for any credit
+    const excessLabIdSet = new Set<string>();
     if (trackDef.labPool) {
       const required = trackDef.labPool.required;
       if (trackDef.labPool.mandatory) {
@@ -190,7 +197,7 @@ export function useRequirementsProgress(
           mandatoryLabIdSet.add(orderedLabPool[i]);
         }
       }
-      // Labs placed beyond max don't count for credit
+
       const labSet = new Set(trackDef.labPool.courses);
       for (const id of allPlaced) {
         if (labSet.has(id) && !orderedLabPool.includes(id)) {
@@ -199,14 +206,13 @@ export function useRequirementsProgress(
       }
     }
 
-    const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((s) => s.courses));
+    const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((semester) => semester.courses));
     let mandatoryDone = 0;
-    for (const { courses: semCourseIds } of trackDef.semesterSchedule) {
-      for (const id of semCourseIds) {
+    for (const { courses: semesterCourseIds } of trackDef.semesterSchedule) {
+      for (const id of semesterCourseIds) {
         if (allPlaced.has(id)) mandatoryDone += courses.get(id)?.credits ?? 0;
       }
     }
-    // Add mandatory lab credits
     for (const id of mandatoryLabIdSet) {
       mandatoryDone += courses.get(id)?.credits ?? 0;
     }
@@ -214,104 +220,111 @@ export function useRequirementsProgress(
     let electiveCredits = 0;
     const counted = new Set<string>();
     for (const id of allPlaced) {
-      // Exclude: schedule mandatories, mandatory labs (already in mandatoryDone), excess labs,
-      // sport courses (039xxx — counted separately), מל"גים (032xxx — counted separately)
-      if (!mandatoryIds.has(id) && !mandatoryLabIdSet.has(id) && !excessLabIdSet.has(id) && !counted.has(id)
-          && !id.startsWith('039') && !id.startsWith('032')) {
+      if (
+        !mandatoryIds.has(id) &&
+        !mandatoryLabIdSet.has(id) &&
+        !excessLabIdSet.has(id) &&
+        !counted.has(id) &&
+        !isSportCourseId(id) &&
+        !isMelagCourseId(id)
+      ) {
         electiveCredits += courses.get(id)?.credits ?? 0;
         counted.add(id);
       }
     }
 
-    const selectedGroups = specializations.filter((g) =>
-      selectedSpecializations.includes(g.id)
+    const selectedGroups = specializations.filter((group) =>
+      selectedSpecializations.includes(group.id)
     );
 
-    // #12: chain complete only when ALL mandatory courses done first, then min count met
-    // #4: double specialization uses doubleMinCoursesToComplete
-    // mandatoryOptions: at least 1 from each inner array must be completed
-    const completedGroupsList = selectedGroups.filter((g) => {
-      const allMandatoryDone = g.mandatoryCourses.length === 0 ||
-        g.mandatoryCourses.every((id) => allPlaced.has(id));
+    const completedGroupsList = selectedGroups.filter((group) => {
+      const allMandatoryDone = group.mandatoryCourses.length === 0 ||
+        group.mandatoryCourses.every((id) => allPlaced.has(id));
       if (!allMandatoryDone) return false;
-      const mandatoryOptionsDone = !g.mandatoryOptions ||
-        g.mandatoryOptions.every((opts) => opts.some((id) => allPlaced.has(id)));
+
+      const mandatoryOptionsDone = !group.mandatoryOptions ||
+        group.mandatoryOptions.every((options) => options.some((id) => allPlaced.has(id)));
       if (!mandatoryOptionsDone) return false;
-      const effectiveMin = (doubleSpecializations.includes(g.id) && g.doubleMinCoursesToComplete)
-        ? g.doubleMinCoursesToComplete
-        : g.minCoursesToComplete;
-      const n = [...g.mandatoryCourses, ...g.electiveCourses].filter((id) => allPlaced.has(id)).length;
-      return n >= effectiveMin;
+
+      const effectiveMin = (
+        doubleSpecializations.includes(group.id) && group.doubleMinCoursesToComplete
+      )
+        ? group.doubleMinCoursesToComplete
+        : group.minCoursesToComplete;
+      const doneCount = [...group.mandatoryCourses, ...group.electiveCourses]
+        .filter((id) => allPlaced.has(id))
+        .length;
+      return doneCount >= effectiveMin;
     });
 
-    // Double groups count as 2 towards the requirement
     const completedCount = completedGroupsList.reduce(
-      (sum, g) => sum + (doubleSpecializations.includes(g.id) ? 2 : 1), 0
+      (sum, group) => sum + (doubleSpecializations.includes(group.id) ? 2 : 1),
+      0
     );
 
     const totalCredits = [...allPlaced].reduce((sum, id) => {
       return sum + (courses.get(id)?.credits ?? 0);
     }, 0);
 
-    const groupDetails = selectedGroups.map((g) => {
-      const all = [...g.mandatoryCourses, ...g.electiveCourses];
-      const done = all.filter((id) => allPlaced.has(id)).length;
-      const effectiveMin = (doubleSpecializations.includes(g.id) && g.doubleMinCoursesToComplete)
-        ? g.doubleMinCoursesToComplete
-        : g.minCoursesToComplete;
-      const mandatoryOptionsDone = !g.mandatoryOptions ||
-        g.mandatoryOptions.every((opts) => opts.some((id) => allPlaced.has(id)));
-      return { id: g.id, name: g.name, done, min: effectiveMin, isDouble: doubleSpecializations.includes(g.id), mandatoryOptionsDone };
+    const groupDetails = selectedGroups.map((group) => {
+      const allGroupCourses = [...group.mandatoryCourses, ...group.electiveCourses];
+      const done = allGroupCourses.filter((id) => allPlaced.has(id)).length;
+      const effectiveMin = (
+        doubleSpecializations.includes(group.id) && group.doubleMinCoursesToComplete
+      )
+        ? group.doubleMinCoursesToComplete
+        : group.minCoursesToComplete;
+      const mandatoryOptionsDone = !group.mandatoryOptions ||
+        group.mandatoryOptions.every((options) => options.some((id) => allPlaced.has(id)));
+
+      return {
+        id: group.id,
+        name: group.name,
+        done,
+        min: effectiveMin,
+        isDouble: doubleSpecializations.includes(group.id),
+        mandatoryOptionsDone,
+      };
     });
 
-    // Lab pool: how many counted (= orderedLabPool.length, already capped at max)
-    const labPoolTaken = orderedLabPool.length;
+    const generalRequirements = buildGeneralRequirementsProgress({
+      courses,
+      trackDef,
+      semesters,
+      completedCourses,
+      englishTaughtCourses,
+    });
+    const melagRequirement = getRequirement(generalRequirements, 'melag');
+    const englishRequirement = getRequirement(generalRequirements, 'english');
+    const sportRequirement = getRequirement(generalRequirements, 'sport');
+    const labsRequirement = getRequirement(generalRequirements, 'labs');
 
-    // #13: Sport credits (039xxx courses) — count ALL occurrences (same course in multiple semesters)
-    let sportCredits = 0;
-    const allPlacedFlat = [
-      ...completedCourses,
-      ...Object.values(semesters).flat(),
-    ];
-    for (const id of allPlacedFlat) {
-      if (id.startsWith('039')) sportCredits += courses.get(id)?.credits ?? 0;
-    }
-
-    // #13: General / מל"גים credits (032xxx — exclude English language courses)
-    // Excludes: isEnglish flag, englishTaughtCourses list, or name contains "אנגלית"
-    let generalCredits = 0;
-    for (const id of allPlaced) {
-      if (id.startsWith('032')) {
-        const c = courses.get(id);
-        if (c && !c.isEnglish && !englishTaughtCourses.includes(id) && !c.name.includes('אנגלית')) {
-          generalCredits += c.credits;
-        }
-      }
-    }
-
-    // #13: English courses placed (name contains "אנגלית", or isEnglish + "מתקדמים" for courses
-    // where the SAP name may not include the word "אנגלית" explicitly)
     const englishPlaced: { id: string; name: string }[] = [];
-    const seenEng = new Set<string>();
+    const seenEnglishPlaced = new Set<string>();
     for (const id of allPlaced) {
-      if (!seenEng.has(id)) {
-        const c = courses.get(id);
-        if (c && (c.name.includes('אנגלית') || (c.isEnglish && c.name.includes('מתקדמים')))) {
-          englishPlaced.push({ id, name: c.name });
-          seenEng.add(id);
-        }
+      if (seenEnglishPlaced.has(id)) continue;
+      const course = courses.get(id);
+      if (!course) continue;
+
+      if (
+        course.name.includes('אנגלית') ||
+        (isCourseTaughtInEnglish(course, englishTaughtCourses) && course.name.includes('מתקדמים'))
+      ) {
+        englishPlaced.push({ id, name: course.name });
+        seenEnglishPlaced.add(id);
       }
     }
 
-    // English requirements based on Amiram/Psychometric score (Technion regulation 1.3.3)
-    const englishInPlan = [...allPlaced].filter((id) => {
-      const c = courses.get(id);
-      return c && (c.isEnglish || englishTaughtCourses.includes(id));
-    });
+    const englishInPlan = englishRequirement?.countedCourses.map((course) => course.courseId) ?? [];
     let englishRequirements: { label: string; done: boolean }[] = [];
     if (englishScore !== undefined) {
-      const advancedA = englishPlaced.some((c) => c.name.includes("מתקדמים א'") || c.name.includes('מתקדמים א'));
-      const advancedB = englishPlaced.some((c) => c.name.includes("מתקדמים ב'") || c.name.includes('מתקדמים ב'));
+      const advancedA = englishPlaced.some((course) =>
+        course.name.includes("מתקדמים א'") || course.name.includes('מתקדמים א')
+      );
+      const advancedB = englishPlaced.some((course) =>
+        course.name.includes("מתקדמים ב'") || course.name.includes('מתקדמים ב')
+      );
+
       if (englishScore >= 104 && englishScore <= 119) {
         englishRequirements = [
           { label: "מתקדמים א'", done: advancedA },
@@ -320,7 +333,7 @@ export function useRequirementsProgress(
       } else if (englishScore >= 120 && englishScore <= 133) {
         englishRequirements = [
           { label: "מתקדמים ב'", done: advancedB },
-          { label: 'קורס 1 בנלמד באנגלית', done: englishInPlan.length >= 1 },
+          { label: 'קורס 1 נלמד באנגלית', done: englishInPlan.length >= 1 },
         ];
       } else if (englishScore >= 134 && englishScore <= 150) {
         englishRequirements = [
@@ -329,7 +342,6 @@ export function useRequirementsProgress(
       }
     }
 
-    // Miluim reduction: reduce generalCreditsRequired (but not sport/מלג courses)
     const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
 
     return {
@@ -342,13 +354,19 @@ export function useRequirementsProgress(
         total: selectedGroups.length,
       },
       groupDetails,
-      // #13 extended:
-      sport: { earned: sportCredits, required: 2 },
-      general: { earned: generalCredits, required: generalRequired },
-      labPoolProgress: trackDef.labPool
+      sport: {
+        earned: sportRequirement?.completedValue ?? 0,
+        required: sportRequirement?.targetValue ?? 2,
+      },
+      general: {
+        earned: melagRequirement?.completedValue ?? 0,
+        required: generalRequired,
+      },
+      generalRequirements,
+      labPoolProgress: trackDef.labPool && labsRequirement
         ? {
-            earned: labPoolTaken,
-            required: trackDef.labPool.required,
+            earned: labsRequirement.completedValue,
+            required: labsRequirement.targetValue,
             mandatory: trackDef.labPool.mandatory ?? false,
             max: trackDef.labPool.max,
           }
@@ -383,7 +401,7 @@ export function useChainRecommendations(
     ]);
 
     const scored = specializations
-      .filter((g) => !selectedSpecializations.includes(g.id))
+      .filter((group) => !selectedSpecializations.includes(group.id))
       .map((group) => {
         const mandatory = group.mandatoryCourses.filter((id) => allPlaced.has(id));
         const elective = group.electiveCourses.filter((id) => allPlaced.has(id));
@@ -391,12 +409,12 @@ export function useChainRecommendations(
         const score = matching.length * 2 + mandatory.length * 3;
         return { group, score, matchingCourses: matching };
       })
-      .filter((r) => r.score > 0)
+      .filter((result) => result.score > 0)
       .sort((a, b) => b.score - a.score);
 
-    return scored.slice(0, 3).map((r) => ({
-      ...r,
-      matchingCourses: r.matchingCourses.map((id) => courses.get(id)?.name ?? id),
+    return scored.slice(0, 3).map((result) => ({
+      ...result,
+      matchingCourses: result.matchingCourses.map((id) => courses.get(id)?.name ?? id),
     }));
   }, [semesters, completedCourses, specializations, selectedSpecializations, courses]);
 }

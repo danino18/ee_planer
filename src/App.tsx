@@ -21,8 +21,6 @@ import { eeSpecializations } from './data/specializations/ee_specializations';
 import { csSpecializations } from './data/specializations/cs_specializations';
 import type { SapCourse, TrackDefinition, SpecializationGroup, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
-import { useGeneralRequirements } from './hooks/useGeneralRequirements';
-import { GeneralRequirementsPanel } from './components/GeneralRequirements/GeneralRequirementsPanel';
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
@@ -84,7 +82,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const specs = SPECS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
-  const generalProgress = useGeneralRequirements(courses, trackDef);
 
   // Track which (trackId, initKey) combos have been initialized
   const initialized = useRef<Set<string>>(new Set());
@@ -313,7 +310,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         <div className="flex gap-4">
           <div className="w-64 shrink-0 flex flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
-            <GeneralRequirementsPanel data={generalProgress} />
             <SpecializationPanel groups={specs} courses={courses} />
             <ChainRecommendations groups={specs} courses={courses} />
           </div>

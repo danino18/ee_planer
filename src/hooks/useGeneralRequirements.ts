@@ -4,6 +4,64 @@ import type { SapCourse, TrackDefinition } from '../types';
 import { GENERAL_REQUIREMENTS_RULES } from '../data/generalRequirements/generalRules';
 import { calculateGeneralRequirements } from '../domain/generalRequirements/rulesEngine';
 import type { CourseRef, GeneralRequirementRule, GeneralRequirementProgress } from '../domain/generalRequirements/types';
+import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
+
+interface BuildParams {
+  courses: Map<string, SapCourse>;
+  trackDef: TrackDefinition;
+  semesters: Record<number, string[]>;
+  completedCourses: string[];
+  englishTaughtCourses: string[];
+}
+
+export function buildGeneralRequirementsProgress({
+  courses,
+  trackDef,
+  semesters,
+  completedCourses,
+  englishTaughtCourses,
+}: BuildParams): GeneralRequirementProgress[] {
+  const allPlacedIds = new Set<string>([
+    ...completedCourses,
+    ...Object.values(semesters).flat(),
+  ]);
+
+  const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
+  const courseRefs: CourseRef[] = [];
+
+  for (const id of allPlacedIds) {
+    const sap = courses.get(id);
+    if (!sap) continue;
+
+    courseRefs.push({
+      courseId: id,
+      name: sap.name,
+      credits: sap.credits,
+      language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
+      isLab: labPoolSet.has(id),
+    });
+  }
+
+  const rules: GeneralRequirementRule[] = GENERAL_REQUIREMENTS_RULES.map((rule) => {
+    if (rule.id === 'labs' && trackDef.labPool) {
+      return {
+        ...rule,
+        targetValue: trackDef.labPool.required,
+        courseMatcher: {
+          ids: trackDef.labPool.courses,
+        },
+      };
+    }
+
+    return rule;
+  });
+
+  const activeRules = rules.filter(
+    (rule) => rule.id !== 'labs' || trackDef.labPool !== undefined
+  );
+
+  return calculateGeneralRequirements(courseRefs, activeRules);
+}
 
 export function useGeneralRequirements(
   courses: Map<string, SapCourse>,
@@ -16,47 +74,12 @@ export function useGeneralRequirements(
   return useMemo(() => {
     if (!trackDef) return [];
 
-    // Collect all unique placed course IDs (semesters + completed)
-    const allPlacedIds = new Set<string>([
-      ...completedCourses,
-      ...Object.values(semesters).flat(),
-    ]);
-
-    const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
-
-    // Build CourseRef list from placed courses
-    const courseRefs: CourseRef[] = [];
-    for (const id of allPlacedIds) {
-      const sap = courses.get(id);
-      if (!sap) continue;
-      courseRefs.push({
-        courseId: id,
-        name: sap.name,
-        credits: sap.credits,
-        language: (sap.isEnglish || englishTaughtCourses.includes(id)) ? 'EN' : 'HE',
-        isLab: labPoolSet.has(id),
-      });
-    }
-
-    // Build rules, patching the LAB rule with track-specific data
-    const rules: GeneralRequirementRule[] = GENERAL_REQUIREMENTS_RULES.map((rule) => {
-      if (rule.id === 'labs' && trackDef.labPool) {
-        return {
-          ...rule,
-          targetValue: trackDef.labPool.required,
-          courseMatcher: {
-            ids: trackDef.labPool.courses,
-          },
-        };
-      }
-      return rule;
+    return buildGeneralRequirementsProgress({
+      courses,
+      trackDef,
+      semesters,
+      completedCourses,
+      englishTaughtCourses,
     });
-
-    // Filter out lab rule if track has no lab pool
-    const activeRules = rules.filter(
-      (r) => r.id !== 'labs' || trackDef.labPool !== undefined
-    );
-
-    return calculateGeneralRequirements(courseRefs, activeRules);
   }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses]);
 }
