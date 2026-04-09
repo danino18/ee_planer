@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchCourses } from './services/sapApi';
-import { savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
+import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
@@ -21,12 +21,9 @@ import { eeSpecializations } from './data/specializations/ee_specializations';
 import { csSpecializations } from './data/specializations/cs_specializations';
 import type { SapCourse, TrackDefinition, SpecializationGroup, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
-import { useGeneralRequirements } from './hooks/useGeneralRequirements';
-import { GeneralRequirementsPanel } from './components/GeneralRequirements/GeneralRequirementsPanel';
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
-/** Extract all persistable fields from the store for cloud save */
 function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
   return {
     trackId: state.trackId,
@@ -58,10 +55,14 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPl
 function getPlanSignature(plan: StudentPlan): string {
   return JSON.stringify(plan);
 }
+
 const SPECS: Record<string, SpecializationGroup[]> = {
-  ee: eeSpecializations, cs: csSpecializations,
-  ee_math: eeSpecializations, ee_physics: eeSpecializations,
-  ee_combined: eeSpecializations, ce: eeSpecializations,
+  ee: eeSpecializations,
+  cs: csSpecializations,
+  ee_math: eeSpecializations,
+  ee_physics: eeSpecializations,
+  ee_combined: eeSpecializations,
+  ce: eeSpecializations,
 };
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
@@ -84,19 +85,17 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const specs = SPECS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
-  const generalProgress = useGeneralRequirements(courses, trackDef);
 
-  // Track which (trackId, initKey) combos have been initialized
   const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedUid = useRef<string | null>(null);
   const applyingCloudPlan = useRef(false);
   const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
-  // Timestamp of our most recent cloud save — used to suppress the Firestore
-  // snapshot that bounces back from our own write (avoid feedback loop).
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -112,8 +111,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     }
   }, [trackId, semesters, removeCourseFromSemester]);
 
-  // Initialize plan with track's semester schedule + sport course pool
-  // Re-runs when trackId changes OR when resetToDefault increments _initKey
   useEffect(() => {
     if (!trackId) return;
     const key = `${trackId}_${_initKey}`;
@@ -130,31 +127,33 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         }
       }
     }
-    // Pre-populate 1 copy of each repeatable sport course in unassigned pool
-    const SPORT_POOL_IDS = ['03940900', '03940902'];
-    for (const id of SPORT_POOL_IDS) {
+
+    const sportPoolIds = ['03940900', '03940902'];
+    for (const id of sportPoolIds) {
       if (courses.has(id) && !(semesters[0] ?? []).includes(id)) {
         addCourseToSemester(id, 0);
       }
     }
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester]);
 
-  // Cloud sync: real-time listener + auto-save.
-  //
-  // On login:
-  //   • subscribeToCloudPlan fires immediately with the current cloud data → loads it.
-  //   • If no cloud document exists yet (first ever login) → saves the local plan.
-  //
-  // While logged in:
-  //   • onSnapshot fires whenever *another device* saves a new version → auto-applied.
-  //   • Local changes are debounced 2 s and saved via Cloud Function.
-  //   • After our own save we suppress the echo snapshot for 5 s (feedback-loop guard).
-  //   • On tab-hide / logout / unmount any pending save is flushed immediately.
   useEffect(() => {
+    const clearSyncTimers = () => {
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
+      }
+      if (retryTimer.current) {
+        clearTimeout(retryTimer.current);
+        retryTimer.current = null;
+      }
+    };
+
     if (isSwitchingTrack && !trackId) {
       lastLoadedUid.current = null;
+      clearSyncTimers();
       return;
     }
+
     if (!user) {
       if (lastLoadedUid.current !== null) {
         applyingCloudPlan.current = true;
@@ -162,73 +161,86 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
         applyingCloudPlan.current = false;
       }
-      lastLoadedUid.current = null; // reset so next login re-subscribes
+      lastLoadedUid.current = null;
+      clearSyncTimers();
       return;
     }
+
     if (lastLoadedUid.current && lastLoadedUid.current !== user.uid) {
       applyingCloudPlan.current = true;
       resetPlan();
       latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
       applyingCloudPlan.current = false;
     }
-    if (lastLoadedUid.current === user.uid) return; // already subscribed for this session
+
+    if (lastLoadedUid.current === user.uid) return;
     lastLoadedUid.current = user.uid;
     const uid = user.uid;
 
-    const doSave = () => {
+    const scheduleRetrySave = (delay = 5000, onSuccess?: () => void) => {
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+      retryTimer.current = setTimeout(() => {
+        void doSave(onSuccess);
+      }, delay);
+    };
+
+    const handleSaveError = (error: unknown, onSuccess?: () => void) => {
+      const message = error instanceof Error ? error.message : 'שגיאת שמירה';
+      if (isRetryableSyncError(error)) {
+        setSyncStatus('error');
+        setSyncErrorMessage(`${message}. ננסה שוב אוטומטית.`);
+        scheduleRetrySave(5000, onSuccess);
+        return;
+      }
+
+      setSyncStatus('error');
+      setSyncErrorMessage(message);
+    };
+
+    const doSave = async (onSuccess?: () => void) => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
         saveTimer.current = null;
       }
+
       setSyncStatus('saving');
+      setSyncErrorMessage(null);
       lastSaveTime.current = Date.now();
       const localPlan = extractPlan(usePlanStore.getState());
       latestLocalSignature.current = getPlanSignature(localPlan);
-      savePlanToCloud(uid, localPlan)
-        .then(() => setSyncStatus('saved'))
-        .catch(() => setSyncStatus('error'));
+
+      try {
+        await savePlanToCloud(uid, localPlan);
+        setSyncStatus('saved');
+        setSyncErrorMessage(null);
+        onSuccess?.();
+      } catch (error: unknown) {
+        handleSaveError(error, onSuccess);
+      }
     };
 
     if (isSwitchingTrack) {
-      const doSaveSwitchedPlan = () => {
-        if (saveTimer.current) {
-          clearTimeout(saveTimer.current);
-          saveTimer.current = null;
-        }
-        setSyncStatus('saving');
-        lastSaveTime.current = Date.now();
-        const localPlan = extractPlan(usePlanStore.getState());
-        latestLocalSignature.current = getPlanSignature(localPlan);
-        savePlanToCloud(uid, localPlan)
-          .then(() => {
-            setSyncStatus('saved');
-            finishTrackSwitch();
-          })
-          .catch(() => setSyncStatus('error'));
-      };
-
       const unsubStore = usePlanStore.subscribe(() => {
         if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
+        saveTimer.current = setTimeout(() => {
+          void doSave(finishTrackSwitch);
+        }, 800);
       });
 
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(doSaveSwitchedPlan, 800);
+      saveTimer.current = setTimeout(() => {
+        void doSave(finishTrackSwitch);
+      }, 800);
 
       return () => {
         unsubStore();
-        if (saveTimer.current) {
-          clearTimeout(saveTimer.current);
-          saveTimer.current = null;
-        }
+        clearSyncTimers();
       };
     }
 
-    // Real-time Firestore listener
     const unsubSnapshot = subscribeToCloudPlan(
       uid,
       (cloudPlan) => {
-        // Ignore snapshots that are the echo of our own recent save
         if (Date.now() - lastSaveTime.current < 5000) return;
         const cloudSignature = getPlanSignature(cloudPlan);
         if (cloudSignature === latestLocalSignature.current) return;
@@ -237,31 +249,45 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         latestLocalSignature.current = cloudSignature;
         applyingCloudPlan.current = false;
         setSyncStatus('saved');
+        setSyncErrorMessage(null);
       },
       () => {
-        // No cloud plan yet → upload current local state
-        doSave();
+        void doSave();
+      },
+      (error) => {
+        if (isRetryableSyncError(error)) return;
+        setSyncStatus('error');
+        setSyncErrorMessage(error.message);
       },
     );
 
-    // Auto-save on local state changes (debounced 2 s)
     const unsubStore = usePlanStore.subscribe(() => {
       if (applyingCloudPlan.current) return;
       if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(doSave, 2000);
+      saveTimer.current = setTimeout(() => {
+        void doSave();
+      }, 2000);
     });
 
-    // Flush immediately when tab becomes hidden (user switches away / closes tab)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && saveTimer.current) doSave();
+      if (document.visibilityState === 'hidden' && saveTimer.current) {
+        void doSave();
+      }
     };
+
+    const handleOnline = () => {
+      void doSave();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
 
     return () => {
       unsubSnapshot();
       unsubStore();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (saveTimer.current && !usePlanStore.getState().isSwitchingTrack) doSave(); // flush on logout / unmount
+      window.removeEventListener('online', handleOnline);
+      clearSyncTimers();
     };
   }, [user, trackId, loadPlan, resetPlan, finishTrackSwitch, isSwitchingTrack]);
 
@@ -281,8 +307,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             <p className="text-sm text-gray-500">{trackDef.name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <LoginButton syncStatus={syncStatus} />
-            {/* Undo last action */}
+            <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
             <button
               onClick={undo}
               disabled={_history.length === 0}
@@ -291,7 +316,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             >
               ↩ בטל
             </button>
-            {/* Reset to recommended schedule */}
             <button
               onClick={handleResetToDefault}
               className="text-sm text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 px-3 py-1.5 rounded-lg transition-colors"
@@ -299,7 +323,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             >
               ⟳ מומלצת
             </button>
-            {/* Switch track */}
             <button
               onClick={beginTrackSwitch}
               className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
@@ -313,7 +336,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         <div className="flex gap-4">
           <div className="w-64 shrink-0 flex flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
-            <GeneralRequirementsPanel data={generalProgress} />
             <SpecializationPanel groups={specs} courses={courses} />
             <ChainRecommendations groups={specs} courses={courses} />
           </div>
@@ -356,23 +378,27 @@ function AppInner() {
     );
   }, [user, trackId, isSwitchingTrack, loadPlan]);
 
-  if (authLoading || loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-gray-600">טוען נתוני קורסים...</p>
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-600">טוען נתוני קורסים...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow border border-red-200 max-w-md text-center">
-        <p className="text-red-600 font-semibold mb-2">⚠️ שגיאה בטעינה</p>
-        <p className="text-gray-600 text-sm">{error}</p>
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow border border-red-200 max-w-md text-center">
+          <p className="text-red-600 font-semibold mb-2">⚠️ שגיאה בטעינה</p>
+          <p className="text-gray-600 text-sm">{error}</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   if (!trackId) return <TrackSelector tracks={ALL_TRACKS} />;
 

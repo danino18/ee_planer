@@ -1,6 +1,8 @@
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { StudentPlan } from '../types';
+
+type FirestoreLikeError = Error & { code?: string };
 
 function stripUndefined<T>(value: T): T {
   if (Array.isArray(value)) {
@@ -18,25 +20,28 @@ function stripUndefined<T>(value: T): T {
   return value;
 }
 
-/**
- * Save the user's plan directly to Firestore (no Cloud Functions needed).
- */
-export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<void> {
-  const planRef = doc(db, 'plans', uid);
-  await setDoc(planRef, stripUndefined(plan));
+export function isRetryableSyncError(error: unknown): boolean {
+  const code = (error as FirestoreLikeError | undefined)?.code;
+  return (
+    code === 'unavailable' ||
+    code === 'deadline-exceeded' ||
+    code === 'resource-exhausted' ||
+    code === 'aborted' ||
+    code === 'failed-precondition'
+  );
 }
 
-/**
- * Subscribe to real-time updates of the user's plan in Firestore.
- * - `onData` is called immediately with the current plan, and again whenever
- *   another device saves a new version.
- * - `onNotFound` is called once if the document doesn't exist yet (first login).
- * Returns an unsubscribe function.
- */
+export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
+  const planRef = doc(db, 'plans', uid);
+  await setDoc(planRef, stripUndefined(plan));
+  return { success: true };
+}
+
 export function subscribeToCloudPlan(
   uid: string,
   onData: (plan: StudentPlan) => void,
   onNotFound: () => void,
+  onError?: (error: Error) => void,
 ): () => void {
   const planRef = doc(db, 'plans', uid);
   return onSnapshot(
@@ -48,6 +53,9 @@ export function subscribeToCloudPlan(
         onNotFound();
       }
     },
-    (error) => console.error('[cloudSync] onSnapshot error:', error),
+    (error) => {
+      console.error('[cloudSync] onSnapshot error:', error);
+      onError?.(error);
+    },
   );
 }

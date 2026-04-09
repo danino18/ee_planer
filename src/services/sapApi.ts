@@ -1,4 +1,8 @@
 import type { SapCourse } from '../types';
+import {
+  isEnglishCourseId,
+  isTechnicalEnglishCourseName,
+} from '../data/generalRequirements/courseClassification';
 
 const BASE_URL = 'https://raw.githubusercontent.com/michael-maltsev/technion-sap-info-fetcher/gh-pages';
 
@@ -169,22 +173,10 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   // English-taught courses (scraped from Technion ugportal, Winter 2024-2025)
   // Note: 03240527 (יסודות היזמות) removed — only sometimes taught in English (user can toggle manually)
   // Note: 03260002 (אתיקה של טכנולוגיות חדשניות) added — always taught in English
-  const ENGLISH_COURSES = new Set([
-    '00160203','00160210','00350147','00360087','00360101','00360104','00360106',
-    '00460010','00460052','00460211','00460241','00470100','00560120','00560391',
-    '00560394','00560396','00560397','00560398','00560402','00560410','00660013',
-    '00660529','00840213','00840738','00850455','00860320','00860321','00860480',
-    '00860520','00860761','00860923','00880780','00940189','00940395','00940701',
-    '00940702','00940703','00960265','00970334','01040143','01040222','01060062',
-    '01060330','01060349','01060380','01060431','01060717','01060723','01060944',
-    '01140229','01140250','01140251','01140252','01270005','01340069','01340140',
-    '01360042','01400733','01960013','01960015','02050598','02050923','02060841',
-    '02060938','02060952','02360017','02360299','02360833','02740252','03150014',
-    '03150242','03240305','03250009','03250022','03260001','03260002','03260005',
-    '03260006','03260009','03360502','03360546','03380002',
-  ]);
   for (const [id, course] of merged) {
-    if (ENGLISH_COURSES.has(id)) course.isEnglish = true;
+    if (isEnglishCourseId(id) || isTechnicalEnglishCourseName(course.name)) {
+      course.isEnglish = true;
+    }
   }
 
   courseCache = merged;

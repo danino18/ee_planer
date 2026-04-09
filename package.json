@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "sync:general-requirements": "node scripts/sync-general-requirements.mjs",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run sync:general-requirements && npx tsc -b && npx vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },

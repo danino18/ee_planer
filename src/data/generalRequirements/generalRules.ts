@@ -1,11 +1,9 @@
 import type { GeneralRequirementRule } from '../../domain/generalRequirements/types';
+import { isMelagCourseId } from './courseClassification';
 
 // Seed rules for Technion general requirements.
-// Predicates use course ID prefix conventions from the existing codebase:
-//   032xxx = humanities / מל"ג courses
-//   039xxx = sport / physical education
-// Labs and English are injected/patched by useGeneralRequirements based on track definition
-// and student plan settings (isEnglish flag, englishTaughtCourses).
+// Course lists are synced from Technion UG Portal at build time.
+// Sport still relies on the existing 039xxx convention.
 export const GENERAL_REQUIREMENTS_RULES: GeneralRequirementRule[] = [
   {
     id: 'melag',
@@ -15,9 +13,7 @@ export const GENERAL_REQUIREMENTS_RULES: GeneralRequirementRule[] = [
     targetValue: 6,
     targetUnit: 'credits',
     courseMatcher: {
-      // Exclude English language courses: by isEnglish flag (language === 'EN') OR by name
-      // containing "אנגלית" (e.g. "אנגלית טכנית-מתקדמים ב'" has a 032 prefix but is not a מל"ג)
-      predicate: (c) => c.courseId.startsWith('032') && c.language !== 'EN' && !c.name.includes('אנגלית'),
+      predicate: (c) => isMelagCourseId(c.courseId),
     },
   },
   {
@@ -47,11 +43,9 @@ export const GENERAL_REQUIREMENTS_RULES: GeneralRequirementRule[] = [
     type: 'LAB',
     title: 'מעבדות',
     scope: 'program',
-    // targetValue is overridden at runtime from trackDef.labPool.required
     targetValue: 3,
     targetUnit: 'courses',
     courseMatcher: {
-      // ids are injected at runtime from trackDef.labPool.courses
       predicate: (c) => c.isLab === true,
     },
   },
