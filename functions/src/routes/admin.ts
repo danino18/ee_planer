@@ -2,14 +2,14 @@ import { Router, Request, Response } from "express";
 import { verifyAuth } from "../middleware/auth";
 import { requireAdmin } from "../middleware/adminCheck";
 import { listAllUsers, deleteUser, getStats, getPlan } from "../services/firestoreService";
+import { createRateLimitMiddleware } from "../security/http";
 
 export const adminRouter = Router();
 
-// All admin routes require authentication AND admin role
 adminRouter.use(verifyAuth);
+adminRouter.use(createRateLimitMiddleware({ keyPrefix: "admin", windowMs: 60_000, maxRequests: 60 }));
 adminRouter.use(requireAdmin);
 
-// GET /api/admin/stats — total users, plans, etc.
 adminRouter.get("/stats", async (_req: Request, res: Response): Promise<void> => {
   try {
     const stats = await getStats();
@@ -20,7 +20,6 @@ adminRouter.get("/stats", async (_req: Request, res: Response): Promise<void> =>
   }
 });
 
-// GET /api/admin/users — list all registered users
 adminRouter.get("/users", async (_req: Request, res: Response): Promise<void> => {
   try {
     const users = await listAllUsers();
@@ -39,7 +38,6 @@ adminRouter.get("/users", async (_req: Request, res: Response): Promise<void> =>
   }
 });
 
-// GET /api/admin/plans/:uid — view any user's plan
 adminRouter.get("/plans/:uid", async (req: Request, res: Response): Promise<void> => {
   const { uid } = req.params;
   try {
@@ -55,7 +53,6 @@ adminRouter.get("/plans/:uid", async (req: Request, res: Response): Promise<void
   }
 });
 
-// DELETE /api/admin/users/:uid — remove user + their data
 adminRouter.delete("/users/:uid", async (req: Request, res: Response): Promise<void> => {
   const { uid } = req.params;
   try {

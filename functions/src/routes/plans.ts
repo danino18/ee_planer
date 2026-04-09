@@ -1,13 +1,14 @@
 import { Router, Request, Response } from "express";
 import { verifyAuth, AuthRequest } from "../middleware/auth";
 import { getPlan, savePlan } from "../services/firestoreService";
+import { createRateLimitMiddleware } from "../security/http";
+import { validateStudentPlanPayload } from "../security/planValidation";
 
 export const plansRouter = Router();
 
-// Apply auth middleware to all plan routes
 plansRouter.use(verifyAuth);
+plansRouter.use(createRateLimitMiddleware({ keyPrefix: "plans", windowMs: 60_000, maxRequests: 120 }));
 
-// GET /api/plans — load the authenticated user's plan
 plansRouter.get("/", async (req: Request, res: Response): Promise<void> => {
   const uid = (req as AuthRequest).uid;
   try {
@@ -23,7 +24,6 @@ plansRouter.get("/", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// POST /api/plans — save (upsert) the authenticated user's plan
 plansRouter.post("/", async (req: Request, res: Response): Promise<void> => {
   const uid = (req as AuthRequest).uid;
   const plan = req.body;
@@ -33,8 +33,14 @@ plansRouter.post("/", async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const validatedPlan = validateStudentPlanPayload(plan);
+  if (!validatedPlan.ok) {
+    res.status(400).json({ error: validatedPlan.error });
+    return;
+  }
+
   try {
-    await savePlan(uid, plan);
+    await savePlan(uid, validatedPlan.value);
     res.json({ success: true });
   } catch (err) {
     console.error("POST /plans error:", err);

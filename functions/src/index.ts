@@ -5,43 +5,30 @@ import express from "express";
 import { plansRouter } from "./routes/plans";
 import { adminRouter } from "./routes/admin";
 import { aiRouter } from "./routes/ai";
+import { corsMiddleware, securityHeadersMiddleware } from "./security/http";
 
 admin.initializeApp();
 
 const app = express();
+app.disable("x-powered-by");
+app.set("trust proxy", true);
 
-// Parse JSON bodies
-app.use(express.json());
+app.use(express.json({ limit: "256kb" }));
+app.use(securityHeadersMiddleware);
+app.use(corsMiddleware);
 
-// CORS — allow only your own domain in production
-app.use((_req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Authorization, Content-Type");
-  if (_req.method === "OPTIONS") {
-    res.sendStatus(204);
-    return;
-  }
-  next();
-});
-
-// Routes
 app.use("/plans", plansRouter);
 app.use("/admin", adminRouter);
 app.use("/ai", aiRouter);
 
-// Health check
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// Export as a single Firebase Function named "api"
-// All endpoints are under: https://<region>-<project>.cloudfunctions.net/api/...
 export const api = functions.onRequest(
   {
     region: "us-central1",
-    // Secrets are referenced here so Functions can access them at runtime
-    // Uncomment when secrets are set up:
+    // Uncomment when secrets are configured:
     // secrets: ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ADMIN_UIDS"],
   },
   app
