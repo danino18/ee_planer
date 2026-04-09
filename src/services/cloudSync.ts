@@ -2,12 +2,28 @@ import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 import type { StudentPlan } from '../types';
 
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as T;
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, entryValue]) => entryValue !== undefined)
+        .map(([key, entryValue]) => [key, stripUndefined(entryValue)]),
+    ) as T;
+  }
+
+  return value;
+}
+
 /**
  * Save the user's plan directly to Firestore (no Cloud Functions needed).
  */
 export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<void> {
   const planRef = doc(db, 'plans', uid);
-  await setDoc(planRef, plan);
+  await setDoc(planRef, stripUndefined(plan));
 }
 
 /**
