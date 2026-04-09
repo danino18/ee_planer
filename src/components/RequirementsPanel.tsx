@@ -29,6 +29,14 @@ function ProgressRow({ label, earned, required, color }: ProgressRowProps) {
   );
 }
 
+type EnglishRequirementItem = {
+  kind: 'advanced_a' | 'advanced_b' | 'content_course';
+  label: string;
+  done: boolean;
+  courseNames: string[];
+  neededCount?: number;
+};
+
 interface CompactRequirementRowProps {
   req: GeneralRequirementProgress;
   targetValue?: number;
@@ -36,12 +44,33 @@ interface CompactRequirementRowProps {
   manualEnglishCourseIds: string[];
   englishTaughtCourses: string[];
   onToggleEnglishCourse: (courseId: string) => void;
+  englishScore?: number;
+  onSetEnglishScore?: (score: number | null) => void;
+  englishRequirementItems?: EnglishRequirementItem[];
 }
 
 function formatRequirementValue(req: GeneralRequirementProgress, targetValue: number): string {
   const unit = req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים';
   const completed = req.completedValue % 1 === 0 ? req.completedValue : req.completedValue.toFixed(1);
   return `${completed} / ${targetValue} ${unit}`;
+}
+
+function renderEnglishRequirementText(requirement: EnglishRequirementItem): string {
+  if (requirement.kind === 'content_course') {
+    if (requirement.courseNames.length === 0) {
+      return requirement.neededCount === 2 ? 'חסרים 2 קורסי תוכן באנגלית' : 'חסר קורס תוכן באנגלית';
+    }
+
+    if (requirement.neededCount === 2) {
+      return requirement.courseNames.length === 2
+        ? requirement.courseNames.join(', ')
+        : `${requirement.courseNames[0]} + חסר קורס נוסף`;
+    }
+
+    return requirement.courseNames[0];
+  }
+
+  return requirement.courseNames[0] ?? requirement.label;
 }
 
 function CompactRequirementRow({
@@ -51,6 +80,9 @@ function CompactRequirementRow({
   manualEnglishCourseIds,
   englishTaughtCourses,
   onToggleEnglishCourse,
+  englishScore,
+  onSetEnglishScore,
+  englishRequirementItems,
 }: CompactRequirementRowProps) {
   const pct = Math.min(100, targetValue > 0 ? (req.completedValue / targetValue) * 100 : 0);
   const isDone = req.completedValue >= targetValue;
@@ -80,7 +112,45 @@ function CompactRequirementRow({
         />
       </div>
 
-      {req.countedCourses.length > 0 && (
+      {req.requirementId === 'english' && onSetEnglishScore && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-xs text-gray-500 shrink-0">ניקוד אמיר"ם:</span>
+          <input
+            type="number"
+            min={104}
+            max={150}
+            value={englishScore ?? ''}
+            onChange={(event) => {
+              const nextValue = event.target.value === '' ? null : parseInt(event.target.value, 10);
+              onSetEnglishScore(nextValue);
+            }}
+            placeholder="104-150"
+            className="w-24 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center bg-white"
+          />
+        </div>
+      )}
+
+      {req.requirementId === 'english' && (
+        <div className="mt-2 space-y-1.5">
+          {englishScore === undefined ? (
+            <p className="text-xs text-gray-400">הזן ניקוד אמיר"ם כדי לחשב את דרישות האנגלית</p>
+          ) : (
+            englishRequirementItems?.map((requirement) => (
+              <div key={`${req.requirementId}-${requirement.kind}-${requirement.label}`} className="flex items-start gap-2 text-xs">
+                <span className={`font-bold mt-0.5 ${requirement.done ? 'text-green-600' : 'text-gray-400'}`}>
+                  {requirement.done ? '✓' : '○'}
+                </span>
+                <div className="min-w-0">
+                  <div className={`font-medium ${requirement.done ? 'text-green-700' : 'text-gray-600'}`}>{requirement.label}</div>
+                  <div className="text-gray-500 break-words">{renderEnglishRequirementText(requirement)}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {req.countedCourses.length > 0 && req.requirementId !== 'english' && (
         <div className="mt-2 flex flex-wrap gap-1">
           {req.countedCourses.map((course) => (
             <span key={`${req.requirementId}-${course.courseId}`} className="text-[11px] rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
@@ -129,7 +199,7 @@ interface Props {
       placed: { id: string; name: string }[];
       hasExemption: boolean;
       score?: number;
-      requirements: { label: string; done: boolean }[];
+      requirements: EnglishRequirementItem[];
       taughtCourses: string[];
       englishInPlan: string[];
     };
@@ -141,15 +211,11 @@ interface Props {
 export function RequirementsPanel({ progress, weightedAverage }: Props) {
   const { setMiluimCredits, setEnglishScore, toggleEnglishTaughtCourse } = usePlanStore();
   const miluimCredits = usePlanStore((s) => s.miluimCredits);
-  const englishScore = usePlanStore((s) => s.englishScore);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const [miluimInput, setMiluimInput] = useState<string>(miluimCredits?.toString() ?? '');
   if (!progress) return null;
 
   const isMiluim = miluimCredits !== undefined;
-  const englishOk = progress.english.requirements.length > 0
-    ? progress.english.requirements.every((requirement) => requirement.done)
-    : progress.english.placed.length > 0;
   const compactRequirements = progress.generalRequirements.filter((req) => (
     req.requirementId === 'melag' ||
     req.requirementId === 'english' ||
@@ -168,14 +234,15 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
 
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
-      <ProgressRow label='סה"כ נקודות' earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
+      <ProgressRow label={'סה"כ נקודות'} earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
+
       <div className="mb-2 flex items-center gap-2">
         <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
           <input
             type="checkbox"
             checked={isMiluim}
-            onChange={(e) => {
-              if (e.target.checked) {
+            onChange={(event) => {
+              if (event.target.checked) {
                 setMiluimCredits(0);
                 setMiluimInput('0');
               } else {
@@ -194,9 +261,9 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
               min={0}
               max={10}
               value={miluimInput}
-              onChange={(e) => {
-                setMiluimInput(e.target.value);
-                const parsed = parseInt(e.target.value, 10);
+              onChange={(event) => {
+                setMiluimInput(event.target.value);
+                const parsed = parseInt(event.target.value, 10);
                 if (!Number.isNaN(parsed)) setMiluimCredits(parsed);
               }}
               className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
@@ -231,43 +298,6 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
           </div>
         )}
 
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm text-gray-700">אנגלית</span>
-            {englishOk && <span className="text-xs text-green-600 font-bold">הושלם</span>}
-          </div>
-          <div className="flex items-center gap-1.5 mb-1">
-            <span className="text-xs text-gray-500 shrink-0">ניקוד אמיר"ם:</span>
-            <input
-              type="number"
-              min={104}
-              max={150}
-              value={englishScore ?? ''}
-              onChange={(e) => {
-                const nextValue = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                setEnglishScore(nextValue);
-              }}
-              placeholder="104-150"
-              className="w-20 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
-            />
-          </div>
-          {progress.english.requirements.length > 0 && (
-            <div className="space-y-0.5 pr-1">
-              {progress.english.requirements.map((requirement, index) => (
-                <div key={index} className="flex items-center gap-1">
-                  <span className={`text-xs font-bold ${requirement.done ? 'text-green-600' : 'text-gray-400'}`}>
-                    {requirement.done ? '✓' : '○'}
-                  </span>
-                  <span className={`text-xs ${requirement.done ? 'text-green-700' : 'text-gray-500'}`}>{requirement.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          {progress.english.score === undefined && (
-            <p className="text-xs text-gray-400">הזן ניקוד אמיר"ם לקביעת דרישות</p>
-          )}
-        </div>
-
         <div className="space-y-2 pt-1">
           {compactRequirements.map((req) => {
             const manualEnglishCourseIds = req.requirementId === 'melag'
@@ -287,6 +317,9 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
                 manualEnglishCourseIds={manualEnglishCourseIds}
                 englishTaughtCourses={englishTaughtCourses}
                 onToggleEnglishCourse={toggleEnglishTaughtCourse}
+                englishScore={req.requirementId === 'english' ? progress.english.score : undefined}
+                onSetEnglishScore={req.requirementId === 'english' ? setEnglishScore : undefined}
+                englishRequirementItems={req.requirementId === 'english' ? progress.english.requirements : undefined}
               />
             );
           })}

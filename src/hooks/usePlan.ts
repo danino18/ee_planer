@@ -139,6 +139,14 @@ export function useWeightedAverage(courses: Map<string, SapCourse>): number | nu
   }, [grades, courses]);
 }
 
+type EnglishRequirementItem = {
+  kind: 'advanced_a' | 'advanced_b' | 'content_course';
+  label: string;
+  done: boolean;
+  courseNames: string[];
+  neededCount?: number;
+};
+
 export function useRequirementsProgress(
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null,
@@ -316,28 +324,29 @@ export function useRequirementsProgress(
     }
 
     const englishInPlan = englishRequirement?.countedCourses.map((course) => course.courseId) ?? [];
-    let englishRequirements: { label: string; done: boolean }[] = [];
+    const englishCourseNamesInPlan = englishRequirement?.countedCourses.map((course) => course.name) ?? [];
+    let englishRequirements: EnglishRequirementItem[] = [];
     if (englishScore !== undefined) {
-      const advancedA = englishPlaced.some((course) =>
+      const advancedAName = englishPlaced.find((course) =>
         course.name.includes("מתקדמים א'") || course.name.includes('מתקדמים א')
-      );
-      const advancedB = englishPlaced.some((course) =>
+      )?.name;
+      const advancedBName = englishPlaced.find((course) =>
         course.name.includes("מתקדמים ב'") || course.name.includes('מתקדמים ב')
-      );
+      )?.name;
 
       if (englishScore >= 104 && englishScore <= 119) {
         englishRequirements = [
-          { label: "מתקדמים א'", done: advancedA },
-          { label: "מתקדמים ב'", done: advancedB },
+          { kind: 'advanced_a', label: "מתקדמים א'", done: !!advancedAName, courseNames: advancedAName ? [advancedAName] : [] },
+          { kind: 'advanced_b', label: "מתקדמים ב'", done: !!advancedBName, courseNames: advancedBName ? [advancedBName] : [] },
         ];
       } else if (englishScore >= 120 && englishScore <= 133) {
         englishRequirements = [
-          { label: "מתקדמים ב'", done: advancedB },
-          { label: 'קורס 1 נלמד באנגלית', done: englishInPlan.length >= 1 },
+          { kind: 'advanced_b', label: "מתקדמים ב'", done: !!advancedBName, courseNames: advancedBName ? [advancedBName] : [] },
+          { kind: 'content_course', label: 'קורס תוכן באנגלית', done: englishCourseNamesInPlan.length >= 1, courseNames: englishCourseNamesInPlan.slice(0, 1), neededCount: 1 },
         ];
       } else if (englishScore >= 134 && englishScore <= 150) {
         englishRequirements = [
-          { label: `קורסים נלמדים באנגלית (${englishInPlan.length}/2)`, done: englishInPlan.length >= 2 },
+          { kind: 'content_course', label: 'קורסי תוכן באנגלית', done: englishCourseNamesInPlan.length >= 2, courseNames: englishCourseNamesInPlan.slice(0, 2), neededCount: 2 },
         ];
       }
     }

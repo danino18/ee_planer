@@ -16,9 +16,10 @@ const SYNC_COLOR: Record<string, string> = {
 
 interface LoginButtonProps {
   syncStatus?: 'idle' | 'saving' | 'saved' | 'error';
+  syncErrorMessage?: string | null;
 }
 
-export function LoginButton({ syncStatus = 'idle' }: LoginButtonProps) {
+export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: LoginButtonProps) {
   const { user, loading, error, clearError, signInWithGoogle, signInWithMicrosoft, signOut } = useAuth();
   const [signingIn, setSigningIn] = useState<'google' | 'microsoft' | null>(null);
 
@@ -36,6 +37,11 @@ export function LoginButton({ syncStatus = 'idle' }: LoginButtonProps) {
         <span className={`text-xs font-medium hidden sm:block ${SYNC_COLOR[syncStatus]}`}>
           {SYNC_LABEL[syncStatus]}
         </span>
+        {syncStatus === 'error' && syncErrorMessage && (
+          <span className="text-xs text-red-500 hidden md:block max-w-[220px] truncate" title={syncErrorMessage}>
+            {syncErrorMessage}
+          </span>
+        )}
         <button
           onClick={signOut}
           className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 px-2 py-1 rounded-lg transition-colors"

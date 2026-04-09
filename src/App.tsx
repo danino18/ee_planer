@@ -94,6 +94,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   // snapshot that bounces back from our own write (avoid feedback loop).
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -178,12 +179,19 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         saveTimer.current = null;
       }
       setSyncStatus('saving');
+      setSyncErrorMessage(null);
       lastSaveTime.current = Date.now();
       const localPlan = extractPlan(usePlanStore.getState());
       latestLocalSignature.current = getPlanSignature(localPlan);
       savePlanToCloud(uid, localPlan)
-        .then(() => setSyncStatus('saved'))
-        .catch(() => setSyncStatus('error'));
+        .then(() => {
+          setSyncStatus('saved');
+          setSyncErrorMessage(null);
+        })
+        .catch((error: unknown) => {
+          setSyncStatus('error');
+          setSyncErrorMessage(error instanceof Error ? error.message : 'שגיאת שמירה');
+        });
     };
 
     if (isSwitchingTrack) {
@@ -193,15 +201,20 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           saveTimer.current = null;
         }
         setSyncStatus('saving');
+        setSyncErrorMessage(null);
         lastSaveTime.current = Date.now();
         const localPlan = extractPlan(usePlanStore.getState());
         latestLocalSignature.current = getPlanSignature(localPlan);
         savePlanToCloud(uid, localPlan)
           .then(() => {
             setSyncStatus('saved');
+            setSyncErrorMessage(null);
             finishTrackSwitch();
           })
-          .catch(() => setSyncStatus('error'));
+          .catch((error: unknown) => {
+            setSyncStatus('error');
+            setSyncErrorMessage(error instanceof Error ? error.message : 'שגיאת שמירה');
+          });
       };
 
       const unsubStore = usePlanStore.subscribe(() => {
@@ -234,6 +247,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         latestLocalSignature.current = cloudSignature;
         applyingCloudPlan.current = false;
         setSyncStatus('saved');
+        setSyncErrorMessage(null);
       },
       () => {
         // No cloud plan yet → upload current local state
@@ -278,7 +292,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
             <p className="text-sm text-gray-500">{trackDef.name}</p>
           </div>
           <div className="flex items-center gap-2">
-            <LoginButton syncStatus={syncStatus} />
+            <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
             {/* Undo last action */}
             <button
               onClick={undo}

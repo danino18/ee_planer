@@ -1,5 +1,6 @@
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
+import { apiClient } from './apiClient';
 import type { StudentPlan } from '../types';
 
 function stripUndefined<T>(value: T): T {
@@ -18,21 +19,10 @@ function stripUndefined<T>(value: T): T {
   return value;
 }
 
-/**
- * Save the user's plan directly to Firestore (no Cloud Functions needed).
- */
-export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<void> {
-  const planRef = doc(db, 'plans', uid);
-  await setDoc(planRef, stripUndefined(plan));
+export async function savePlanToCloud(_uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
+  return apiClient.post<{ success: boolean }>('/plans', stripUndefined(plan));
 }
 
-/**
- * Subscribe to real-time updates of the user's plan in Firestore.
- * - `onData` is called immediately with the current plan, and again whenever
- *   another device saves a new version.
- * - `onNotFound` is called once if the document doesn't exist yet (first login).
- * Returns an unsubscribe function.
- */
 export function subscribeToCloudPlan(
   uid: string,
   onData: (plan: StudentPlan) => void,
