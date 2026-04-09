@@ -95,7 +95,10 @@ export function CourseCard({
         {semester !== undefined && (
           <button
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => { e.stopPropagation(); isRepeatable && instanceKey ? toggleCompletedInstance(instanceKey) : toggleCompleted(course.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              isRepeatable && instanceKey ? toggleCompletedInstance(instanceKey) : toggleCompleted(course.id);
+            }}
             className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${effectiveIsCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
             title={effectiveIsCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
           >
