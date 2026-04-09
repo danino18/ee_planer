@@ -12,7 +12,6 @@ export interface SapCourse {
   teachingSemester?: 'winter' | 'spring';  // undefined = both
   isEnglish?: boolean;
   sapAverage?: number;  // grade average from SAP data, if available
-  dismissedRecommendedCourses?: Record<string, string[]>;
 }
 
 export interface TrackDefinition {
@@ -73,5 +72,6 @@ export interface StudentPlan {
   miluimCredits?: number;  // 0–10: reserve duty credit reduction for כלל-טכניוני requirement
   englishScore?: number;   // 104–150: Amiram/Psychometric English score
   englishTaughtCourses?: string[];  // course IDs student marked as taught in English
+  dismissedRecommendedCourses?: Record<string, string[]>;
   facultyColorOverrides?: Record<string, string>;  // faculty name → color key override
 }

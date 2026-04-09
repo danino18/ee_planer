@@ -132,6 +132,12 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
       .filter(group => group.length > 0);
   }
 
+  // Fix: 01140074 (פיזיקה 1פ) should not require פיזיקה 1מ as a prerequisite.
+  const physics1p = merged.get('01140074');
+  if (physics1p) {
+    physics1p.prerequisites = [];
+  }
+
   // Force correct credits for sport courses (SAP data may have wrong values)
   const SPORT_OVERRIDES: Record<string, number> = {
     '03940900': 1,

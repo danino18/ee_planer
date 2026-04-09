@@ -239,6 +239,30 @@ function cleanSavedTracks(value: unknown): Record<string, PlanDocument> {
   return result;
 }
 
+function cleanDismissedRecommendedCourses(value: unknown): Record<string, string[]> {
+  const source = optionalRecord(value, "dismissedRecommendedCourses");
+  if (!source) return {};
+
+  const entries = Object.entries(source);
+  if (entries.length > MAX_SAVED_TRACKS) {
+    throw new PlanValidationError("dismissedRecommendedCourses has too many entries");
+  }
+
+  const result: Record<string, string[]> = {};
+  for (const [trackId, rawCourseIds] of entries) {
+    if (!TRACK_IDS.has(trackId as TrackId)) {
+      throw new PlanValidationError(`Invalid dismissedRecommendedCourses key: ${trackId}`);
+    }
+    result[trackId] = cleanStringArray(
+      rawCourseIds,
+      `dismissedRecommendedCourses.${trackId}`,
+      MAX_COURSES
+    );
+  }
+
+  return result;
+}
+
 export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): PlanDocument {
   const source = asRecord(payload, "plan");
   const maxSemester = cleanInteger(source.maxSemester ?? 8, "maxSemester", 1, MAX_SEMESTERS);
@@ -274,6 +298,7 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
     manualSapAverages: cleanNumberRecord(source.manualSapAverages, "manualSapAverages", 0, 100),
     binaryPass: cleanBooleanRecord(source.binaryPass, "binaryPass"),
     englishTaughtCourses: cleanStringArray(source.englishTaughtCourses, "englishTaughtCourses", MAX_COURSES),
+    dismissedRecommendedCourses: cleanDismissedRecommendedCourses(source.dismissedRecommendedCourses),
     facultyColorOverrides: cleanStringRecord(
       source.facultyColorOverrides,
       "facultyColorOverrides",

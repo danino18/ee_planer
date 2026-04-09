@@ -45,6 +45,7 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPl
     manualSapAverages: state.manualSapAverages,
     binaryPass: state.binaryPass,
     savedTracks: state.savedTracks,
+    dismissedRecommendedCourses: state.dismissedRecommendedCourses,
     miluimCredits: state.miluimCredits,
     englishScore: state.englishScore,
     englishTaughtCourses: state.englishTaughtCourses,
@@ -82,6 +83,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const _history = usePlanStore((s) => s._history);
   const _initKey = usePlanStore((s) => s._initKey);
   const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
+  const dismissedRecommendedCourses = usePlanStore((s) => s.dismissedRecommendedCourses);
   const specs = SPECS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
@@ -119,9 +121,10 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
     const allPlaced = new Set(Object.values(semesters).flat());
     const alreadyInitialized = new Set<string>();
+    const dismissedForTrack = new Set(dismissedRecommendedCourses?.[trackId] ?? []);
     for (const { semester, courses: ids } of trackDef.semesterSchedule) {
       for (const id of ids) {
-        if (!allPlaced.has(id) && !alreadyInitialized.has(id) && courses.has(id)) {
+        if (!allPlaced.has(id) && !alreadyInitialized.has(id) && courses.has(id) && !dismissedForTrack.has(id)) {
           addCourseToSemester(id, semester);
           alreadyInitialized.add(id);
         }
@@ -130,11 +133,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
     const sportPoolIds = ['03940900', '03940902'];
     for (const id of sportPoolIds) {
-      if (courses.has(id) && !(semesters[0] ?? []).includes(id)) {
+      if (courses.has(id) && !(semesters[0] ?? []).includes(id) && !dismissedForTrack.has(id)) {
         addCourseToSemester(id, 0);
       }
     }
-  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester]);
+  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses]);
 
   useEffect(() => {
     const clearSyncTimers = () => {

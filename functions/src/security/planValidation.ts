@@ -23,6 +23,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "englishScore",
   "englishTaughtCourses",
   "facultyColorOverrides",
+  "dismissedRecommendedCourses",
 ]);
 
 interface ValidationSuccess {
@@ -523,6 +524,20 @@ function validateStudentPlanRecord(
       return facultyColorOverrides;
     }
     sanitized.facultyColorOverrides = facultyColorOverrides;
+  }
+
+  if ("dismissedRecommendedCourses" in value) {
+    const dismissedRecommendedCourses = validateStringArrayMap(
+      "dismissedRecommendedCourses",
+      value.dismissedRecommendedCourses,
+      TRACK_IDS.length,
+      600,
+      32
+    );
+    if (isValidationFailure(dismissedRecommendedCourses)) {
+      return dismissedRecommendedCourses;
+    }
+    sanitized.dismissedRecommendedCourses = dismissedRecommendedCourses;
   }
 
   return success(sanitized);

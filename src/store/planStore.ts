@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TrackId, StudentPlan } from '../types';
+import { eeTrack } from '../data/tracks/ee';
+import { csTrack } from '../data/tracks/cs';
+import { eeMathTrack } from '../data/tracks/ee_math';
+import { eePhysicsTrack } from '../data/tracks/ee_physics';
+import { eeCombinedTrack } from '../data/tracks/ee_combined';
+import { ceTrack } from '../data/tracks/ce';
 
 interface PlanState extends StudentPlan {
   // Ephemeral — NOT persisted
@@ -68,6 +74,54 @@ const CE_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
   4: ['01140073'],
 };
 
+const TRACKS = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
+const AUTO_SEEDED_POOL_IDS = ['03940900', '03940902'];
+
+const AUTO_SEEDED_COURSES_BY_TRACK = Object.fromEntries(
+  TRACKS.map((track) => [
+    track.id,
+    new Set([
+      ...track.semesterSchedule.flatMap(({ courses }) => courses),
+      ...AUTO_SEEDED_POOL_IDS,
+    ]),
+  ]),
+) as Record<TrackId, Set<string>>;
+
+function clearDismissedCourse(
+  dismissedRecommendedCourses: Record<string, string[]> | undefined,
+  trackId: TrackId | null,
+  courseId: string,
+): Record<string, string[]> {
+  if (!trackId) return dismissedRecommendedCourses ?? {};
+
+  const current = dismissedRecommendedCourses?.[trackId] ?? [];
+  if (!current.includes(courseId)) return dismissedRecommendedCourses ?? {};
+
+  const next = { ...(dismissedRecommendedCourses ?? {}) };
+  const filtered = current.filter((id) => id !== courseId);
+  if (filtered.length > 0) next[trackId] = filtered;
+  else delete next[trackId];
+  return next;
+}
+
+function markDismissedCourse(
+  dismissedRecommendedCourses: Record<string, string[]> | undefined,
+  trackId: TrackId | null,
+  courseId: string,
+): Record<string, string[]> {
+  if (!trackId) return dismissedRecommendedCourses ?? {};
+  const autoSeeded = AUTO_SEEDED_COURSES_BY_TRACK[trackId];
+  if (!autoSeeded?.has(courseId)) return dismissedRecommendedCourses ?? {};
+
+  const current = dismissedRecommendedCourses?.[trackId] ?? [];
+  if (current.includes(courseId)) return dismissedRecommendedCourses ?? {};
+
+  return {
+    ...(dismissedRecommendedCourses ?? {}),
+    [trackId]: [...current, courseId],
+  };
+}
+
 const initialState: StudentPlan = {
   trackId: null,
   semesters: { ...DEFAULT_SEMESTER_MAP },
@@ -92,6 +146,7 @@ const initialState: StudentPlan = {
   englishTaughtCourses: [],
   facultyColorOverrides: {},
   completedInstances: [],
+  dismissedRecommendedCourses: {},
 };
 
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
@@ -99,6 +154,7 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
     ...plan,
     semesters: { ...plan.semesters },
     savedTracks: plan.savedTracks ? { ...plan.savedTracks } : plan.savedTracks,
+    dismissedRecommendedCourses: { ...(plan.dismissedRecommendedCourses ?? {}) },
   };
 
   if (migrated.trackId === 'ce') {
@@ -145,6 +201,7 @@ function captureSnapshot(state: PlanState): StudentPlan {
     englishTaughtCourses: [...(state.englishTaughtCourses ?? [])],
     facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}) },
     completedInstances: [...(state.completedInstances ?? [])],
+    dismissedRecommendedCourses: { ...(state.dismissedRecommendedCourses ?? {}) },
   };
 }
 
@@ -224,7 +281,15 @@ export const usePlanStore = create<PlanState>()(
             }
             newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
           }
-          return { semesters: newSemesters, _history: history };
+          return {
+            semesters: newSemesters,
+            dismissedRecommendedCourses: clearDismissedCourse(
+              state.dismissedRecommendedCourses,
+              state.trackId,
+              courseId,
+            ),
+            _history: history,
+          };
         }),
 
       removeCourseFromSemester: (courseId, semester) =>
@@ -238,9 +303,18 @@ export const usePlanStore = create<PlanState>()(
           } else {
             newList = list.filter((id) => id !== courseId);
           }
+          const nextSemesters = { ...state.semesters, [semester]: newList };
+          const stillPlaced = Object.values(nextSemesters).some((ids) => ids.includes(courseId));
           return {
-            semesters: { ...state.semesters, [semester]: newList },
+            semesters: nextSemesters,
             completedCourses: state.completedCourses.filter((id) => id !== courseId),
+            dismissedRecommendedCourses: stillPlaced
+              ? state.dismissedRecommendedCourses ?? {}
+              : markDismissedCourse(
+                state.dismissedRecommendedCourses,
+                state.trackId,
+                courseId,
+              ),
             _history: history,
           };
         }),
@@ -261,7 +335,15 @@ export const usePlanStore = create<PlanState>()(
             }
             newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           }
-          return { semesters: newSemesters, _history: history };
+          return {
+            semesters: newSemesters,
+            dismissedRecommendedCourses: clearDismissedCourse(
+              state.dismissedRecommendedCourses,
+              state.trackId,
+              courseId,
+            ),
+            _history: history,
+          };
         }),
 
       toggleCompleted: (courseId) =>
@@ -536,6 +618,7 @@ export const usePlanStore = create<PlanState>()(
           englishTaughtCourses: migratedPlan.englishTaughtCourses ?? [],
           facultyColorOverrides: migratedPlan.facultyColorOverrides ?? {},
           completedInstances: migratedPlan.completedInstances ?? [],
+          dismissedRecommendedCourses: migratedPlan.dismissedRecommendedCourses ?? {},
           // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
           savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
           _history: [],
@@ -557,6 +640,8 @@ export const usePlanStore = create<PlanState>()(
           // Remove saved state for current track so it re-initializes fresh
           const savedTracks = { ...state.savedTracks };
           if (state.trackId) delete savedTracks[state.trackId];
+          const dismissedRecommendedCourses = { ...(state.dismissedRecommendedCourses ?? {}) };
+          if (state.trackId) delete dismissedRecommendedCourses[state.trackId];
           return {
             trackId: state.trackId,
             semesters: { ...DEFAULT_SEMESTER_MAP },
@@ -581,6 +666,7 @@ export const usePlanStore = create<PlanState>()(
             englishTaughtCourses: [],
             facultyColorOverrides: {},
             completedInstances: [],
+            dismissedRecommendedCourses,
             savedTracks,
             _history: [],
             _initKey: state._initKey + 1,
