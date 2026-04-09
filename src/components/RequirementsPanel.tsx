@@ -310,10 +310,20 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
               <CompactRequirementRow
                 key={req.requirementId}
                 req={req}
-                targetValue={req.requirementId === 'melag' ? progress.general.required : undefined}
-                missingValue={req.requirementId === 'melag'
-                  ? Math.max(0, progress.general.required - req.completedValue)
-                  : undefined}
+                targetValue={
+                  req.requirementId === 'melag'
+                    ? progress.general.required
+                    : req.requirementId === 'english'
+                      ? req.targetValue
+                      : undefined
+                }
+                missingValue={
+                  req.requirementId === 'melag'
+                    ? Math.max(0, progress.general.required - req.completedValue)
+                    : req.requirementId === 'english'
+                      ? Math.max(0, req.targetValue - req.completedValue)
+                      : undefined
+                }
                 manualEnglishCourseIds={manualEnglishCourseIds}
                 englishTaughtCourses={englishTaughtCourses}
                 onToggleEnglishCourse={toggleEnglishTaughtCourse}

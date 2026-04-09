@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
-import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
+import { isCourseTaughtInEnglish, isMelagCourseId } from '../data/generalRequirements/courseClassification';
 
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
@@ -21,6 +21,7 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     english: false,
+    melag: false,
     winter: false,
     spring: false,
   });
@@ -57,10 +58,14 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
   }, []);
 
   const q = query.trim().toLowerCase();
-  const hasActiveFilters = filters.english || filters.winter || filters.spring;
+  const hasActiveFilters = filters.english || filters.melag || filters.winter || filters.spring;
 
   function matchesFilters(course: SapCourse): boolean {
     if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses ?? [])) {
+      return false;
+    }
+
+    if (filters.melag && !isMelagCourseId(course.id)) {
       return false;
     }
 
@@ -203,6 +208,14 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
           }`}
         >
           אנגלית
+        </button>
+        <button
+          onClick={() => toggleFilter('melag')}
+          className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+            filters.melag ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
+          }`}
+        >
+          מל"ג
         </button>
         <button
           onClick={() => toggleFilter('winter')}
