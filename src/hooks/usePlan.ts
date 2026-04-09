@@ -7,6 +7,7 @@ import {
   isCourseTaughtInEnglish,
   isMelagCourseId,
   isSportCourseId,
+  isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
 
 const PREREQ_EQUIVALENCES: string[][] = [
@@ -324,7 +325,9 @@ export function useRequirementsProgress(
     }
 
     const englishInPlan = englishRequirement?.countedCourses.map((course) => course.courseId) ?? [];
-    const englishCourseNamesInPlan = englishRequirement?.countedCourses.map((course) => course.name) ?? [];
+    const englishContentCourseNamesInPlan = englishRequirement?.countedCourses
+      .filter((course) => !isTechnicalEnglishCourseName(course.name))
+      .map((course) => course.name) ?? [];
     let englishRequirements: EnglishRequirementItem[] = [];
     if (englishScore !== undefined) {
       const advancedAName = englishPlaced.find((course) =>
@@ -342,11 +345,11 @@ export function useRequirementsProgress(
       } else if (englishScore >= 120 && englishScore <= 133) {
         englishRequirements = [
           { kind: 'advanced_b', label: "מתקדמים ב'", done: !!advancedBName, courseNames: advancedBName ? [advancedBName] : [] },
-          { kind: 'content_course', label: 'קורס תוכן באנגלית', done: englishCourseNamesInPlan.length >= 1, courseNames: englishCourseNamesInPlan.slice(0, 1), neededCount: 1 },
+          { kind: 'content_course', label: 'קורס תוכן באנגלית', done: englishContentCourseNamesInPlan.length >= 1, courseNames: englishContentCourseNamesInPlan.slice(0, 1), neededCount: 1 },
         ];
       } else if (englishScore >= 134 && englishScore <= 150) {
         englishRequirements = [
-          { kind: 'content_course', label: 'קורסי תוכן באנגלית', done: englishCourseNamesInPlan.length >= 2, courseNames: englishCourseNamesInPlan.slice(0, 2), neededCount: 2 },
+          { kind: 'content_course', label: 'קורסי תוכן באנגלית', done: englishContentCourseNamesInPlan.length >= 2, courseNames: englishContentCourseNamesInPlan.slice(0, 2), neededCount: 2 },
         ];
       }
     }
