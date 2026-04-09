@@ -195,6 +195,7 @@ interface Props {
     general: { earned: number; required: number };
     generalRequirements: GeneralRequirementProgress[];
     labPoolProgress: { earned: number; required: number; mandatory: boolean; max?: number } | null;
+    coreRequirementProgress: { completed: number; required: number; total: number } | null;
     english: {
       placed: { id: string; name: string }[];
       hasExemption: boolean;
@@ -234,6 +235,24 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
 
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
+      {progress.coreRequirementProgress && (() => {
+        const { completed, required } = progress.coreRequirementProgress!;
+        const done = completed >= required;
+        const pct = Math.min(100, (completed / required) * 100);
+        return (
+          <div className="mb-3">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm text-gray-700">קורסי ליבה</span>
+              <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}`}>
+                {completed} / {required} {done ? 'קורסים ✓' : 'קורסים'}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className={`h-2 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-orange-500'}`} style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        );
+      })()}
       <ProgressRow label={'סה"כ נקודות'} earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
 
       <div className="mb-2 flex items-center gap-2">

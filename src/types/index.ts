@@ -12,6 +12,7 @@ export interface SapCourse {
   teachingSemester?: 'winter' | 'spring';  // undefined = both
   isEnglish?: boolean;
   sapAverage?: number;  // grade average from SAP data, if available
+  dismissedRecommendedCourses?: Record<string, string[]>;  // trackId -> auto-seeded course IDs removed intentionally by the user
 }
 
 export interface TrackDefinition {
@@ -29,6 +30,10 @@ export interface TrackDefinition {
     required: number;     // mandatory minimum (0 = purely optional)
     mandatory?: boolean;  // true → first `required` placed labs count as mandatory credits
     max?: number;         // max labs that count for any credit (beyond this = uncredited)
+  };
+  coreRequirement?: {
+    courses: string[];
+    required: number;     // "complete N out of courses.length"
   };
 }
 

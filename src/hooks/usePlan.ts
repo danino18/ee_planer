@@ -356,6 +356,14 @@ export function useRequirementsProgress(
 
     const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
 
+    const coreProgress = trackDef.coreRequirement
+      ? {
+          completed: trackDef.coreRequirement.courses.filter((id) => allPlaced.has(id)).length,
+          required: trackDef.coreRequirement.required,
+          total: trackDef.coreRequirement.courses.length,
+        }
+      : null;
+
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
@@ -383,6 +391,7 @@ export function useRequirementsProgress(
             max: trackDef.labPool.max,
           }
         : null,
+      coreRequirementProgress: coreProgress,
       english: {
         placed: englishPlaced,
         hasExemption: hasEnglishExemption,
@@ -395,7 +404,8 @@ export function useRequirementsProgress(
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
         completedCount >= trackDef.specializationGroupsRequired &&
-        totalCredits >= trackDef.totalCreditsRequired,
+        totalCredits >= trackDef.totalCreditsRequired &&
+        (!coreProgress || coreProgress.completed >= coreProgress.required),
     };
   }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder]);
 }

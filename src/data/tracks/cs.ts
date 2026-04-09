@@ -9,6 +9,10 @@ export const csTrack: TrackDefinition = {
   electiveCreditsRequired: 41,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 2,
+  coreRequirement: {
+    courses: ['00440140','00440191','00440198','00440202','00460195','00460237','00460266'],
+    required: 4,
+  },
   semesterSchedule: [
     {
       semester: 1,
