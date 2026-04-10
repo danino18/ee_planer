@@ -26,6 +26,9 @@
 - Deploy workflow → `docs/deploy.md`
 - SAP data sync → `docs/data-sync.md`
 
+## Compact Guidance
+When compacting, preserve: list of modified files, pending commands, current task context.
+
 ## Memory
 - Session state lives in the auto-memory system at:
   `~/.claude/projects/C--Users-eyald-OneDrive---Technion-planer-ee/memory/current_focus.md`
