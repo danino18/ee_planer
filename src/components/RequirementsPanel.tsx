@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { memo, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
@@ -220,21 +221,48 @@ interface Props {
   weightedAverage: number | null;
 }
 
-export function RequirementsPanel({ progress, weightedAverage }: Props) {
-  const { setMiluimCredits, setEnglishScore, toggleEnglishTaughtCourse } = usePlanStore();
-  const miluimCredits = usePlanStore((s) => s.miluimCredits);
-  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
-  const [miluimInput, setMiluimInput] = useState<string>(miluimCredits?.toString() ?? '');
+export const RequirementsPanel = memo(function RequirementsPanel({ progress, weightedAverage }: Props) {
+  const {
+    setMiluimCredits,
+    setEnglishScore,
+    toggleEnglishTaughtCourse,
+    miluimCredits,
+    englishTaughtCourses,
+  } = usePlanStore(useShallow((state) => ({
+    setMiluimCredits: state.setMiluimCredits,
+    setEnglishScore: state.setEnglishScore,
+    toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
+    miluimCredits: state.miluimCredits,
+    englishTaughtCourses: state.englishTaughtCourses ?? [],
+  })));
+  const compactRequirements = useMemo(() => (
+    (progress?.generalRequirements ?? []).filter((req) => (
+      req.requirementId === 'free_elective' ||
+      req.requirementId === 'general_electives' ||
+      req.requirementId === 'english' ||
+      req.requirementId === 'sport' ||
+      req.requirementId === 'labs'
+    ))
+  ), [progress?.generalRequirements]);
+
+  const manualEnglishCourseIdsByRequirement = useMemo(() => {
+    const idsByRequirement = new Map<string, string[]>();
+    for (const requirement of compactRequirements) {
+      if (requirement.requirementId !== 'free_elective') continue;
+
+      idsByRequirement.set(
+        requirement.requirementId,
+        requirement.countedCourses
+          .filter((course) => isManualEnglishEligible(course.courseId))
+          .map((course) => course.courseId),
+      );
+    }
+    return idsByRequirement;
+  }, [compactRequirements]);
+
   if (!progress) return null;
 
   const isMiluim = miluimCredits !== undefined;
-  const compactRequirements = progress.generalRequirements.filter((req) => (
-    req.requirementId === 'free_elective' ||
-    req.requirementId === 'general_electives' ||
-    req.requirementId === 'english' ||
-    req.requirementId === 'sport' ||
-    req.requirementId === 'labs'
-  ));
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -275,10 +303,8 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
             onChange={(event) => {
               if (event.target.checked) {
                 setMiluimCredits(0);
-                setMiluimInput('0');
               } else {
                 setMiluimCredits(null);
-                setMiluimInput('');
               }
             }}
             className="rounded"
@@ -288,12 +314,12 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
         {isMiluim && (
           <div className="flex items-center gap-1">
             <input
+              key={miluimCredits ?? 'empty'}
               type="number"
               min={0}
               max={10}
-              value={miluimInput}
+              defaultValue={miluimCredits ?? ''}
               onChange={(event) => {
-                setMiluimInput(event.target.value);
                 const parsed = parseInt(event.target.value, 10);
                 if (!Number.isNaN(parsed)) setMiluimCredits(parsed);
               }}
@@ -331,11 +357,7 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
 
         <div className="space-y-2 pt-1">
           {compactRequirements.map((req) => {
-            const manualEnglishCourseIds = req.requirementId === 'free_elective'
-              ? req.countedCourses
-                .filter((course) => isManualEnglishEligible(course.courseId))
-                .map((course) => course.courseId)
-              : [];
+            const manualEnglishCourseIds = manualEnglishCourseIdsByRequirement.get(req.requirementId) ?? [];
 
             return (
               <CompactRequirementRow
@@ -379,4 +401,6 @@ export function RequirementsPanel({ progress, weightedAverage }: Props) {
       </div>
     </div>
   );
-}
+});
+
+RequirementsPanel.displayName = 'RequirementsPanel';

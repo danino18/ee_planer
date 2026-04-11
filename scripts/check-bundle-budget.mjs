@@ -10,6 +10,14 @@ const BUDGET = {
   entryJsRawBytes: 220 * 1024,
   entryJsGzipBytes: 70 * 1024,
   largestJsGzipBytes: 95 * 1024,
+  requiredDynamicEntries: {
+    'src/components/CourseDetailModal.tsx': {
+      maxGzipBytes: 20 * 1024,
+    },
+    'src/components/SpecializationGroupModal.tsx': {
+      maxGzipBytes: 12 * 1024,
+    },
+  },
 };
 
 const metrics = collectBundleMetrics(DIST_DIR);

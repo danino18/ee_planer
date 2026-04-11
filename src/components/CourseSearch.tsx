@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
@@ -15,7 +15,7 @@ interface Props {
   onCourseAdded?: (courseName: string, semesterLabel: string) => void;
 }
 
-export function CourseSearch({ courses, onCourseAdded }: Props) {
+export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded }: Props) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'search' | 'favorites'>('search');
@@ -301,4 +301,6 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
       )}
     </div>
   );
-}
+});
+
+CourseSearch.displayName = 'CourseSearch';

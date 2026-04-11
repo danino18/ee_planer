@@ -1,6 +1,7 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import type { StudentPlan } from '../types';
+import { sanitizeStudentPlan } from './planValidation';
 
 type FirestoreLikeError = Error & { code?: string };
 
@@ -48,7 +49,15 @@ export function subscribeToCloudPlan(
     planRef,
     (snap) => {
       if (snap.exists()) {
-        onData(snap.data() as StudentPlan);
+        const plan = sanitizeStudentPlan(snap.data());
+        if (!plan) {
+          const error = new Error('Cloud plan payload is invalid');
+          console.error('[cloudSync] invalid plan payload:', snap.data());
+          onError?.(error);
+          return;
+        }
+
+        onData(plan);
       } else {
         onNotFound();
       }

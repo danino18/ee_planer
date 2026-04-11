@@ -14,7 +14,7 @@
     "lint:functions": "npm --prefix functions run lint",
     "analyze:bundle": "node scripts/check-bundle-budget.mjs",
     "perf:bundle": "npm run build && npm run analyze:bundle",
-    "check": "npm run lint && npm run test && npm run build && npm run analyze:bundle && npm run build:functions && npm run lint:functions",
+    "check": "powershell -ExecutionPolicy Bypass -File scripts/run-checks.ps1",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, memo, Suspense, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
@@ -25,7 +25,7 @@ const LazyCourseDetailModal = lazy(async () => {
   return { default: module.CourseDetailModal };
 });
 
-export function CourseCard({
+export const CourseCard = memo(function CourseCard({
   course,
   isMandatory,
   hasPrereqWarning,
@@ -244,4 +244,6 @@ export function CourseCard({
       )}
     </>
   );
-}
+});
+
+CourseCard.displayName = 'CourseCard';

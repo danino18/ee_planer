@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useShallow } from 'zustand/react/shallow';
 import type { SpecializationGroup, SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
@@ -10,14 +12,31 @@ interface Props {
 }
 
 export function SpecializationGroupModal({ group, courses, onClose }: Props) {
-  const { favorites, toggleFavorite, semesters, completedCourses, addCourseToSemester } = usePlanStore();
-  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
-  const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
+  const {
+    favorites,
+    toggleFavorite,
+    semesters,
+    completedCourses,
+    addCourseToSemester,
+    englishTaughtCourses,
+  } = usePlanStore(useShallow((state) => ({
+    favorites: state.favorites,
+    toggleFavorite: state.toggleFavorite,
+    semesters: state.semesters,
+    completedCourses: state.completedCourses,
+    addCourseToSemester: state.addCourseToSemester,
+    englishTaughtCourses: state.englishTaughtCourses ?? [],
+  })));
+  const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
+  const allPlaced = useMemo(
+    () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
+    [completedCourses, semesters],
+  );
 
   const renderCourse = (id: string) => {
     const course = courses.get(id);
     const inPlan = allPlaced.has(id);
-    const isFav = favorites.includes(id);
+    const isFav = favoriteSet.has(id);
     const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
     const seasonLabel = course?.teachingSemester === 'winter'
       ? '❄️'

@@ -297,6 +297,7 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
     hasEnglishExemption: cleanBoolean(source.hasEnglishExemption, "hasEnglishExemption"),
     manualSapAverages: cleanNumberRecord(source.manualSapAverages, "manualSapAverages", 0, 100),
     binaryPass: cleanBooleanRecord(source.binaryPass, "binaryPass"),
+    completedInstances: cleanStringArray(source.completedInstances, "completedInstances", MAX_COURSES, 64),
     englishTaughtCourses: cleanStringArray(source.englishTaughtCourses, "englishTaughtCourses", MAX_COURSES),
     dismissedRecommendedCourses: cleanDismissedRecommendedCourses(source.dismissedRecommendedCourses),
     facultyColorOverrides: cleanStringRecord(

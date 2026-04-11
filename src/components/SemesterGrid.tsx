@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, useSensor, useSensors,
@@ -42,7 +42,7 @@ interface Props {
   specializations?: SpecializationGroup[];
 }
 
-export function SemesterGrid({ courses, trackDef, specializations }: Props) {
+export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, specializations }: Props) {
   const {
     semesters, moveCourse, addCourseToSemester, completedCourses, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
@@ -94,11 +94,11 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     return result;
   }, [trackDef, semesters, semesterOrder]);
 
-  const mandatoryIds = new Set([
+  const mandatoryIds = useMemo(() => new Set([
     ...trackDef.semesterSchedule.flatMap((s) => s.courses),
     ...mandatoryLabIds,
-  ]);
-  const completedSet = new Set(completedCourses);
+  ]), [trackDef.semesterSchedule, mandatoryLabIds]);
+  const completedSet = useMemo(() => new Set(completedCourses), [completedCourses]);
 
   // Map courseId → chain name for selected specializations
   const courseChainMap = useMemo(() => {
@@ -137,12 +137,15 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
 
   // Effective completed: explicit completedCourses + all courses in semesters before currentSemester
-  const effectiveCompleted = new Set<string>(completedCourses);
-  if (currentSemester !== null) {
-    for (let s = 1; s < currentSemester; s++) {
-      for (const id of semesters[s] ?? []) effectiveCompleted.add(id);
+  const effectiveCompleted = useMemo(() => {
+    const completed = new Set<string>(completedCourses);
+    if (currentSemester !== null) {
+      for (let s = 1; s < currentSemester; s++) {
+        for (const id of semesters[s] ?? []) completed.add(id);
+      }
     }
-  }
+    return completed;
+  }, [completedCourses, currentSemester, semesters]);
 
   function parseInstanceKey(rawId: string): { courseId: string; semFrom: number } {
     // instanceKey format: `${courseId}__${semester}__${idx}`
@@ -428,4 +431,6 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
       </DragOverlay>
     </DndContext>
   );
-}
+});
+
+SemesterGrid.displayName = 'SemesterGrid';

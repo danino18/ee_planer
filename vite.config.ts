@@ -9,6 +9,7 @@ export default defineConfig({
     react(),
   ],
   build: {
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks(id) {

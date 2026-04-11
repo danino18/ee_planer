@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { TRACK_SPECIALIZATIONS } from '../constants';
@@ -19,7 +20,20 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
     trackId,
     binaryPass, setBinaryPass,
     removeCourseFromSemester,
-  } = usePlanStore();
+  } = usePlanStore(useShallow((state) => ({
+    grades: state.grades,
+    setGrade: state.setGrade,
+    substitutions: state.substitutions,
+    setSubstitution: state.setSubstitution,
+    completedCourses: state.completedCourses,
+    semesters: state.semesters,
+    selectedPrereqGroups: state.selectedPrereqGroups,
+    setSelectedPrereqGroup: state.setSelectedPrereqGroup,
+    trackId: state.trackId,
+    binaryPass: state.binaryPass,
+    setBinaryPass: state.setBinaryPass,
+    removeCourseFromSemester: state.removeCourseFromSemester,
+  })));
 
   const chainMemberships = useMemo(() => {
     const allSpecs = TRACK_SPECIALIZATIONS[trackId ?? 'ee'] ?? [];
@@ -41,10 +55,19 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
   const [subSearch, setSubSearch] = useState('');
   const [customSearch, setCustomSearch] = useState('');
+  const deferredSubSearch = useDeferredValue(subSearch);
+  const deferredCustomSearch = useDeferredValue(customSearch);
 
   const allInPlan = useMemo(
     () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
     [completedCourses, semesters]
+  );
+  const searchableCourses = useMemo(
+    () => Array.from(courses.values()).map((candidate) => ({
+      course: candidate,
+      lowerName: candidate.name.toLowerCase(),
+    })),
+    [courses],
   );
 
   // Prereq path selection state
@@ -65,35 +88,57 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
 
   // Substitution search results
   const subResults = useMemo(() => {
-    const q = subSearch.trim();
+    const q = deferredSubSearch.trim();
     if (q.length < 2) return [];
     const lower = q.toLowerCase();
     const results: SapCourse[] = [];
-    for (const c of courses.values()) {
-      if (c.id === course.id) continue;
-      if (c.id.includes(q) || c.name.toLowerCase().includes(lower)) {
-        results.push(c);
+    for (const { course: candidate, lowerName } of searchableCourses) {
+      if (candidate.id === course.id) continue;
+      if (candidate.id.includes(q) || lowerName.includes(lower)) {
+        results.push(candidate);
         if (results.length >= 6) break;
       }
     }
     return results;
-  }, [subSearch, courses, course.id]);
+  }, [deferredSubSearch, searchableCourses, course.id]);
 
   // Custom group course search results
   const customResults = useMemo(() => {
-    const q = customSearch.trim();
+    const q = deferredCustomSearch.trim();
     if (q.length < 2) return [];
     const lower = q.toLowerCase();
     const results: SapCourse[] = [];
-    for (const c of courses.values()) {
-      if (c.id === course.id || customGroup.includes(c.id)) continue;
-      if (c.id.includes(q) || c.name.toLowerCase().includes(lower)) {
-        results.push(c);
+    for (const { course: candidate, lowerName } of searchableCourses) {
+      if (candidate.id === course.id || customGroup.includes(candidate.id)) continue;
+      if (candidate.id.includes(q) || lowerName.includes(lower)) {
+        results.push(candidate);
         if (results.length >= 5) break;
       }
     }
     return results;
-  }, [customSearch, courses, course.id, customGroup]);
+  }, [deferredCustomSearch, searchableCourses, course.id, customGroup]);
+
+  useEffect(() => {
+    setIsBinaryMode(isBinaryPass);
+  }, [isBinaryPass]);
+
+  useEffect(() => {
+    setGradeInput(currentGrade !== undefined ? String(currentGrade) : '');
+  }, [currentGrade]);
+
+  useEffect(() => {
+    setSubSearch('');
+    setCustomSearch('');
+  }, [course.id]);
+
+  useEffect(() => {
+    setMode(
+      savedGroup === undefined ? 'auto'
+      : savedIdx >= 0 ? savedIdx
+      : 'custom',
+    );
+    setCustomGroup(savedGroup && savedIdx < 0 ? savedGroup : []);
+  }, [savedGroup, savedIdx, course.id]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

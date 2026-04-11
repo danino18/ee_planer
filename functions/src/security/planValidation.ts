@@ -18,6 +18,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "hasEnglishExemption",
   "manualSapAverages",
   "binaryPass",
+  "completedInstances",
   "savedTracks",
   "miluimCredits",
   "englishScore",
@@ -476,6 +477,14 @@ function validateStudentPlanRecord(
       return binaryPass;
     }
     sanitized.binaryPass = binaryPass;
+  }
+
+  if ("completedInstances" in value) {
+    const completedInstances = validateStringArray("completedInstances", value.completedInstances, 600, 64);
+    if (isValidationFailure(completedInstances)) {
+      return completedInstances;
+    }
+    sanitized.completedInstances = completedInstances;
   }
 
   if ("savedTracks" in value) {

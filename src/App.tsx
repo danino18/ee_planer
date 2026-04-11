@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { fetchCourses } from './services/sapApi';
 import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
@@ -21,7 +21,6 @@ import { ceTrack } from './data/tracks/ce';
 import type { SapCourse, TrackDefinition, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 import { TRACK_SPECIALIZATIONS } from './constants';
-import { AUTO_SEEDED_POOL_IDS } from './store/planStore';
 
 // UI timing constants
 const TOAST_DURATION_MS = 2500;
@@ -51,6 +50,7 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPl
     hasEnglishExemption: state.hasEnglishExemption,
     manualSapAverages: state.manualSapAverages,
     binaryPass: state.binaryPass,
+    completedInstances: state.completedInstances,
     savedTracks: state.savedTracks,
     dismissedRecommendedCourses: state.dismissedRecommendedCourses,
     miluimCredits: state.miluimCredits,
@@ -113,11 +113,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleCourseAdded(courseName: string, semesterLabel: string) {
+  const handleCourseAdded = useCallback((courseName: string, semesterLabel: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ message: `${courseName} נוסף ל${semesterLabel}`, visible: true });
     toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
-  }
+  }, []);
 
   useEffect(() => {
     if (trackId === 'ce' && (semesters[4] ?? []).includes('01140073')) {
@@ -140,12 +140,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           addCourseToSemester(id, semester);
           alreadyInitialized.add(id);
         }
-      }
-    }
-
-    for (const id of AUTO_SEEDED_POOL_IDS) {
-      if (courses.has(id) && !(semesters[0] ?? []).includes(id) && !dismissedForTrack.has(id)) {
-        addCourseToSemester(id, 0);
       }
     }
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses]);

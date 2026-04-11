@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useDeferredValue, useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -46,7 +46,7 @@ function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean,
   return 'border-gray-200 bg-gray-50/50';
 }
 
-export function SemesterColumn({
+export const SemesterColumn = memo(function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode,
@@ -60,6 +60,7 @@ export function SemesterColumn({
     transform, transition, isDragging,
   } = useSortable({ id: `col-${semester}` });
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
 
   const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
   const columnStyle = getColumnStyle(isOver, !!(isDraggingActive && semester > 0), isSummer, isCurrent, isPast, isFuture);
@@ -71,13 +72,18 @@ export function SemesterColumn({
       : `סמסטר ${SEM_LABELS[semester]}`;
 
   // Filter for search in the unassigned column
-  const filteredIds = (semester === 0 && search.trim())
-    ? courseIds.filter((id) => {
-        const c = courses.get(id);
-        const q = search.trim();
-        return c?.name.includes(q) || id.includes(q);
-      })
-    : courseIds;
+  const filteredIds = useMemo(() => {
+    const trimmedSearch = deferredSearch.trim();
+    if (semester !== 0 || !trimmedSearch) {
+      return courseIds;
+    }
+
+    const normalizedSearch = trimmedSearch.toLowerCase();
+    return courseIds.filter((id) => {
+      const course = courses.get(id);
+      return id.includes(trimmedSearch) || course?.name.toLowerCase().includes(normalizedSearch);
+    });
+  }, [semester, deferredSearch, courseIds, courses]);
 
   const sortableStyle = semester > 0 ? {
     transform: CSS.Transform.toString(transform),
@@ -235,4 +241,6 @@ export function SemesterColumn({
       </div>
     </div>
   );
-}
+});
+
+SemesterColumn.displayName = 'SemesterColumn';
