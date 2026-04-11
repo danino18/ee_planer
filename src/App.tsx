@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { fetchCourses } from './services/sapApi';
 import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
@@ -17,10 +18,16 @@ import { eeMathTrack } from './data/tracks/ee_math';
 import { eePhysicsTrack } from './data/tracks/ee_physics';
 import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
-import { eeSpecializations } from './data/specializations/ee_specializations';
-import { csSpecializations } from './data/specializations/cs_specializations';
-import type { SapCourse, TrackDefinition, SpecializationGroup, StudentPlan } from './types';
+import type { SapCourse, TrackDefinition, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
+import { TRACK_SPECIALIZATIONS } from './constants';
+import { AUTO_SEEDED_POOL_IDS } from './store/planStore';
+
+// UI timing constants
+const TOAST_DURATION_MS = 2500;
+const SAVE_DEBOUNCE_MS = 2000;
+const TRACK_SWITCH_DEBOUNCE_MS = 800;
+const SYNC_RETRY_DELAY_MS = 5000;
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
@@ -57,17 +64,7 @@ function getPlanSignature(plan: StudentPlan): string {
   return JSON.stringify(plan);
 }
 
-const SPECS: Record<string, SpecializationGroup[]> = {
-  ee: eeSpecializations,
-  cs: csSpecializations,
-  ee_math: eeSpecializations,
-  ee_physics: eeSpecializations,
-  ee_combined: eeSpecializations,
-  ce: eeSpecializations,
-};
-
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
-  const store = usePlanStore();
   const {
     trackId,
     resetPlan,
@@ -79,12 +76,27 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     addCourseToSemester,
     removeCourseFromSemester,
     loadPlan,
-  } = store;
-  const _history = usePlanStore((s) => s._history);
-  const _initKey = usePlanStore((s) => s._initKey);
-  const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
-  const dismissedRecommendedCourses = usePlanStore((s) => s.dismissedRecommendedCourses);
-  const specs = SPECS[trackId ?? 'ee'] ?? [];
+    _history,
+    _initKey,
+    isSwitchingTrack,
+    dismissedRecommendedCourses,
+  } = usePlanStore(useShallow((state) => ({
+    trackId: state.trackId,
+    resetPlan: state.resetPlan,
+    beginTrackSwitch: state.beginTrackSwitch,
+    finishTrackSwitch: state.finishTrackSwitch,
+    resetToDefault: state.resetToDefault,
+    undo: state.undo,
+    semesters: state.semesters,
+    addCourseToSemester: state.addCourseToSemester,
+    removeCourseFromSemester: state.removeCourseFromSemester,
+    loadPlan: state.loadPlan,
+    _history: state._history,
+    _initKey: state._initKey,
+    isSwitchingTrack: state.isSwitchingTrack,
+    dismissedRecommendedCourses: state.dismissedRecommendedCourses,
+  })));
+  const specs = TRACK_SPECIALIZATIONS[trackId ?? 'ee'] ?? [];
   const progress = useRequirementsProgress(courses, trackDef, specs);
   const weightedAverage = useWeightedAverage(courses);
 
@@ -104,7 +116,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   function handleCourseAdded(courseName: string, semesterLabel: string) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ message: `${courseName} נוסף ל${semesterLabel}`, visible: true });
-    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2500);
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
   }
 
   useEffect(() => {
@@ -131,8 +143,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       }
     }
 
-    const sportPoolIds = ['03940900', '03940902'];
-    for (const id of sportPoolIds) {
+    for (const id of AUTO_SEEDED_POOL_IDS) {
       if (courses.has(id) && !(semesters[0] ?? []).includes(id) && !dismissedForTrack.has(id)) {
         addCourseToSemester(id, 0);
       }
@@ -180,7 +191,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     lastLoadedUid.current = user.uid;
     const uid = user.uid;
 
-    const scheduleRetrySave = (delay = 5000, onSuccess?: () => void) => {
+    const scheduleRetrySave = (delay = SYNC_RETRY_DELAY_MS, onSuccess?: () => void) => {
       if (retryTimer.current) clearTimeout(retryTimer.current);
       retryTimer.current = setTimeout(() => {
         void doSave(onSuccess);
@@ -192,7 +203,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       if (isRetryableSyncError(error)) {
         setSyncStatus('error');
         setSyncErrorMessage(`${message}. ננסה שוב אוטומטית.`);
-        scheduleRetrySave(5000, onSuccess);
+        scheduleRetrySave(SYNC_RETRY_DELAY_MS, onSuccess);
         return;
       }
 
@@ -227,13 +238,13 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
           void doSave(finishTrackSwitch);
-        }, 800);
+        }, TRACK_SWITCH_DEBOUNCE_MS);
       });
 
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         void doSave(finishTrackSwitch);
-      }, 800);
+      }, TRACK_SWITCH_DEBOUNCE_MS);
 
       return () => {
         unsubStore();
@@ -244,7 +255,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     const unsubSnapshot = subscribeToCloudPlan(
       uid,
       (cloudPlan) => {
-        if (Date.now() - lastSaveTime.current < 5000) return;
+        if (Date.now() - lastSaveTime.current < SYNC_RETRY_DELAY_MS) return;
         const cloudSignature = getPlanSignature(cloudPlan);
         if (cloudSignature === latestLocalSignature.current) return;
         applyingCloudPlan.current = true;
@@ -269,7 +280,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         void doSave();
-      }, 2000);
+      }, SAVE_DEBOUNCE_MS);
     });
 
     const handleVisibilityChange = () => {

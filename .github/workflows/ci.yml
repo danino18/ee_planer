@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install functions dependencies
+        run: npm --prefix functions ci
+
+      - name: Lint app
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test
+
+      - name: Build app
+        run: npm run build
+
+      - name: Check bundle budget
+        run: npm run analyze:bundle
+
+      - name: Build functions
+        run: npm run build:functions
+
+      - name: Lint functions
+        run: npm run lint:functions

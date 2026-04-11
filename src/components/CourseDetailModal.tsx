@@ -1,14 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { SapCourse, SpecializationGroup } from '../types';
+import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey } from '../store/planStore';
-import { eeSpecializations } from '../data/specializations/ee_specializations';
-import { csSpecializations } from '../data/specializations/cs_specializations';
-
-const TRACK_SPECS: Record<string, SpecializationGroup[]> = {
-  ee: eeSpecializations, cs: csSpecializations,
-  ee_math: eeSpecializations, ee_physics: eeSpecializations,
-  ee_combined: eeSpecializations, ce: eeSpecializations,
-};
+import { TRACK_SPECIALIZATIONS } from '../constants';
 
 interface Props {
   course: SapCourse;
@@ -29,7 +22,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
   } = usePlanStore();
 
   const chainMemberships = useMemo(() => {
-    const allSpecs = TRACK_SPECS[trackId ?? 'ee'] ?? [];
+    const allSpecs = TRACK_SPECIALIZATIONS[trackId ?? 'ee'] ?? [];
     return allSpecs
       .filter((g) =>
         g.mandatoryCourses.includes(course.id) || g.electiveCourses.includes(course.id)

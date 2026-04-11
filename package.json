@@ -6,8 +6,15 @@
   "scripts": {
     "sync:general-requirements": "node scripts/sync-general-requirements.mjs",
     "dev": "vite",
-    "build": "npm run sync:general-requirements && npx tsc -b && npx vite build",
+    "typecheck": "tsc -b",
+    "build": "npm run sync:general-requirements && npm run typecheck && vite build",
     "lint": "eslint .",
+    "test": "node scripts/run-tests.mjs",
+    "build:functions": "npm --prefix functions run build",
+    "lint:functions": "npm --prefix functions run lint",
+    "analyze:bundle": "node scripts/check-bundle-budget.mjs",
+    "perf:bundle": "npm run build && npm run analyze:bundle",
+    "check": "npm run lint && npm run test && npm run build && npm run analyze:bundle && npm run build:functions && npm run lint:functions",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -20,6 +20,7 @@ interface RawSapCourse {
 }
 
 let courseCache: Map<string, SapCourse> | null = null;
+let courseCachePromise: Promise<Map<string, SapCourse>> | null = null;
 
 // Split on " או " to get OR-alternatives; within each alternative extract all 8-digit IDs (AND-requirements).
 // Example: "(A ו-B) או (C ו-D)" → [[A,B],[C,D]]
@@ -33,16 +34,24 @@ function parsePrerequisites(prereqStr?: string): string[][] {
 
 export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   if (courseCache) return courseCache;
+  if (courseCachePromise) return courseCachePromise;
 
-  const semRes = await fetch(`${BASE_URL}/last_semesters.json`);
-  const semesters: SapSemester[] = await semRes.json();
+  courseCachePromise = (async () => {
+    const semRes = await fetch(`${BASE_URL}/last_semesters.json`);
+    if (!semRes.ok) {
+      throw new Error(`Failed to fetch semesters: ${semRes.status}`);
+    }
+    const semesters: SapSemester[] = await semRes.json();
 
-  // Fetch ALL listed semesters in parallel for full course name coverage
-  const maps = await Promise.all(
+    // Fetch ALL listed semesters in parallel for full course name coverage
+    const maps = await Promise.all(
     semesters.map(async (sem) => {
       try {
         const url = `${BASE_URL}/courses_${sem.year}_${sem.semester}.json`;
         const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch ${url}: ${res.status}`);
+        }
         const rawData: Record<string, RawSapCourse> = await res.json();
         const m = new Map<string, SapCourse>();
         for (const [, course] of Object.entries(rawData)) {
@@ -199,5 +208,13 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   }
 
   courseCache = merged;
-  return merged;
+    return merged;
+  })();
+
+  try {
+    return await courseCachePromise;
+  } catch (error) {
+    courseCachePromise = null;
+    throw error;
+  }
 }

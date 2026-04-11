@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
+import type { EnglishRequirementItem } from '../hooks/usePlan';
 
 interface ProgressRowProps {
   label: string;
@@ -28,14 +29,6 @@ function ProgressRow({ label, earned, required, color }: ProgressRowProps) {
     </div>
   );
 }
-
-type EnglishRequirementItem = {
-  kind: 'advanced_a' | 'advanced_b' | 'content_course';
-  label: string;
-  done: boolean;
-  courseNames: string[];
-  neededCount?: number;
-};
 
 interface CompactRequirementRowProps {
   req: GeneralRequirementProgress;

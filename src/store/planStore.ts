@@ -56,6 +56,9 @@ export const REPEATABLE_COURSES = new Set([
   '03940900', '03940901', '03940902', '03940800',
 ]);
 
+// Maximum number of semesters a student can have (including summer semesters)
+export const MAX_SEMESTERS = 16;
+
 // Returns the grade storage key for a course.
 // For repeatable courses placed in a specific semester, uses courseId_semester
 // so each instance can have its own grade.
@@ -75,7 +78,9 @@ const CE_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
 };
 
 const TRACKS = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
-const AUTO_SEEDED_POOL_IDS = ['03940900', '03940902'];
+
+// Sport/PE pool courses auto-placed in the unassigned column on first load
+export const AUTO_SEEDED_POOL_IDS = ['03940900', '03940902'];
 
 const AUTO_SEEDED_COURSES_BY_TRACK = Object.fromEntries(
   TRACKS.map((track) => [
@@ -430,7 +435,7 @@ export const usePlanStore = create<PlanState>()(
       addSemester: () =>
         set((state) => {
           const next = state.maxSemester + 1;
-          if (next > 16) return state;
+          if (next > MAX_SEMESTERS) return state;
           const history = pushHistory(state);
           return {
             maxSemester: next,
@@ -443,7 +448,7 @@ export const usePlanStore = create<PlanState>()(
       addSummerSemester: () =>
         set((state) => {
           const next = state.maxSemester + 1;
-          if (next > 16) return state;
+          if (next > MAX_SEMESTERS) return state;
           const history = pushHistory(state);
           // Insert summer BEFORE the last regular (non-summer) semester so that
           // courses placed in it are recognized as prereqs by subsequent semesters.

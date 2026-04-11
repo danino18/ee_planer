@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
@@ -32,7 +33,21 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
     semesterOrder,
     summerSemesters,
     englishTaughtCourses,
-  } = usePlanStore();
+  } = usePlanStore(useShallow((state) => ({
+    favorites: state.favorites,
+    addCourseToSemester: state.addCourseToSemester,
+    semesterOrder: state.semesterOrder,
+    summerSemesters: state.summerSemesters,
+    englishTaughtCourses: state.englishTaughtCourses ?? [],
+  })));
+  const deferredQuery = useDeferredValue(query);
+  const indexedCourses = useMemo(
+    () => [...courses.values()].map((course) => ({
+      course,
+      lowerName: course.name.toLowerCase(),
+    })),
+    [courses],
+  );
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -57,11 +72,11 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
     };
   }, []);
 
-  const q = query.trim().toLowerCase();
+  const q = deferredQuery.trim().toLowerCase();
   const hasActiveFilters = filters.english || filters.melag || filters.winter || filters.spring;
 
-  function matchesFilters(course: SapCourse): boolean {
-    if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses ?? [])) {
+  const matchesFilters = useCallback((course: SapCourse): boolean => {
+    if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) {
       return false;
     }
 
@@ -78,24 +93,33 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
     }
 
     return true;
-  }
+  }, [englishTaughtCourses, filters]);
 
-  const searchResults: SapCourse[] = q.length >= 2
-    ? [...courses.values()]
-      .filter((course) => (course.id.includes(q) || course.name.toLowerCase().includes(q)) && matchesFilters(course))
-      .slice(0, 12)
-    : hasActiveFilters
-      ? [...courses.values()].filter(matchesFilters).slice(0, 12)
-      : [];
+  const searchResults = useMemo(() => {
+    if (q.length < 2 && !hasActiveFilters) return [];
 
-  const favoriteCourses: SapCourse[] = favorites
-    .map((id) => courses.get(id))
-    .filter((course): course is SapCourse => !!course)
-    .filter(matchesFilters);
+    const results: SapCourse[] = [];
+    for (const { course, lowerName } of indexedCourses) {
+      if (!matchesFilters(course)) continue;
+      if (q.length >= 2 && !course.id.includes(q) && !lowerName.includes(q)) continue;
+      results.push(course);
+      if (results.length >= 12) break;
+    }
 
-  const showDropdown = open && (tab === 'favorites' || q.length >= 2 || hasActiveFilters);
+    return results;
+  }, [hasActiveFilters, indexedCourses, q, matchesFilters]);
 
-  const semesterOptions = [
+  const favoriteCourses = useMemo(
+    () => favorites
+      .map((id) => courses.get(id))
+      .filter((course): course is SapCourse => !!course)
+      .filter(matchesFilters),
+    [courses, favorites, matchesFilters],
+  );
+
+  const showDropdown = open && (tab === 'favorites' || query.trim().length >= 2 || hasActiveFilters);
+
+  const semesterOptions = useMemo(() => [
     { label: 'ללא שיבוץ', value: 0 },
     ...semesterOrder.map((sem) => ({
       label: summerSemesters.includes(sem)
@@ -103,7 +127,7 @@ export function CourseSearch({ courses, onCourseAdded }: Props) {
         : `סמסטר ${SEM_LABELS[sem - 1] ?? sem}`,
       value: sem,
     })),
-  ];
+  ], [semesterOrder, summerSemesters]);
 
   function addToSemester(courseId: string, semValue: number) {
     addCourseToSemester(courseId, semValue);

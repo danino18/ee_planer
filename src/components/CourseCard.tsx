@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
+import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
-import { CourseDetailModal } from './CourseDetailModal';
 import { getFacultyStyle } from '../utils/faculty';
 import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
 
@@ -19,6 +19,11 @@ interface Props {
   wrongSemesterType?: boolean;
   chainName?: string;
 }
+
+const LazyCourseDetailModal = lazy(async () => {
+  const module = await import('./CourseDetailModal');
+  return { default: module.CourseDetailModal };
+});
 
 export function CourseCard({
   course,
@@ -38,15 +43,32 @@ export function CourseCard({
     id: draggableId,
     data: { course },
   });
-  const { favorites, toggleFavorite, toggleCompleted, toggleCompletedInstance, grades, binaryPass, removeCourseFromSemester, completedInstances } = usePlanStore();
-  const facultyColorOverrides = usePlanStore((s) => s.facultyColorOverrides ?? {});
-  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
-  const isFavorite = favorites.includes(course.id);
-  const grade = grades[gradeKey(course.id, semester)];
-  const isBinaryPass = !!(binaryPass ?? {})[course.id];
+  const {
+    toggleFavorite,
+    toggleCompleted,
+    toggleCompletedInstance,
+    removeCourseFromSemester,
+    isFavorite,
+    grade,
+    isBinaryPass,
+    isCompletedInstance,
+    facultyColorOverrides,
+    englishTaughtCourses,
+  } = usePlanStore(useShallow((state) => ({
+    toggleFavorite: state.toggleFavorite,
+    toggleCompleted: state.toggleCompleted,
+    toggleCompletedInstance: state.toggleCompletedInstance,
+    removeCourseFromSemester: state.removeCourseFromSemester,
+    isFavorite: state.favorites.includes(course.id),
+    grade: state.grades[gradeKey(course.id, semester)],
+    isBinaryPass: !!(state.binaryPass ?? {})[course.id],
+    isCompletedInstance: instanceKey ? (state.completedInstances ?? []).includes(instanceKey) : false,
+    facultyColorOverrides: state.facultyColorOverrides ?? {},
+    englishTaughtCourses: state.englishTaughtCourses ?? [],
+  })));
   const isRepeatable = REPEATABLE_COURSES.has(course.id);
   const effectiveIsCompleted = isRepeatable && instanceKey
-    ? (completedInstances ?? []).includes(instanceKey)
+    ? isCompletedInstance
     : isCompleted;
   const [modalOpen, setModalOpen] = useState(false);
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
@@ -114,7 +136,11 @@ export function CourseCard({
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              isRepeatable && instanceKey ? toggleCompletedInstance(instanceKey) : toggleCompleted(course.id);
+              if (isRepeatable && instanceKey) {
+                toggleCompletedInstance(instanceKey);
+              } else {
+                toggleCompleted(course.id);
+              }
             }}
             className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${effectiveIsCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
             title={effectiveIsCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
@@ -201,12 +227,20 @@ export function CourseCard({
       </div>
 
       {modalOpen && (
-        <CourseDetailModal
-          course={course}
-          courses={courses}
-          semester={semester}
-          onClose={() => setModalOpen(false)}
-        />
+        <Suspense
+          fallback={(
+            <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
+        >
+          <LazyCourseDetailModal
+            course={course}
+            courses={courses}
+            semester={semester}
+            onClose={() => setModalOpen(false)}
+          />
+        </Suspense>
       )}
     </>
   );

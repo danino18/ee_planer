@@ -123,7 +123,7 @@ export function usePrerequisiteStatus(
 }
 
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {
-  const { grades } = usePlanStore();
+  const grades = usePlanStore((s) => s.grades);
 
   return useMemo(() => {
     let totalWeightedSum = 0;
@@ -140,7 +140,7 @@ export function useWeightedAverage(courses: Map<string, SapCourse>): number | nu
   }, [grades, courses]);
 }
 
-type EnglishRequirementItem = {
+export type EnglishRequirementItem = {
   kind: 'advanced_a' | 'advanced_b' | 'content_course';
   label: string;
   done: boolean;
@@ -420,7 +420,9 @@ export function useChainRecommendations(
   courses: Map<string, SapCourse>,
   specializations: SpecializationGroup[]
 ): RecommendedChain[] {
-  const { semesters, completedCourses, selectedSpecializations } = usePlanStore();
+  const semesters = usePlanStore((s) => s.semesters);
+  const completedCourses = usePlanStore((s) => s.completedCourses);
+  const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
 
   return useMemo(() => {
     const allPlaced = new Set<string>([

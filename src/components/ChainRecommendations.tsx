@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse, SpecializationGroup } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { useChainRecommendations } from '../hooks/usePlan';
@@ -9,7 +10,17 @@ interface Props {
 }
 
 export function ChainRecommendations({ groups, courses }: Props) {
-  const { toggleSpecialization, selectedSpecializations, semesters, completedCourses } = usePlanStore();
+  const {
+    toggleSpecialization,
+    selectedSpecializations,
+    semesters,
+    completedCourses,
+  } = usePlanStore(useShallow((state) => ({
+    toggleSpecialization: state.toggleSpecialization,
+    selectedSpecializations: state.selectedSpecializations,
+    semesters: state.semesters,
+    completedCourses: state.completedCourses,
+  })));
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
   const recommendations = useChainRecommendations(courses, groups);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);

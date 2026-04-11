@@ -5,10 +5,11 @@ import {
 } from '@dnd-kit/core';
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
+import { useShallow } from 'zustand/react/shallow';
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
-import { usePlanStore, REPEATABLE_COURSES, gradeKey } from '../store/planStore';
+import { usePlanStore, REPEATABLE_COURSES, gradeKey, MAX_SEMESTERS } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
@@ -49,7 +50,31 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
     grades, binaryPass, selectedSpecializations, facultyColorOverrides, setFacultyColorOverride,
-  } = usePlanStore();
+  } = usePlanStore(useShallow((state) => ({
+    semesters: state.semesters,
+    moveCourse: state.moveCourse,
+    addCourseToSemester: state.addCourseToSemester,
+    completedCourses: state.completedCourses,
+    maxSemester: state.maxSemester,
+    addSemester: state.addSemester,
+    removeSemester: state.removeSemester,
+    summerSemesters: state.summerSemesters,
+    currentSemester: state.currentSemester,
+    setCurrentSemester: state.setCurrentSemester,
+    addSummerSemester: state.addSummerSemester,
+    removeSummerSemester: state.removeSummerSemester,
+    semesterOrder: state.semesterOrder,
+    reorderSemesters: state.reorderSemesters,
+    semesterTypeOverrides: state.semesterTypeOverrides,
+    semesterWarningsIgnored: state.semesterWarningsIgnored,
+    setSemesterType: state.setSemesterType,
+    toggleSemesterWarnings: state.toggleSemesterWarnings,
+    grades: state.grades,
+    binaryPass: state.binaryPass,
+    selectedSpecializations: state.selectedSpecializations,
+    facultyColorOverrides: state.facultyColorOverrides,
+    setFacultyColorOverride: state.setFacultyColorOverride,
+  })));
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
 
   // Mandatory lab IDs: first `required` placed lab pool courses in semester order
@@ -349,7 +374,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
           <SemesterColumn {...semColProps(0)} />
         </div>
         <div className="flex flex-col gap-2">
-          {maxSemester < 16 && (
+          {maxSemester < MAX_SEMESTERS && (
             <button
               onClick={addSemester}
               className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors min-h-14 text-sm font-medium"
@@ -367,7 +392,7 @@ export function SemesterGrid({ courses, trackDef, specializations }: Props) {
               <span>הסר סמסטר</span>
             </button>
           )}
-          {maxSemester < 16 && (
+          {maxSemester < MAX_SEMESTERS && (
             <button
               onClick={addSummerSemester}
               className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-14 text-sm font-medium"

@@ -1,18 +1,30 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import type { SpecializationGroup, SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
-import { SpecializationGroupModal } from './SpecializationGroupModal';
 
 interface Props {
   groups: SpecializationGroup[];
   courses: Map<string, SapCourse>;
 }
 
+const LazySpecializationGroupModal = lazy(async () => {
+  const module = await import('./SpecializationGroupModal');
+  return { default: module.SpecializationGroupModal };
+});
+
 export function SpecializationPanel({ groups, courses }: Props) {
   const {
     selectedSpecializations, semesters, completedCourses,
     toggleSpecialization, doubleSpecializations, toggleDoubleSpecialization,
-  } = usePlanStore();
+  } = usePlanStore(useShallow((state) => ({
+    selectedSpecializations: state.selectedSpecializations,
+    semesters: state.semesters,
+    completedCourses: state.completedCourses,
+    toggleSpecialization: state.toggleSpecialization,
+    doubleSpecializations: state.doubleSpecializations,
+    toggleDoubleSpecialization: state.toggleDoubleSpecialization,
+  })));
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
   const [openGroup, setOpenGroup] = useState<SpecializationGroup | null>(null);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
@@ -175,11 +187,13 @@ export function SpecializationPanel({ groups, courses }: Props) {
       </div>
 
       {openGroup && (
-        <SpecializationGroupModal
-          group={openGroup}
-          courses={courses}
-          onClose={() => setOpenGroup(null)}
-        />
+        <Suspense fallback={null}>
+          <LazySpecializationGroupModal
+            group={openGroup}
+            courses={courses}
+            onClose={() => setOpenGroup(null)}
+          />
+        </Suspense>
       )}
     </>
   );
