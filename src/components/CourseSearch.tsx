@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
-import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
+import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
 
 const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
   english: [
@@ -14,12 +14,14 @@ const FILTER_LINKS: Partial<Record<string, { href: string; label: string; toolti
   ],
   melag: [
     {
-      href: 'https://humanities.technion.ac.il/courses/%d7%a7%d7%95%d7%a8%d7%a1-%d7%94%d7%a2%d7%a9%d7%a8%d7%94/',
-      label: 'קורסי העשרה',
-    },
-    {
       href: 'https://ugportal.technion.ac.il/%D7%94%D7%95%D7%A8%D7%90%D7%94-%D7%95%D7%91%D7%97%D7%99%D7%A0%D7%95%D7%AA/%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99-%D7%94%D7%A2%D7%A9%D7%A8%D7%94/',
       label: 'מל"גים',
+    },
+  ],
+  freeElective: [
+    {
+      href: 'https://humanities.technion.ac.il/courses/%d7%a7%d7%95%d7%a8%d7%a1-%d7%94%d7%a2%d7%a9%d7%a8%d7%94/',
+      label: 'קורסי העשרה',
     },
   ],
   winter: [
@@ -56,6 +58,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   const [filters, setFilters] = useState({
     english: false,
     melag: false,
+    freeElective: false,
     winter: false,
     spring: false,
   });
@@ -106,14 +109,18 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   }, []);
 
   const q = deferredQuery.trim().toLowerCase();
-  const hasActiveFilters = filters.english || filters.melag || filters.winter || filters.spring;
+  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring;
 
   const matchesFilters = useCallback((course: SapCourse): boolean => {
     if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) {
       return false;
     }
 
-    if (filters.melag && !isFreeElectiveCourseId(course.id)) {
+    if (filters.melag && !isMelagCourseId(course.id)) {
+      return false;
+    }
+
+    if (filters.freeElective && !isHumanitiesFreeElectiveCourseId(course.id)) {
       return false;
     }
 
@@ -276,11 +283,20 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
               filters.melag ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
             }`}
           >
-            ב"ח
+            מל"ג
           </button>
-          {FILTER_LINKS.melag!.map((link) => (
-            <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" title={link.label} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">{link.label} ↗</a>
-          ))}
+          <a href={FILTER_LINKS.melag![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.melag![0].label} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => toggleFilter('freeElective')}
+            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+              filters.freeElective ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
+            }`}
+          >
+            בחירה חופשית
+          </button>
+          <a href={FILTER_LINKS.freeElective![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.freeElective![0].label} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
         </div>
         <div className="flex items-center gap-1">
           <button

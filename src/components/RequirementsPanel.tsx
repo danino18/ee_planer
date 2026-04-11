@@ -325,12 +325,9 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   <div className="min-w-0">
                     <span className={slot.done ? 'text-green-700' : slot.released ? 'text-purple-600' : 'text-gray-500'}>
                       {slot.ids.length > 1
-                        ? `${slot.ids.join(' / ')} (אחד מהשניים)`
-                        : `${slot.ids[0]} ${slot.names[0]}`}
+                        ? `${slot.names.join(' / ')} (אחד מהשניים)`
+                        : slot.names[0]}
                     </span>
-                    {slot.ids.length > 1 && slot.activeId && (
-                      <span className="text-gray-400 ms-1">({slot.activeId} {slot.names[slot.ids.indexOf(slot.activeId)]})</span>
-                    )}
                   </div>
                 </div>
               ))}
@@ -357,7 +354,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                           }}
                           className="rounded"
                         />
-                        <span>{id} {name} → לשרשרת</span>
+                        <span>{name} → לשרשרת</span>
                       </label>
                     );
                   })}
