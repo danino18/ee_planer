@@ -25,6 +25,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "englishTaughtCourses",
   "facultyColorOverrides",
   "dismissedRecommendedCourses",
+  "coreToChainOverrides",
 ]);
 
 interface ValidationSuccess {
@@ -547,6 +548,19 @@ function validateStudentPlanRecord(
       return dismissedRecommendedCourses;
     }
     sanitized.dismissedRecommendedCourses = dismissedRecommendedCourses;
+  }
+
+  if ("coreToChainOverrides" in value) {
+    const coreToChainOverrides = validateStringArray(
+      "coreToChainOverrides",
+      value.coreToChainOverrides,
+      600,
+      32
+    );
+    if (isValidationFailure(coreToChainOverrides)) {
+      return coreToChainOverrides;
+    }
+    sanitized.coreToChainOverrides = coreToChainOverrides;
   }
 
   return success(sanitized);

@@ -188,7 +188,7 @@ export function useRequirementsProgress(
 
     // Core-locked courses: placed core courses NOT released to chain.
     // These are excluded from specialization evaluation (can't double-count).
-    let coreLockedSet = new Set<string>();
+    const coreLockedSet = new Set<string>();
     if (trackDef.coreRequirement) {
       const { courses: coreCourseIds, orGroups = [] } = trackDef.coreRequirement;
       const corePlaced = coreCourseIds.filter((id) => allPlaced.has(id));

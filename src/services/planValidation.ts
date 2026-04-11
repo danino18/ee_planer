@@ -28,6 +28,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'englishTaughtCourses',
   'dismissedRecommendedCourses',
   'facultyColorOverrides',
+  'coreToChainOverrides',
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -456,6 +457,12 @@ function sanitizeStudentPlanRecord(
     const facultyColorOverrides = validateStringMap(value.facultyColorOverrides, 100, 32);
     if (!facultyColorOverrides) return null;
     sanitized.facultyColorOverrides = facultyColorOverrides;
+  }
+
+  if ('coreToChainOverrides' in value) {
+    const coreToChainOverrides = validateStringArray(value.coreToChainOverrides, 600, 32);
+    if (!coreToChainOverrides) return null;
+    sanitized.coreToChainOverrides = coreToChainOverrides;
   }
 
   return sanitized as StudentPlan;

@@ -306,6 +306,11 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       MAX_SPECIALIZATIONS,
       STRING_VALUE_MAX_LENGTH
     ),
+    coreToChainOverrides: cleanStringArray(
+      source.coreToChainOverrides,
+      "coreToChainOverrides",
+      MAX_COURSES
+    ),
   };
 
   if (allowSavedTracks) {

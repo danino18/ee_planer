@@ -60,6 +60,7 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPl
     englishScore: state.englishScore,
     englishTaughtCourses: state.englishTaughtCourses,
     facultyColorOverrides: state.facultyColorOverrides ?? {},
+    coreToChainOverrides: state.coreToChainOverrides,
   };
 }
 
