@@ -20,7 +20,10 @@ import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
 import type { SapCourse, TrackDefinition, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
-import { TRACK_SPECIALIZATIONS } from './constants';
+import {
+  getTrackSpecializationCatalog,
+  reportTrackSpecializationDiagnostics,
+} from './domain/specializations';
 
 // UI timing constants
 const TOAST_DURATION_MS = 2500;
@@ -96,8 +99,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     isSwitchingTrack: state.isSwitchingTrack,
     dismissedRecommendedCourses: state.dismissedRecommendedCourses,
   })));
-  const specs = TRACK_SPECIALIZATIONS[trackId ?? 'ee'] ?? [];
-  const progress = useRequirementsProgress(courses, trackDef, specs);
+  const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
+  const specs = specializationCatalog.groups;
+  const progress = useRequirementsProgress(courses, trackDef, specializationCatalog);
   const weightedAverage = useWeightedAverage(courses);
 
   const initialized = useRef<Set<string>>(new Set());
@@ -118,6 +122,10 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     setToast({ message: `${courseName} נוסף ל${semesterLabel}`, visible: true });
     toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
   }, []);
+
+  useEffect(() => {
+    reportTrackSpecializationDiagnostics(trackDef.id);
+  }, [trackDef.id]);
 
   useEffect(() => {
     if (trackId === 'ce' && (semesters[4] ?? []).includes('01140073')) {
@@ -344,8 +352,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         <div className="flex gap-4">
           <div className="w-64 shrink-0 flex flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
-            <SpecializationPanel groups={specs} courses={courses} />
-            <ChainRecommendations groups={specs} courses={courses} />
+            <SpecializationPanel catalog={specializationCatalog} courses={courses} />
+            <ChainRecommendations catalog={specializationCatalog} courses={courses} />
           </div>
           <div className="flex-1 min-w-0">
             <CourseSearch courses={courses} onCourseAdded={handleCourseAdded} />

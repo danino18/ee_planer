@@ -19,7 +19,7 @@
     },
     {
       "course_number": "00460002",
-      "course_name": "תכן ומימוש אלגוריתמים",
+      "course_name": "תכן וניתוח אלגוריתמים",
       "category": "mandatory_option_single_and_mandatory_double"
     },
     {
@@ -49,22 +49,17 @@
     },
     {
       "course_number": "00460237",
-      "course_name": "מעגלים משולבים מבוא ל-VLSI",
+      "course_name": "מעגלים משולבים - מבוא ל-וי.ל.ס.י.",
       "category": "elective"
     },
     {
       "course_number": "00460265",
-      "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים",
+      "course_name": "ארכיטקטורות ומעגלים בשילוב ממריסטורים",
       "category": "elective"
     },
     {
       "course_number": "00460266",
-      "course_name": "שיטות הידור",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460268",
-      "course_name": "הנדסת מעבדי מחשב",
+      "course_name": "שיטות הידור (קומפילציה)",
       "category": "elective"
     },
     {
@@ -74,17 +69,17 @@
     },
     {
       "course_number": "00460272",
-      "course_name": "מערכות מבוזרות : עקרונות",
+      "course_name": "מערכות מבוזרות: עקרונות",
       "category": "elective"
     },
     {
       "course_number": "00460275",
-      "course_name": "הבטחת נכונות של תוכנה",
+      "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי",
       "category": "elective"
     },
     {
       "course_number": "00460277",
-      "course_name": "הבינה כמנוע של מדע",
+      "course_name": "הבטחת נכונות של תוכנה",
       "category": "elective"
     },
     {
@@ -108,16 +103,6 @@
       "category": "elective"
     },
     {
-      "course_number": "00460345",
-      "course_name": "גרפיקה ממוחשבת",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460853",
-      "course_name": "ארכיטקטורות מחשבים מתקדמות",
-      "category": "elective"
-    },
-    {
       "course_number": "00460864",
       "course_name": "ערוצי תקשורת מהירים בין שבבים",
       "category": "elective"
@@ -129,12 +114,12 @@
     },
     {
       "course_number": "00460918",
-      "course_name": "תכן פיסי ממוחשב של שבבים",
+      "course_name": "תכן פיסי של מערכות VLSI",
       "category": "elective"
     },
     {
       "course_number": "02360370",
-      "course_name": "תכנות מקבילי ומבוזר",
+      "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים ולמידה חישובית",
       "category": "elective"
     },
     {
@@ -171,7 +156,7 @@
           },
           {
             "course_number": "00460002",
-            "course_name": "תכן ומימוש אלגוריתמים"
+            "course_name": "תכן וניתוח אלגוריתמים"
           }
         ]
       },
@@ -185,7 +170,7 @@
           },
           {
             "course_number": "00460002",
-            "course_name": "תכן ומימוש אלגוריתמים"
+            "course_name": "תכן וניתוח אלגוריתמים"
           },
           {
             "course_number": "00440334",
@@ -223,19 +208,15 @@
           },
           {
             "course_number": "00460237",
-            "course_name": "מעגלים משולבים מבוא ל-VLSI"
+            "course_name": "מעגלים משולבים - מבוא ל-וי.ל.ס.י."
           },
           {
             "course_number": "00460265",
-            "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים"
+            "course_name": "ארכיטקטורות ומעגלים בשילוב ממריסטורים"
           },
           {
             "course_number": "00460266",
-            "course_name": "שיטות הידור"
-          },
-          {
-            "course_number": "00460268",
-            "course_name": "הנדסת מעבדי מחשב"
+            "course_name": "שיטות הידור (קומפילציה)"
           },
           {
             "course_number": "00460271",
@@ -243,15 +224,15 @@
           },
           {
             "course_number": "00460272",
-            "course_name": "מערכות מבוזרות : עקרונות"
+            "course_name": "מערכות מבוזרות: עקרונות"
           },
           {
             "course_number": "00460275",
-            "course_name": "הבטחת נכונות של תוכנה"
+            "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי"
           },
           {
             "course_number": "00460277",
-            "course_name": "הבינה כמנוע של מדע"
+            "course_name": "הבטחת נכונות של תוכנה"
           },
           {
             "course_number": "00460278",
@@ -270,14 +251,6 @@
             "course_name": "הגנה ברשתות"
           },
           {
-            "course_number": "00460345",
-            "course_name": "גרפיקה ממוחשבת"
-          },
-          {
-            "course_number": "00460853",
-            "course_name": "ארכיטקטורות מחשבים מתקדמות"
-          },
-          {
             "course_number": "00460864",
             "course_name": "ערוצי תקשורת מהירים בין שבבים"
           },
@@ -287,11 +260,11 @@
           },
           {
             "course_number": "00460918",
-            "course_name": "תכן פיסי ממוחשב של שבבים"
+            "course_name": "תכן פיסי של מערכות VLSI"
           },
           {
             "course_number": "02360370",
-            "course_name": "תכנות מקבילי ומבוזר"
+            "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים ולמידה חישובית"
           },
           {
             "course_number": "02360990",
@@ -314,7 +287,7 @@
         },
         {
           "course_number": "00460002",
-          "course_name": "תכן ומימוש אלגוריתמים"
+          "course_name": "תכן וניתוח אלגוריתמים"
         }
       ],
       "additional_courses_required": 4,
@@ -357,19 +330,15 @@
           },
           {
             "course_number": "00460237",
-            "course_name": "מעגלים משולבים מבוא ל-VLSI"
+            "course_name": "מעגלים משולבים - מבוא ל-וי.ל.ס.י."
           },
           {
             "course_number": "00460265",
-            "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים"
+            "course_name": "ארכיטקטורות ומעגלים בשילוב ממריסטורים"
           },
           {
             "course_number": "00460266",
-            "course_name": "שיטות הידור"
-          },
-          {
-            "course_number": "00460268",
-            "course_name": "הנדסת מעבדי מחשב"
+            "course_name": "שיטות הידור (קומפילציה)"
           },
           {
             "course_number": "00460271",
@@ -377,15 +346,15 @@
           },
           {
             "course_number": "00460272",
-            "course_name": "מערכות מבוזרות : עקרונות"
+            "course_name": "מערכות מבוזרות: עקרונות"
           },
           {
             "course_number": "00460275",
-            "course_name": "הבטחת נכונות של תוכנה"
+            "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי"
           },
           {
             "course_number": "00460277",
-            "course_name": "הבינה כמנוע של מדע"
+            "course_name": "הבטחת נכונות של תוכנה"
           },
           {
             "course_number": "00460278",
@@ -404,14 +373,6 @@
             "course_name": "הגנה ברשתות"
           },
           {
-            "course_number": "00460345",
-            "course_name": "גרפיקה ממוחשבת"
-          },
-          {
-            "course_number": "00460853",
-            "course_name": "ארכיטקטורות מחשבים מתקדמות"
-          },
-          {
             "course_number": "00460864",
             "course_name": "ערוצי תקשורת מהירים בין שבבים"
           },
@@ -421,11 +382,11 @@
           },
           {
             "course_number": "00460918",
-            "course_name": "תכן פיסי ממוחשב של שבבים"
+            "course_name": "תכן פיסי של מערכות VLSI"
           },
           {
             "course_number": "02360370",
-            "course_name": "תכנות מקבילי ומבוזר"
+            "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים ולמידה חישובית"
           },
           {
             "course_number": "02360990",

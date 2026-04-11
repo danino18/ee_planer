@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 import { usePlanStore } from '../store/planStore';
-import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
+import type {
+  SapCourse,
+  TrackDefinition,
+  SpecializationGroup,
+  TrackSpecializationCatalog,
+} from '../types';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
+import { evaluateSpecializationGroup } from '../domain/specializations';
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
 import {
   isCourseTaughtInEnglish,
@@ -151,7 +157,7 @@ export type EnglishRequirementItem = {
 export function useRequirementsProgress(
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null,
-  specializations: SpecializationGroup[]
+  specializationCatalog: TrackSpecializationCatalog
 ) {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
@@ -242,59 +248,41 @@ export function useRequirementsProgress(
       }
     }
 
-    const selectedGroups = specializations.filter((group) =>
+    const selectedGroups = specializationCatalog.groups.filter((group) =>
       selectedSpecializations.includes(group.id)
     );
-
-    const completedGroupsList = selectedGroups.filter((group) => {
-      const allMandatoryDone = group.mandatoryCourses.length === 0 ||
-        group.mandatoryCourses.every((id) => allPlaced.has(id));
-      if (!allMandatoryDone) return false;
-
-      const mandatoryOptionsDone = !group.mandatoryOptions ||
-        group.mandatoryOptions.every((options) => options.some((id) => allPlaced.has(id)));
-      if (!mandatoryOptionsDone) return false;
-
-      const effectiveMin = (
-        doubleSpecializations.includes(group.id) && group.doubleMinCoursesToComplete
-      )
-        ? group.doubleMinCoursesToComplete
-        : group.minCoursesToComplete;
-      const doneCount = [...group.mandatoryCourses, ...group.electiveCourses]
-        .filter((id) => allPlaced.has(id))
-        .length;
-      return doneCount >= effectiveMin;
+    const groupEvaluations = selectedGroups.map((group) => {
+      const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
+        ? 'double'
+        : 'single';
+      const evaluation = evaluateSpecializationGroup(group, allPlaced, mode);
+      return {
+        group,
+        mode,
+        evaluation,
+      };
     });
 
-    const completedCount = completedGroupsList.reduce(
-      (sum, group) => sum + (doubleSpecializations.includes(group.id) ? 2 : 1),
-      0
-    );
+    const completedCount = specializationCatalog.interactionDisabled
+      ? 0
+      : groupEvaluations.reduce(
+        (sum, result) => sum + (result.evaluation.complete ? (result.mode === 'double' ? 2 : 1) : 0),
+        0,
+      );
 
     const totalCredits = [...allPlaced].reduce((sum, id) => {
       return sum + (courses.get(id)?.credits ?? 0);
     }, 0);
 
-    const groupDetails = selectedGroups.map((group) => {
-      const allGroupCourses = [...group.mandatoryCourses, ...group.electiveCourses];
-      const done = allGroupCourses.filter((id) => allPlaced.has(id)).length;
-      const effectiveMin = (
-        doubleSpecializations.includes(group.id) && group.doubleMinCoursesToComplete
-      )
-        ? group.doubleMinCoursesToComplete
-        : group.minCoursesToComplete;
-      const mandatoryOptionsDone = !group.mandatoryOptions ||
-        group.mandatoryOptions.every((options) => options.some((id) => allPlaced.has(id)));
-
-      return {
-        id: group.id,
-        name: group.name,
-        done,
-        min: effectiveMin,
-        isDouble: doubleSpecializations.includes(group.id),
-        mandatoryOptionsDone,
-      };
-    });
+    const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => ({
+      id: group.id,
+      name: group.name,
+      done: evaluation.doneCount,
+      min: evaluation.requiredCount,
+      isDouble: mode === 'double',
+      complete: evaluation.complete,
+      issues: evaluation.issues,
+    }));
 
     const generalRequirements = buildGeneralRequirementsProgress({
       courses,
@@ -371,9 +359,11 @@ export function useRequirementsProgress(
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
       total: { earned: totalCredits, required: trackDef.totalCreditsRequired },
       specializationGroups: {
-        completed: completedCount,
+        completed: specializationCatalog.interactionDisabled ? 0 : completedCount,
         required: trackDef.specializationGroupsRequired,
         total: selectedGroups.length,
+        unavailable: specializationCatalog.interactionDisabled,
+        diagnostics: specializationCatalog.diagnostics,
       },
       groupDetails,
       sport: {
@@ -409,16 +399,18 @@ export function useRequirementsProgress(
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
-        completedCount >= trackDef.specializationGroupsRequired &&
+        (specializationCatalog.interactionDisabled
+          ? false
+          : completedCount >= trackDef.specializationGroupsRequired) &&
         totalCredits >= trackDef.totalCreditsRequired &&
         (!coreProgress || coreProgress.completed >= coreProgress.required),
     };
-  }, [semesters, completedCourses, courses, trackDef, specializations, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder]);
+  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder]);
 }
 
 export function useChainRecommendations(
   courses: Map<string, SapCourse>,
-  specializations: SpecializationGroup[]
+  specializationCatalog: TrackSpecializationCatalog
 ): RecommendedChain[] {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
@@ -430,14 +422,15 @@ export function useChainRecommendations(
       ...Object.values(semesters).flat(),
     ]);
 
-    const scored = specializations
+    if (specializationCatalog.interactionDisabled) return [];
+
+    const scored = specializationCatalog.groups
       .filter((group) => !selectedSpecializations.includes(group.id))
       .map((group) => {
+        const evaluation = evaluateSpecializationGroup(group, allPlaced, 'single');
         const mandatory = group.mandatoryCourses.filter((id) => allPlaced.has(id));
-        const elective = group.electiveCourses.filter((id) => allPlaced.has(id));
-        const matching = [...mandatory, ...elective];
-        const score = matching.length * 2 + mandatory.length * 3;
-        return { group, score, matchingCourses: matching };
+        const score = evaluation.doneCount * 2 + mandatory.length * 3;
+        return { group, score, matchingCourses: evaluation.matchedCourseNumbers };
       })
       .filter((result) => result.score > 0)
       .sort((a, b) => b.score - a.score);
@@ -446,5 +439,5 @@ export function useChainRecommendations(
       ...result,
       matchingCourses: result.matchingCourses.map((id) => courses.get(id)?.name ?? id),
     }));
-  }, [semesters, completedCourses, specializations, selectedSpecializations, courses]);
+  }, [semesters, completedCourses, specializationCatalog, selectedSpecializations, courses]);
 }

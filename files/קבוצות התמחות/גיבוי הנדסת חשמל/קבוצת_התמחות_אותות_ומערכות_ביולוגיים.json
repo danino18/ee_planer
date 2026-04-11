@@ -30,12 +30,7 @@
     },
     {
       "course_number": "00460041",
-      "course_name": "רשתות עצביות ביולוגיות",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460743",
-      "course_name": "עיבוד אותות מרחבי",
+      "course_name": "רשתות עצביות ביולוגיות-חישוביות, עיבוד מידע ולמידה",
       "category": "elective"
     },
     {
@@ -50,7 +45,7 @@
     },
     {
       "course_number": "01160029",
-      "course_name": "מבוא לביו-פיזיקה",
+      "course_name": "מבוא לביופיסיקה",
       "category": "elective"
     },
     {
@@ -111,11 +106,7 @@
         },
         {
           "course_number": "00460041",
-          "course_name": "רשתות עצביות ביולוגיות"
-        },
-        {
-          "course_number": "00460743",
-          "course_name": "עיבוד אותות מרחבי"
+          "course_name": "רשתות עצביות ביולוגיות-חישוביות, עיבוד מידע ולמידה"
         },
         {
           "course_number": "00460831",
@@ -127,7 +118,7 @@
         },
         {
           "course_number": "01160029",
-          "course_name": "מבוא לביו-פיזיקה"
+          "course_name": "מבוא לביופיסיקה"
         },
         {
           "course_number": "03360208",

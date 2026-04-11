@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { SapCourse, SpecializationGroup } from '../types';
+import type { SapCourse, TrackSpecializationCatalog } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { useChainRecommendations } from '../hooks/usePlan';
 
 interface Props {
-  groups: SpecializationGroup[];
+  catalog: TrackSpecializationCatalog;
   courses: Map<string, SapCourse>;
 }
 
-export function ChainRecommendations({ groups, courses }: Props) {
+export function ChainRecommendations({ catalog, courses }: Props) {
   const {
     toggleSpecialization,
     selectedSpecializations,
@@ -22,8 +22,17 @@ export function ChainRecommendations({ groups, courses }: Props) {
     completedCourses: state.completedCourses,
   })));
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
-  const recommendations = useChainRecommendations(courses, groups);
+  const recommendations = useChainRecommendations(courses, catalog);
   const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+
+  if (catalog.interactionDisabled) {
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <h2 className="text-base font-bold text-gray-900 mb-1">נ¯ ׳©׳¨׳©׳¨׳׳•׳× ׳׳•׳׳׳¦׳•׳×</h2>
+        <p className="text-xs text-amber-700">המלצות התמחות מושבתות עד שתוקנו קבצי ההתמחויות למסלול זה.</p>
+      </div>
+    );
+  }
 
   if (recommendations.length === 0) {
     return (

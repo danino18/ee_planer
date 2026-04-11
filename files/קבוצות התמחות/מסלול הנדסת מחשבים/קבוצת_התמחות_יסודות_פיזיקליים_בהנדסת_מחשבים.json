@@ -1,0 +1,168 @@
+{
+  "title": "קבוצת התמחות - יסודות פיזיקליים בהנדסת מחשבים",
+  "specialization_group_name": "יסודות פיזיקליים בהנדסת מחשבים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00440124",
+      "course_name": "אלקטרוניקה פיסיקלית",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00460225",
+      "course_name": "עקרונות פיסיקליים של התקני מוליכים למחצה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440231",
+      "course_name": "התקנים אלקטרוניים 1 (MOS)",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460237",
+      "course_name": "מעגלים משולבים - מבוא ל-VLSI",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460052",
+      "course_name": "אופטואלקטרוניקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460129",
+      "course_name": "פיזיקה של מצב מוצק ח׳",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460241",
+      "course_name": "מכניקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440239",
+      "course_name": "תהליכים במיקרואלקטרוניקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460012",
+      "course_name": "מבוא לאלקטרוניקה גמישה אורגנית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460230",
+      "course_name": "התקנים אלקט. מתקדמים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460239",
+      "course_name": "מעבדה בננו-אלקטרוניקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460242",
+      "course_name": "פיזיקה סטטיסטית להנדסת חשמל",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460243",
+      "course_name": "טכנולוגיות קוונטיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460265",
+      "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460773",
+      "course_name": "התקני מל\"מ אלקטרואופטיים לגלוי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460968",
+      "course_name": "מיקרו-עיבוד ומיקרו-מערכות אלקטרומכניות",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00440124",
+        "course_name": "אלקטרוניקה פיסיקלית"
+      }
+    ],
+    "additional_courses_required": 2,
+    "additional_course_selection_rule": {
+      "type": "choose_2_from",
+      "options": [
+        {
+          "course_number": "00460225",
+          "course_name": "עקרונות פיסיקליים של התקני מוליכים למחצה"
+        },
+        {
+          "course_number": "00440231",
+          "course_name": "התקנים אלקטרוניים 1 (MOS)"
+        },
+        {
+          "course_number": "00460237",
+          "course_name": "מעגלים משולבים - מבוא ל-VLSI"
+        },
+        {
+          "course_number": "00460052",
+          "course_name": "אופטואלקטרוניקה קוונטית"
+        },
+        {
+          "course_number": "00460129",
+          "course_name": "פיזיקה של מצב מוצק ח׳"
+        },
+        {
+          "course_number": "00460241",
+          "course_name": "מכניקה קוונטית"
+        },
+        {
+          "course_number": "00440239",
+          "course_name": "תהליכים במיקרואלקטרוניקה"
+        },
+        {
+          "course_number": "00460012",
+          "course_name": "מבוא לאלקטרוניקה גמישה אורגנית"
+        },
+        {
+          "course_number": "00460230",
+          "course_name": "התקנים אלקט. מתקדמים"
+        },
+        {
+          "course_number": "00460239",
+          "course_name": "מעבדה בננו-אלקטרוניקה"
+        },
+        {
+          "course_number": "00460242",
+          "course_name": "פיזיקה סטטיסטית להנדסת חשמל"
+        },
+        {
+          "course_number": "00460243",
+          "course_name": "טכנולוגיות קוונטיות"
+        },
+        {
+          "course_number": "00460265",
+          "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים"
+        },
+        {
+          "course_number": "00460773",
+          "course_name": "התקני מל\"מ אלקטרואופטיים לגלוי"
+        },
+        {
+          "course_number": "00460968",
+          "course_name": "מיקרו-עיבוד ומיקרו-מערכות אלקטרומכניות"
+        }
+      ]
+    },
+    "logical_expression": "00440124 AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00440124 הוא המקצוע המחייב",
+    "לאחר מכן נדרשים עוד 2 מקצועות נוספים מתוך רשימת הקורסים של הקבוצה"
+  ]
+}

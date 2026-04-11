@@ -54,13 +54,8 @@
       "category": "elective"
     },
     {
-      "course_number": "00460733",
-      "course_name": "תורת האינפורמציה",
-      "category": "elective"
-    },
-    {
       "course_number": "00460041",
-      "course_name": "רשתות עצביות ביולוגיות",
+      "course_name": "רשתות עצביות ביולוגיות-חישוביות, עיבוד מידע ולמידה",
       "category": "elective"
     },
     {
@@ -74,18 +69,8 @@
       "category": "elective"
     },
     {
-      "course_number": "00460746",
-      "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת",
-      "category": "elective"
-    },
-    {
       "course_number": "00460747",
-      "course_name": "למידה עמוקה לאותות ודיבור",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460853",
-      "course_name": "ארכיטקטורות מחשבים מתקדמות",
+      "course_name": "למידה עמוקה לאותות דיבור",
       "category": "elective"
     },
     {
@@ -179,12 +164,8 @@
           "course_name": "למידה עמוקה וחבורות"
         },
         {
-          "course_number": "00460733",
-          "course_name": "תורת האינפורמציה"
-        },
-        {
           "course_number": "00460041",
-          "course_name": "רשתות עצביות ביולוגיות"
+          "course_name": "רשתות עצביות ביולוגיות-חישוביות, עיבוד מידע ולמידה"
         },
         {
           "course_number": "00460200",
@@ -195,16 +176,8 @@
           "course_name": "רובוטים ניידים"
         },
         {
-          "course_number": "00460746",
-          "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת"
-        },
-        {
           "course_number": "00460747",
-          "course_name": "למידה עמוקה לאותות ודיבור"
-        },
-        {
-          "course_number": "00460853",
-          "course_name": "ארכיטקטורות מחשבים מתקדמות"
+          "course_name": "למידה עמוקה לאותות דיבור"
         }
       ]
     },

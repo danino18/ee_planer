@@ -36,16 +36,127 @@ export interface TrackDefinition {
   };
 }
 
+export interface SpecializationCourseReference {
+  courseNumber: string;
+  courseName: string;
+  category?: string;
+}
+
+export interface SpecializationChoiceRule {
+  kind: 'choice_rule';
+  type: string;
+  count: number;
+  options: SpecializationRuleOption[];
+  note?: string;
+  groupName?: string;
+}
+
+export interface SpecializationCourseOption extends SpecializationCourseReference {
+  kind: 'course';
+}
+
+export type SpecializationRuleOption =
+  | SpecializationChoiceRule
+  | SpecializationCourseOption;
+
+export interface SpecializationReplacementRule {
+  replaceableCourse: SpecializationCourseReference;
+  allowedReplacements: SpecializationCourseReference[];
+  note?: string;
+}
+
+export interface SpecializationMutualExclusionRule {
+  type: string;
+  count: number;
+  options: SpecializationCourseReference[];
+  note?: string;
+}
+
+export interface SpecializationRequirementSet {
+  totalCoursesRequiredForGroup: number;
+  mandatoryCourses: SpecializationCourseReference[];
+  mandatoryChoiceRules: SpecializationChoiceRule[];
+  selectionRule: SpecializationChoiceRule | null;
+  additionalCoursesRequired: number;
+  additionalCourseSelectionRule: SpecializationChoiceRule | null;
+  logicalExpression: string | null;
+}
+
+export type SpecializationMode = 'single' | 'double';
+export type SpecializationGroupModeState = 'single_only' | 'single_and_double';
+
+export interface SpecializationDiagnostic {
+  severity: 'warning' | 'error';
+  code: string;
+  message: string;
+  trackId?: TrackId;
+  filePath?: string;
+  specializationName?: string;
+}
+
 export interface SpecializationGroup {
   id: string;
-  trackId: TrackId | TrackId[];
+  trackId: TrackId;
+  title: string;
   name: string;
+  sourceFile: string;
+  courses: SpecializationCourseReference[];
   mandatoryCourses: string[];
-  mandatoryOptions?: string[][];  // at least 1 from each inner array must be completed
+  mandatoryOptions?: string[][];
   electiveCourses: string[];
   minCoursesToComplete: number;
   doubleMinCoursesToComplete?: number;
-  canBeDouble?: boolean;
+  notes: string[];
+  modeState: SpecializationGroupModeState;
+  supportedModes: SpecializationMode[];
+  canBeDouble: boolean;
+  requirementsByMode: Record<SpecializationMode, SpecializationRequirementSet | null>;
+  mutualExclusionRules: SpecializationMutualExclusionRule[];
+  replacementRules: SpecializationReplacementRule[];
+  diagnostics: SpecializationDiagnostic[];
+}
+
+export interface TrackSpecializationCatalog {
+  trackId: TrackId;
+  trackFolder: string;
+  groups: SpecializationGroup[];
+  diagnostics: SpecializationDiagnostic[];
+  hasErrors: boolean;
+  interactionDisabled: boolean;
+}
+
+export interface SpecializationRuleEvaluation {
+  satisfied: boolean;
+  satisfiedOptionCount: number;
+  requiredOptionCount: number;
+  matchedCourseNumbers: string[];
+}
+
+export interface SpecializationGroupEvaluation {
+  groupId: string;
+  groupName: string;
+  mode: SpecializationMode;
+  complete: boolean;
+  doneCount: number;
+  requiredCount: number;
+  mandatoryCoursesSatisfied: boolean;
+  mandatoryChoicesSatisfied: boolean;
+  selectionRuleSatisfied: boolean;
+  additionalRuleSatisfied: boolean;
+  mutualExclusionSatisfied: boolean;
+  matchedCourseNumbers: string[];
+  issues: string[];
+}
+
+export interface SpecializationCatalogSelectionState {
+  selectedSpecializations: string[];
+  doubleSpecializations: string[];
+}
+
+export interface TrackSpecializationSelectionSanitization
+  extends SpecializationCatalogSelectionState {
+  removedSelectedSpecializations: string[];
+  removedDoubleSpecializations: string[];
 }
 
 export interface StudentPlan {

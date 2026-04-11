@@ -29,12 +29,12 @@
     },
     {
       "course_number": "01160031",
-      "course_name": "מבוא לאינפורמציה וחישוב קוונטיים",
+      "course_name": "תורת האינפורמציה הקוונטית",
       "category": "mandatory_choice_option_with_mutual_exclusion"
     },
     {
       "course_number": "00460052",
-      "course_name": "אופטואלקטרוניקה קוונטית",
+      "course_name": "אופטו-אלקטרוניקה קוואנטית",
       "category": "elective"
     },
     {
@@ -49,12 +49,12 @@
     },
     {
       "course_number": "00460232",
-      "course_name": "פרקים בננו אלקטרוניקה",
+      "course_name": "פרקים בננו-אלקטרוניקה",
       "category": "elective"
     },
     {
       "course_number": "00460240",
-      "course_name": "התקנים קוואנטים על מוליכים",
+      "course_name": "התקנים קוונטיים על-מוליכים",
       "category": "elective"
     },
     {
@@ -66,11 +66,6 @@
       "course_number": "00460734",
       "course_name": "תורת האינפורמציה לתקשורת קוונטית",
       "category": "mandatory_choice_option"
-    },
-    {
-      "course_number": "01160037",
-      "course_name": "מיחשוב קוונטי רועש",
-      "category": "elective"
     }
   ],
   "requirements": {
@@ -91,7 +86,7 @@
           },
           {
             "course_number": "01160031",
-            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+            "course_name": "תורת האינפורמציה הקוונטית"
           },
           {
             "course_number": "00460734",
@@ -117,11 +112,11 @@
           },
           {
             "course_number": "01160031",
-            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+            "course_name": "תורת האינפורמציה הקוונטית"
           },
           {
             "course_number": "00460052",
-            "course_name": "אופטואלקטרוניקה קוונטית"
+            "course_name": "אופטו-אלקטרוניקה קוואנטית"
           },
           {
             "course_number": "00460053",
@@ -133,11 +128,11 @@
           },
           {
             "course_number": "00460232",
-            "course_name": "פרקים בננו אלקטרוניקה"
+            "course_name": "פרקים בננו-אלקטרוניקה"
           },
           {
             "course_number": "00460240",
-            "course_name": "התקנים קוואנטים על מוליכים"
+            "course_name": "התקנים קוונטיים על-מוליכים"
           },
           {
             "course_number": "00460241",
@@ -146,10 +141,6 @@
           {
             "course_number": "00460734",
             "course_name": "תורת האינפורמציה לתקשורת קוונטית"
-          },
-          {
-            "course_number": "01160037",
-            "course_name": "מיחשוב קוונטי רועש"
           }
         ]
       },
@@ -172,7 +163,7 @@
           },
           {
             "course_number": "01160031",
-            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+            "course_name": "תורת האינפורמציה הקוונטית"
           },
           {
             "course_number": "00460734",
@@ -198,11 +189,11 @@
           },
           {
             "course_number": "01160031",
-            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+            "course_name": "תורת האינפורמציה הקוונטית"
           },
           {
             "course_number": "00460052",
-            "course_name": "אופטואלקטרוניקה קוונטית"
+            "course_name": "אופטו-אלקטרוניקה קוואנטית"
           },
           {
             "course_number": "00460053",
@@ -214,11 +205,11 @@
           },
           {
             "course_number": "00460232",
-            "course_name": "פרקים בננו אלקטרוניקה"
+            "course_name": "פרקים בננו-אלקטרוניקה"
           },
           {
             "course_number": "00460240",
-            "course_name": "התקנים קוואנטים על מוליכים"
+            "course_name": "התקנים קוונטיים על-מוליכים"
           },
           {
             "course_number": "00460241",
@@ -227,10 +218,6 @@
           {
             "course_number": "00460734",
             "course_name": "תורת האינפורמציה לתקשורת קוונטית"
-          },
-          {
-            "course_number": "01160037",
-            "course_name": "מיחשוב קוונטי רועש"
           }
         ]
       },
@@ -260,7 +247,7 @@
           },
           {
             "course_number": "01160031",
-            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+            "course_name": "תורת האינפורמציה הקוונטית"
           }
         ],
         "note": "אפשר לקחת או את 02360990 או את 01160031, אבל לא את שניהם"

@@ -5,12 +5,12 @@
   "courses": [
     {
       "course_number": "00460237",
-      "course_name": "מעגלים משולבים - מבוא ל-VLSI",
+      "course_name": "מעגלים משולבים - מבוא ל-וי.ל.ס.י.",
       "category": "mandatory_core"
     },
     {
       "course_number": "00460045",
-      "course_name": "תכן ממירים ממותגים",
+      "course_name": "תכן של ממירי מתח ממותגים",
       "category": "elective"
     },
     {
@@ -25,17 +25,12 @@
     },
     {
       "course_number": "00460903",
-      "course_name": "מעגלים משולבים - CMOS בתדר רדיו (RF)",
+      "course_name": "מעגלים משולבים בתדר רדיו",
       "category": "elective"
     },
     {
       "course_number": "00440139",
       "course_name": "ממירי מתח ממותגים",
-      "category": "elective"
-    },
-    {
-      "course_number": "00440294",
-      "course_name": "מכשור אלקטרוני",
       "category": "elective"
     },
     {
@@ -45,17 +40,12 @@
     },
     {
       "course_number": "00460265",
-      "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים",
+      "course_name": "ארכיטקטורות ומעגלים בשילוב ממריסטורים",
       "category": "elective"
     },
     {
       "course_number": "00460880",
       "course_name": "תכן לוגי ממוחשב של שבבים",
-      "category": "elective"
-    },
-    {
-      "course_number": "00440214",
-      "course_name": "טכניקות קליטה ושידור",
       "category": "elective"
     },
     {
@@ -70,7 +60,7 @@
     },
     {
       "course_number": "00460918",
-      "course_name": "תכן פיסי ממוחשב של שבבים",
+      "course_name": "תכן פיסי של מערכות VLSI",
       "category": "elective"
     }
   ],
@@ -79,7 +69,7 @@
     "mandatory_courses": [
       {
         "course_number": "00460237",
-        "course_name": "מעגלים משולבים - מבוא ל-VLSI"
+        "course_name": "מעגלים משולבים - מבוא ל-וי.ל.ס.י."
       }
     ],
     "additional_courses_required": 2,
@@ -88,7 +78,7 @@
       "options": [
         {
           "course_number": "00460045",
-          "course_name": "תכן ממירים ממותגים"
+          "course_name": "תכן של ממירי מתח ממותגים"
         },
         {
           "course_number": "00460187",
@@ -100,15 +90,11 @@
         },
         {
           "course_number": "00460903",
-          "course_name": "מעגלים משולבים - CMOS בתדר רדיו (RF)"
+          "course_name": "מעגלים משולבים בתדר רדיו"
         },
         {
           "course_number": "00440139",
           "course_name": "ממירי מתח ממותגים"
-        },
-        {
-          "course_number": "00440294",
-          "course_name": "מכשור אלקטרוני"
         },
         {
           "course_number": "00460189",
@@ -116,15 +102,11 @@
         },
         {
           "course_number": "00460265",
-          "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים"
+          "course_name": "ארכיטקטורות ומעגלים בשילוב ממריסטורים"
         },
         {
           "course_number": "00460880",
           "course_name": "תכן לוגי ממוחשב של שבבים"
-        },
-        {
-          "course_number": "00440214",
-          "course_name": "טכניקות קליטה ושידור"
         },
         {
           "course_number": "00460864",
@@ -136,7 +118,7 @@
         },
         {
           "course_number": "00460918",
-          "course_name": "תכן פיסי ממוחשב של שבבים"
+          "course_name": "תכן פיסי של מערכות VLSI"
         }
       ]
     },

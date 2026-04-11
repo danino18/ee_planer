@@ -2,7 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey } from '../store/planStore';
-import { TRACK_SPECIALIZATIONS } from '../constants';
+import { getTrackSpecializationCatalog } from '../domain/specializations';
 
 interface Props {
   course: SapCourse;
@@ -36,7 +36,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
   })));
 
   const chainMemberships = useMemo(() => {
-    const allSpecs = TRACK_SPECIALIZATIONS[trackId ?? 'ee'] ?? [];
+    const allSpecs = trackId ? getTrackSpecializationCatalog(trackId).groups : [];
     return allSpecs
       .filter((g) =>
         g.mandatoryCourses.includes(course.id) || g.electiveCourses.includes(course.id)

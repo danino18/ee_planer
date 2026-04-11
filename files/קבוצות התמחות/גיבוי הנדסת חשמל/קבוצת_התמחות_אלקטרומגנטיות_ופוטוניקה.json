@@ -9,7 +9,7 @@
   "courses": [
     {
       "course_number": "00460248",
-      "course_name": "פוטוניקה לייזרים",
+      "course_name": "פוטוניקה ולייזרים",
       "category": "mandatory_option_single_and_required_double"
     },
     {
@@ -19,7 +19,7 @@
     },
     {
       "course_number": "00460052",
-      "course_name": "אופטואלקטרוניקה קוונטית",
+      "course_name": "אופטו-אלקטרוניקה קוואנטית",
       "category": "elective"
     },
     {
@@ -28,23 +28,8 @@
       "category": "elective"
     },
     {
-      "course_number": "00460055",
-      "course_name": "ננו-פוטוניקה",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460216",
-      "course_name": "מיקרוגלים",
-      "category": "elective"
-    },
-    {
       "course_number": "00460241",
       "course_name": "מכניקה קוונטית",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460242",
-      "course_name": "פיזיקה סטטיסטית להנדסת חשמל",
       "category": "elective"
     },
     {
@@ -53,18 +38,8 @@
       "category": "elective"
     },
     {
-      "course_number": "00460244",
-      "course_name": "תופעות גלים",
-      "category": "elective"
-    },
-    {
       "course_number": "00460249",
-      "course_name": "מערכות אלקטרואופטיות",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460250",
-      "course_name": "אי לינאריות ומבנים מחזוריים בפוטוניקה",
+      "course_name": "מערכות אלקטרו-אופטיות",
       "category": "elective"
     },
     {
@@ -79,17 +54,12 @@
     },
     {
       "course_number": "00460342",
-      "course_name": "מבוא לתופעות אופטיות",
+      "course_name": "מבוא לתקשורת בסיבים אופטיים",
       "category": "elective"
     },
     {
       "course_number": "00460773",
-      "course_name": "התקני מוליכים למחצה אלקטרו-אופטיים לגילוי",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460851",
-      "course_name": "לייזרים של מוליכים למחצה והתקנים פוטוניים משולבים",
+      "course_name": "התקני מל\"מ אלקטרואופטיים לגלוי",
       "category": "elective"
     },
     {
@@ -116,7 +86,7 @@
         "options": [
           {
             "course_number": "00460248",
-            "course_name": "פוטוניקה לייזרים"
+            "course_name": "פוטוניקה ולייזרים"
           },
           {
             "course_number": "00460256",
@@ -130,7 +100,7 @@
         "options": [
           {
             "course_number": "00460248",
-            "course_name": "פוטוניקה לייזרים"
+            "course_name": "פוטוניקה ולייזרים"
           },
           {
             "course_number": "00460256",
@@ -138,43 +108,23 @@
           },
           {
             "course_number": "00460052",
-            "course_name": "אופטואלקטרוניקה קוונטית"
+            "course_name": "אופטו-אלקטרוניקה קוואנטית"
           },
           {
             "course_number": "00460053",
             "course_name": "אופטיקה קוונטית"
           },
           {
-            "course_number": "00460055",
-            "course_name": "ננו-פוטוניקה"
-          },
-          {
-            "course_number": "00460216",
-            "course_name": "מיקרוגלים"
-          },
-          {
             "course_number": "00460241",
             "course_name": "מכניקה קוונטית"
-          },
-          {
-            "course_number": "00460242",
-            "course_name": "פיזיקה סטטיסטית להנדסת חשמל"
           },
           {
             "course_number": "00460243",
             "course_name": "טכנולוגיות קוונטיות"
           },
           {
-            "course_number": "00460244",
-            "course_name": "תופעות גלים"
-          },
-          {
             "course_number": "00460249",
-            "course_name": "מערכות אלקטרואופטיות"
-          },
-          {
-            "course_number": "00460250",
-            "course_name": "אי לינאריות ומבנים מחזוריים בפוטוניקה"
+            "course_name": "מערכות אלקטרו-אופטיות"
           },
           {
             "course_number": "00460251",
@@ -186,15 +136,11 @@
           },
           {
             "course_number": "00460342",
-            "course_name": "מבוא לתופעות אופטיות"
+            "course_name": "מבוא לתקשורת בסיבים אופטיים"
           },
           {
             "course_number": "00460773",
-            "course_name": "התקני מוליכים למחצה אלקטרו-אופטיים לגילוי"
-          },
-          {
-            "course_number": "00460851",
-            "course_name": "לייזרים של מוליכים למחצה והתקנים פוטוניים משולבים"
+            "course_name": "התקני מל\"מ אלקטרואופטיים לגלוי"
           },
           {
             "course_number": "01160210",
@@ -217,7 +163,7 @@
       "mandatory_courses": [
         {
           "course_number": "00460248",
-          "course_name": "פוטוניקה לייזרים"
+          "course_name": "פוטוניקה ולייזרים"
         },
         {
           "course_number": "00460256",
@@ -230,43 +176,23 @@
         "options": [
           {
             "course_number": "00460052",
-            "course_name": "אופטואלקטרוניקה קוונטית"
+            "course_name": "אופטו-אלקטרוניקה קוואנטית"
           },
           {
             "course_number": "00460053",
             "course_name": "אופטיקה קוונטית"
           },
           {
-            "course_number": "00460055",
-            "course_name": "ננו-פוטוניקה"
-          },
-          {
-            "course_number": "00460216",
-            "course_name": "מיקרוגלים"
-          },
-          {
             "course_number": "00460241",
             "course_name": "מכניקה קוונטית"
-          },
-          {
-            "course_number": "00460242",
-            "course_name": "פיזיקה סטטיסטית להנדסת חשמל"
           },
           {
             "course_number": "00460243",
             "course_name": "טכנולוגיות קוונטיות"
           },
           {
-            "course_number": "00460244",
-            "course_name": "תופעות גלים"
-          },
-          {
             "course_number": "00460249",
-            "course_name": "מערכות אלקטרואופטיות"
-          },
-          {
-            "course_number": "00460250",
-            "course_name": "אי לינאריות ומבנים מחזוריים בפוטוניקה"
+            "course_name": "מערכות אלקטרו-אופטיות"
           },
           {
             "course_number": "00460251",
@@ -278,15 +204,11 @@
           },
           {
             "course_number": "00460342",
-            "course_name": "מבוא לתופעות אופטיות"
+            "course_name": "מבוא לתקשורת בסיבים אופטיים"
           },
           {
             "course_number": "00460773",
-            "course_name": "התקני מוליכים למחצה אלקטרו-אופטיים לגילוי"
-          },
-          {
-            "course_number": "00460851",
-            "course_name": "לייזרים של מוליכים למחצה והתקנים פוטוניים משולבים"
+            "course_name": "התקני מל\"מ אלקטרואופטיים לגלוי"
           },
           {
             "course_number": "01160210",

@@ -14,11 +14,6 @@
       "category": "required"
     },
     {
-      "course_number": "00460001",
-      "course_name": "הנדסת מערכות תוכנה מבוזרות",
-      "category": "elective"
-    },
-    {
       "course_number": "00460002",
       "course_name": "תכן וניתוח אלגוריתמים",
       "category": "elective"
@@ -50,7 +45,7 @@
     },
     {
       "course_number": "00460272",
-      "course_name": "מערכות מבוזרות : עקרונות",
+      "course_name": "מערכות מבוזרות: עקרונות",
       "category": "elective"
     },
     {
@@ -64,18 +59,8 @@
       "category": "elective"
     },
     {
-      "course_number": "00460733",
-      "course_name": "תורת האינפורמציה",
-      "category": "elective"
-    },
-    {
       "course_number": "00460881",
       "course_name": "אימות פורמלי לחומרה",
-      "category": "elective"
-    },
-    {
-      "course_number": "02360309",
-      "course_name": "מבוא לתורת הצפינה",
       "category": "elective"
     },
     {
@@ -105,10 +90,6 @@
     "additional_course_selection_rule": {
       "type": "choose_1_from",
       "options": [
-        {
-          "course_number": "00460001",
-          "course_name": "הנדסת מערכות תוכנה מבוזרות"
-        },
         {
           "course_number": "00460002",
           "course_name": "תכן וניתוח אלגוריתמים"
@@ -149,7 +130,7 @@
         },
         {
           "course_number": "00460272",
-          "course_name": "מערכות מבוזרות : עקרונות"
+          "course_name": "מערכות מבוזרות: עקרונות"
         },
         {
           "course_number": "00460280",
@@ -160,20 +141,12 @@
           "course_name": "הגנה ברשתות"
         },
         {
-          "course_number": "00460733",
-          "course_name": "תורת האינפורמציה"
-        },
-        {
           "course_number": "00460881",
           "course_name": "אימות פורמלי לחומרה"
-        },
-        {
-          "course_number": "02360309",
-          "course_name": "מבוא לתורת הצפינה"
         }
       ]
     },
-    "logical_expression": "(00440334 AND 00460005) AND 1_OF(00460001,00460002,00460203,(00460197 OR 01040193 OR 02360330),00460195,00460205,00460209,00460272,00460280,02360350,00460733,00460881,02360309)"
+    "logical_expression": "(00440334 AND 00460005) AND 1_OF(00460002,00460203,(00460197 OR 01040193 OR 02360330),00460195,00460205,00460209,00460272,00460280,02360350,00460881)"
   },
   "replacement_rules": [
     {

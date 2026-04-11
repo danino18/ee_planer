@@ -35,7 +35,7 @@
     },
     {
       "course_number": "00460045",
-      "course_name": "תכן ממירים ממותגים",
+      "course_name": "תכן של ממירי מתח ממותגים",
       "category": "elective"
     },
     {
@@ -106,7 +106,7 @@
         },
         {
           "course_number": "00460045",
-          "course_name": "תכן ממירים ממותגים"
+          "course_name": "תכן של ממירי מתח ממותגים"
         },
         {
           "type": "choose_1_from",

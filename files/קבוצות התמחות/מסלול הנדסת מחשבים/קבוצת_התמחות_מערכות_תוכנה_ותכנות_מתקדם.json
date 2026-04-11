@@ -1,0 +1,269 @@
+{
+  "title": "קבוצת התמחות - מערכות תוכנה ותכנות מתקדם",
+  "specialization_group_name": "מערכות תוכנה ותכנות מתקדם",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "02360319",
+      "course_name": "שפות תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360321",
+      "course_name": "שיטות בהנדסת תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360322",
+      "course_name": "מערכות אחסון מידע",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360490",
+      "course_name": "אבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360491",
+      "course_name": "תכנות מאובטח",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360496",
+      "course_name": "הנדסה לאחור",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360350",
+      "course_name": "הגנה ברשתות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460266",
+      "course_name": "שיטות הידור (קומפילציה)",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360360",
+      "course_name": "תורת הקומפילציה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360363",
+      "course_name": "מסדי נתונים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360370",
+      "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים וללמידה חישובית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360376",
+      "course_name": "הנדסת מערכות הפעלה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360703",
+      "course_name": "תכנות מונחה עצמים",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460271",
+      "course_name": "תכנות ותכן מונחה עצמים",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360351",
+      "course_name": "מערכות מבוזרות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360501",
+      "course_name": "מבוא לבינה מלאכותית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360780",
+      "course_name": "אלגוריתמים לניהול זיכרון דינמי",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360781",
+      "course_name": "למידה עמוקה על מאיצים חישוביים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460275",
+      "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460277",
+      "course_name": "הבטחת נכונות של תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460278",
+      "course_name": "מאיצים חישוביים ומערכות מואצות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460279",
+      "course_name": "חישוב מקבילי מואץ",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [],
+    "selection_rule": {
+      "type": "choose_3_from",
+      "options": [
+        {
+          "course_number": "02360319",
+          "course_name": "שפות תוכנה"
+        },
+        {
+          "course_number": "02360321",
+          "course_name": "שיטות בהנדסת תוכנה"
+        },
+        {
+          "course_number": "02360322",
+          "course_name": "מערכות אחסון מידע"
+        },
+        {
+          "course_number": "02360490",
+          "course_name": "אבטחת מחשבים"
+        },
+        {
+          "course_number": "02360491",
+          "course_name": "תכנות מאובטח"
+        },
+        {
+          "course_number": "02360496",
+          "course_name": "הנדסה לאחור"
+        },
+        {
+          "course_number": "02360350",
+          "course_name": "הגנה ברשתות"
+        },
+        {
+          "course_number": "00460266",
+          "course_name": "שיטות הידור (קומפילציה)"
+        },
+        {
+          "course_number": "02360360",
+          "course_name": "תורת הקומפילציה"
+        },
+        {
+          "course_number": "02360363",
+          "course_name": "מסדי נתונים"
+        },
+        {
+          "course_number": "02360370",
+          "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים וללמידה חישובית"
+        },
+        {
+          "course_number": "02360376",
+          "course_name": "הנדסת מערכות הפעלה"
+        },
+        {
+          "course_number": "02360703",
+          "course_name": "תכנות מונחה עצמים"
+        },
+        {
+          "course_number": "00460271",
+          "course_name": "תכנות ותכן מונחה עצמים"
+        },
+        {
+          "course_number": "02360351",
+          "course_name": "מערכות מבוזרות"
+        },
+        {
+          "course_number": "02360501",
+          "course_name": "מבוא לבינה מלאכותית"
+        },
+        {
+          "course_number": "02360780",
+          "course_name": "אלגוריתמים לניהול זיכרון דינמי"
+        },
+        {
+          "course_number": "02360781",
+          "course_name": "למידה עמוקה על מאיצים חישוביים"
+        },
+        {
+          "course_number": "00460272",
+          "course_name": "מערכות מבוזרות : עקרונות"
+        },
+        {
+          "course_number": "00460275",
+          "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי"
+        },
+        {
+          "course_number": "00460277",
+          "course_name": "הבטחת נכונות של תוכנה"
+        },
+        {
+          "course_number": "00460278",
+          "course_name": "מאיצים חישוביים ומערכות מואצות"
+        },
+        {
+          "course_number": "00460279",
+          "course_name": "חישוב מקבילי מואץ"
+        },
+        {
+          "course_number": "00460280",
+          "course_name": "עקרונות וכלים באבטחת מחשבים"
+        }
+      ]
+    },
+    "logical_expression": "3_OF(02360319,02360321,02360322,02360490,02360491,02360496,02360350,00460266,02360360,02360363,02360370,02360376,02360703,00460271,02360351,02360501,02360780,02360781,00460272,00460275,00460277,00460278,00460279,00460280)"
+  },
+  "mutual_exclusion_rules": [
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460266",
+          "course_name": "שיטות הידור (קומפילציה)"
+        },
+        {
+          "course_number": "02360360",
+          "course_name": "תורת הקומפילציה"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460266 ו-02360360"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "02360703",
+          "course_name": "תכנות מונחה עצמים"
+        },
+        {
+          "course_number": "00460271",
+          "course_name": "תכנות ותכן מונחה עצמים"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 02360703 ו-00460271"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "אין מקצוע חובה קבוע בקבוצה זו",
+    "יש לבחור 3 מקצועות מתוך רשימת הקורסים של הקבוצה",
+    "יש שני כללי OR בתוך הקבוצה, ולכן אי אפשר לקחת יחד את שני הקורסים בכל אחד מהזוגות הללו"
+  ]
+}

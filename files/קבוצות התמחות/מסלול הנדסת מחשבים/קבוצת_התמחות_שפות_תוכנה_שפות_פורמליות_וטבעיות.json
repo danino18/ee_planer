@@ -1,0 +1,131 @@
+{
+  "title": "קבוצת התמחות - שפות תוכנה, שפות פורמליות וטבעיות",
+  "specialization_group_name": "שפות תוכנה, שפות פורמליות וטבעיות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "02340129",
+      "course_name": "מבוא לתורת הקבוצות ואוטומטים למדמ\"ח",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "02340292",
+      "course_name": "לוגיקה למדעי המחשב",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360319",
+      "course_name": "שפות תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360299",
+      "course_name": "מבוא לעיבוד שפות טבעיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360342",
+      "course_name": "מבוא לאימות תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360345",
+      "course_name": "אימות אוטומטי של מערכות תוכנה וחומרה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460277",
+      "course_name": "הבטחת נכונות של תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460266",
+      "course_name": "שיטות הידור (קומפילציה)",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360360",
+      "course_name": "תורת הקומפילציה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360780",
+      "course_name": "אלגוריתמים לניהול זיכרון דינמי",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "02340129",
+        "course_name": "מבוא לתורת הקבוצות ואוטומטים למדמ\"ח"
+      }
+    ],
+    "additional_courses_required": 2,
+    "additional_course_selection_rule": {
+      "type": "choose_2_from",
+      "options": [
+        {
+          "course_number": "02340292",
+          "course_name": "לוגיקה למדעי המחשב"
+        },
+        {
+          "course_number": "02360319",
+          "course_name": "שפות תוכנה"
+        },
+        {
+          "course_number": "02360299",
+          "course_name": "מבוא לעיבוד שפות טבעיות"
+        },
+        {
+          "course_number": "02360342",
+          "course_name": "מבוא לאימות תוכנה"
+        },
+        {
+          "course_number": "02360345",
+          "course_name": "אימות אוטומטי של מערכות תוכנה וחומרה"
+        },
+        {
+          "course_number": "00460277",
+          "course_name": "הבטחת נכונות של תוכנה"
+        },
+        {
+          "course_number": "00460266",
+          "course_name": "שיטות הידור (קומפילציה)"
+        },
+        {
+          "course_number": "02360360",
+          "course_name": "תורת הקומפילציה"
+        },
+        {
+          "course_number": "02360780",
+          "course_name": "אלגוריתמים לניהול זיכרון דינמי"
+        }
+      ]
+    },
+    "logical_expression": "02340129 AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES_SUBJECT_TO_MUTUAL_EXCLUSION_RULES"
+  },
+  "mutual_exclusion_rules": [
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460266",
+          "course_name": "שיטות הידור (קומפילציה)"
+        },
+        {
+          "course_number": "02360360",
+          "course_name": "תורת הקומפילציה"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460266 ו-02360360"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "02340129 הוא המקצוע המחייב",
+    "לאחר מכן נדרשים עוד 2 מקצועות נוספים מתוך רשימת הקורסים של הקבוצה",
+    "יש כלל OR אחד בתוך הקבוצה, ולכן אי אפשר לקחת יחד את 00460266 ו-02360360"
+  ]
+}

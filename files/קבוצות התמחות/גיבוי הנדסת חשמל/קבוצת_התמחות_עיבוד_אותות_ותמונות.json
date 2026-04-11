@@ -40,7 +40,7 @@
     },
     {
       "course_number": "00460249",
-      "course_name": "מערכות אלקטרואופטיות",
+      "course_name": "מערכות אלקטרו-אופטיות",
       "category": "elective"
     },
     {
@@ -49,28 +49,8 @@
       "category": "elective"
     },
     {
-      "course_number": "00460345",
-      "course_name": "גרפיקה ממוחשבת",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460733",
-      "course_name": "תורת האינפורמציה",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460743",
-      "course_name": "עיבוד אותות מרחבי",
-      "category": "elective"
-    },
-    {
-      "course_number": "00460746",
-      "course_name": "אלגוריתמים ויישומים בראייה ממוחשבת",
-      "category": "elective"
-    },
-    {
       "course_number": "00460747",
-      "course_name": "למידה עמוקה לאותות ודיבור",
+      "course_name": "למידה עמוקה לאותות דיבור",
       "category": "elective"
     },
     {
@@ -162,31 +142,15 @@
         },
         {
           "course_number": "00460249",
-          "course_name": "מערכות אלקטרואופטיות"
+          "course_name": "מערכות אלקטרו-אופטיות"
         },
         {
           "course_number": "00460332",
           "course_name": "מערכות ראיה ושמיעה"
         },
         {
-          "course_number": "00460345",
-          "course_name": "גרפיקה ממוחשבת"
-        },
-        {
-          "course_number": "00460733",
-          "course_name": "תורת האינפורמציה"
-        },
-        {
-          "course_number": "00460743",
-          "course_name": "עיבוד אותות מרחבי"
-        },
-        {
-          "course_number": "00460746",
-          "course_name": "אלגוריתמים ויישומים בראייה ממוחשבת"
-        },
-        {
           "course_number": "00460747",
-          "course_name": "למידה עמוקה לאותות ודיבור"
+          "course_name": "למידה עמוקה לאותות דיבור"
         },
         {
           "course_number": "00460831",

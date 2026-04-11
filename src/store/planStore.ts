@@ -7,6 +7,10 @@ import { eeMathTrack } from '../data/tracks/ee_math';
 import { eePhysicsTrack } from '../data/tracks/ee_physics';
 import { eeCombinedTrack } from '../data/tracks/ee_combined';
 import { ceTrack } from '../data/tracks/ce';
+import {
+  getTrackSpecializationCatalog,
+  sanitizeTrackSpecializationSelections,
+} from '../domain/specializations';
 
 interface PlanState extends StudentPlan {
   // Ephemeral — NOT persisted
@@ -180,6 +184,22 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
   return migrated;
 }
 
+function sanitizeSpecializationStateForTrack(plan: StudentPlan): StudentPlan {
+  if (!plan.trackId) return plan;
+
+  const catalog = getTrackSpecializationCatalog(plan.trackId);
+  const sanitizedSelections = sanitizeTrackSpecializationSelections(catalog, {
+    selectedSpecializations: plan.selectedSpecializations ?? [],
+    doubleSpecializations: plan.doubleSpecializations ?? [],
+  });
+
+  return {
+    ...plan,
+    selectedSpecializations: sanitizedSelections.selectedSpecializations,
+    doubleSpecializations: sanitizedSelections.doubleSpecializations,
+  };
+}
+
 /** Shallow snapshot of all plan fields for undo history */
 function captureSnapshot(state: PlanState): StudentPlan {
   return {
@@ -232,7 +252,9 @@ export const usePlanStore = create<PlanState>()(
           }
           // Restore previously saved state for this track
           if (savedTracks[newTrackId]) {
-            const saved = applyPlanMigrations(savedTracks[newTrackId]);
+            const saved = sanitizeSpecializationStateForTrack(
+              applyPlanMigrations(savedTracks[newTrackId]),
+            );
             return {
               ...initialState,
               ...saved,
@@ -376,11 +398,19 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       toggleSpecialization: (groupId) =>
-        set((state) => ({
-          selectedSpecializations: state.selectedSpecializations.includes(groupId)
+        set((state) => {
+          const isSelected = state.selectedSpecializations.includes(groupId);
+          const selectedSpecializations = isSelected
             ? state.selectedSpecializations.filter((id) => id !== groupId)
-            : [...state.selectedSpecializations, groupId],
-        })),
+            : [...state.selectedSpecializations, groupId];
+
+          return {
+            selectedSpecializations,
+            doubleSpecializations: isSelected
+              ? (state.doubleSpecializations ?? []).filter((id) => id !== groupId)
+              : state.doubleSpecializations,
+          };
+        }),
 
       toggleFavorite: (courseId) =>
         set((state) => ({
@@ -544,6 +574,11 @@ export const usePlanStore = create<PlanState>()(
 
       toggleDoubleSpecialization: (groupId) =>
         set((state) => {
+          if (!state.trackId) return state;
+          const catalog = getTrackSpecializationCatalog(state.trackId);
+          if (catalog.interactionDisabled) return state;
+          const group = catalog.groups.find((entry) => entry.id === groupId);
+          if (!group?.canBeDouble) return state;
           const doubles = state.doubleSpecializations ?? [];
           return {
             doubleSpecializations: doubles.includes(groupId)
@@ -605,7 +640,7 @@ export const usePlanStore = create<PlanState>()(
       reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
 
       loadPlan: (plan) => set((state) => {
-        const migratedPlan = applyPlanMigrations(plan);
+        const migratedPlan = sanitizeSpecializationStateForTrack(applyPlanMigrations(plan));
         return {
           ...initialState,
           ...migratedPlan,

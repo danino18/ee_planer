@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
+import type { SpecializationDiagnostic } from '../types';
 import type { EnglishRequirementItem } from '../hooks/usePlan';
 
 interface ProgressRowProps {
@@ -200,8 +201,14 @@ interface Props {
     mandatory: { earned: number; required: number };
     elective: { earned: number; required: number };
     total: { earned: number; required: number };
-    specializationGroups: { completed: number; required: number; total: number };
-    groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean }[];
+    specializationGroups: {
+      completed: number;
+      required: number;
+      total: number;
+      unavailable?: boolean;
+      diagnostics?: SpecializationDiagnostic[];
+    };
+    groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean; complete?: boolean; issues?: string[] }[];
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
     freeElective: { earned: number; required: number };
@@ -334,11 +341,22 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
       <div className="border-t pt-3 mt-1 space-y-2">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-700">קבוצות התמחות</span>
-          <span className={`text-sm font-bold ${progress.specializationGroups.completed >= progress.specializationGroups.required ? 'text-green-600' : 'text-gray-600'}`}>
-            {progress.specializationGroups.completed} / {progress.specializationGroups.required}
+          <span className={`text-sm font-bold ${
+            progress.specializationGroups.unavailable
+              ? 'text-amber-700'
+              : progress.specializationGroups.completed >= progress.specializationGroups.required
+                ? 'text-green-600'
+                : 'text-gray-600'
+          }`}>
+            {progress.specializationGroups.unavailable ? 'לא זמין' : `${progress.specializationGroups.completed} / ${progress.specializationGroups.required}`}
             {progress.specializationGroups.completed >= progress.specializationGroups.required ? ' הושלם' : ''}
           </span>
         </div>
+        {progress.specializationGroups.unavailable && (
+          <p className="text-xs text-amber-700">
+            קבצי ההתמחויות למסלול הזה אינם תקינים כרגע ולכן ההתקדמות בהתמחויות לא מחושבת.
+          </p>
+        )}
         {progress.groupDetails.length > 0 && (
           <div className="space-y-1 pr-1">
             {progress.groupDetails.map((group) => (
