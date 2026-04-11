@@ -208,7 +208,16 @@ interface Props {
       unavailable?: boolean;
       diagnostics?: SpecializationDiagnostic[];
     };
-    groupDetails: { id: string; name: string; done: number; min: number; isDouble?: boolean; complete?: boolean; issues?: string[] }[];
+    groupDetails: {
+      id: string;
+      name: string;
+      done: number;
+      min: number;
+      isDouble?: boolean;
+      complete?: boolean;
+      issues?: string[];
+      summaries?: { id: string; label: string; done: number; required: number }[];
+    }[];
     sport: { earned: number; required: number };
     general: { earned: number; required: number };
     freeElective: { earned: number; required: number };
@@ -360,14 +369,25 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         {progress.groupDetails.length > 0 && (
           <div className="space-y-1 pr-1">
             {progress.groupDetails.map((group) => (
-              <div key={group.id} className="flex justify-between items-center">
-                <span className="text-xs text-gray-500 truncate max-w-[120px]" title={group.name}>{group.name}</span>
-                <div className="flex items-center gap-1 shrink-0">
-                  {group.isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפול</span>}
-                  <span className={`text-xs font-medium ${group.done >= group.min ? 'text-green-600' : 'text-gray-500'}`}>
-                    {group.done}/{group.min}{group.done >= group.min ? ' הושלם' : ''}
-                  </span>
+              <div key={group.id}>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500 truncate max-w-[120px]" title={group.name}>{group.name}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {group.isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפול</span>}
+                    <span className={`text-xs font-medium ${group.done >= group.min ? 'text-green-600' : 'text-gray-500'}`}>
+                      {group.done}/{group.min}{group.done >= group.min ? ' הושלם' : ''}
+                    </span>
+                  </div>
                 </div>
+                {group.summaries && group.summaries.length > 0 && (
+                  <div className="flex flex-wrap justify-end gap-1 mt-1">
+                    {group.summaries.map((summary) => (
+                      <span key={summary.id} className="text-[11px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
+                        {summary.done}/{summary.required} {summary.label}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

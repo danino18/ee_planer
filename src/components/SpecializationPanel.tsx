@@ -1,6 +1,6 @@
 ﻿import { lazy, Suspense, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { SpecializationGroup, SapCourse, TrackSpecializationCatalog } from '../types';
+import type { SpecializationGroup, SpecializationRuleBlock, SapCourse, TrackSpecializationCatalog } from '../types';
 import { evaluateSpecializationGroup } from '../domain/specializations';
 import { usePlanStore } from '../store/planStore';
 
@@ -13,6 +13,22 @@ const LazySpecializationGroupModal = lazy(async () => {
   const module = await import('./SpecializationGroupModal');
   return { default: module.SpecializationGroupModal };
 });
+
+function getRuleProgress(ruleBlocks: SpecializationRuleBlock[]) {
+  const required = ruleBlocks.reduce((sum, block) => sum + block.requiredCount, 0);
+  const done = ruleBlocks.reduce((sum, block) => sum + Math.min(block.satisfiedCount, block.requiredCount), 0);
+  return { done, required };
+}
+
+function summarizeRuleBlock(block: SpecializationRuleBlock): string {
+  const labels: Record<SpecializationRuleBlock['kind'], string> = {
+    mandatory_courses: 'חובה',
+    mandatory_choice: 'בחירת חובה',
+    selection_rule: 'בחירה',
+    additional_courses: 'קורס נוסף',
+  };
+  return `${block.satisfiedCount}/${block.requiredCount} ${labels[block.kind]}`;
+}
 
 export function SpecializationPanel({ catalog, courses }: Props) {
   const {
@@ -68,7 +84,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               : 'נמצאו אזהרות בקבצי ההתמחויות למסלול זה.'}
           </div>
         )}
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
           {groups.map((group) => {
             const isSelected = selectedSpecializations.includes(group.id);
             const isDouble = doubles.includes(group.id);
@@ -77,10 +93,11 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               allPlaced,
               isDouble && group.canBeDouble ? 'double' : 'single',
             );
+            const progress = getRuleProgress(evaluation.ruleBlocks);
             const pct = Math.min(
               100,
-              evaluation.requiredCount > 0
-                ? (evaluation.doneCount / evaluation.requiredCount) * 100
+              progress.required > 0
+                ? (progress.done / progress.required) * 100
                 : 0,
             );
 
@@ -88,12 +105,12 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               <div
                 key={group.id}
                 onClick={() => handleOpenGroup(group)}
-                className={`text-right p-2.5 rounded-lg border-2 transition-all cursor-pointer ${
+                className={`text-right p-3 rounded-lg border-2 transition-all cursor-pointer ${
                   isSelected ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
-                <div className="flex justify-between items-center mb-1">
-                  <div className="flex items-center gap-1">
+                <div className="flex justify-between items-start gap-3 mb-2">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
@@ -101,14 +118,14 @@ export function SpecializationPanel({ catalog, courses }: Props) {
                         if (!interactionDisabled) toggleSpecialization(group.id);
                       }}
                       disabled={interactionDisabled}
-                      className={`text-xs leading-none w-4 h-4 flex items-center justify-center rounded border transition-colors ${
+                      className={`text-xs leading-none w-5 h-5 flex items-center justify-center rounded border transition-colors ${
                         isSelected
                           ? 'bg-blue-500 border-blue-500 text-white'
                           : 'border-gray-300 text-transparent hover:border-blue-400'
                       } ${interactionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                       title={isSelected ? 'בטל בחירה' : 'בחר קבוצה'}
                     >
-                      ג“
+                      ✓
                     </button>
                     {group.canBeDouble && (
                       <button
@@ -126,12 +143,29 @@ export function SpecializationPanel({ catalog, courses }: Props) {
                       </button>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-semibold text-gray-800">{group.name}</span>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${evaluation.complete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {evaluation.doneCount}/{evaluation.requiredCount}{evaluation.complete ? ' ג“' : ''}
-                    </span>
-                    {isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפולה</span>}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                      {isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפולה</span>}
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${evaluation.complete ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {progress.done}/{progress.required}{evaluation.complete ? ' הושלם' : ''}
+                      </span>
+                      <span className="text-sm font-semibold text-gray-800 truncate">{group.name}</span>
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-1 mt-2">
+                      {evaluation.ruleBlocks.map((block) => (
+                        <span
+                          key={block.id}
+                          className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                            block.isSatisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {summarizeRuleBlock(block)}
+                        </span>
+                      ))}
+                    </div>
+                    {evaluation.issues.length > 0 && (
+                      <p className="text-[11px] text-amber-700 mt-2 line-clamp-2">{evaluation.issues[0]}</p>
+                    )}
                   </div>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-1.5">

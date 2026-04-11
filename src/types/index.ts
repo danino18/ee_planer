@@ -82,6 +82,24 @@ export interface SpecializationRequirementSet {
   logicalExpression: string | null;
 }
 
+export type SpecializationRuleBlockKind =
+  | 'mandatory_courses'
+  | 'mandatory_choice'
+  | 'selection_rule'
+  | 'additional_courses';
+
+export interface SpecializationRuleBlock {
+  id: string;
+  kind: SpecializationRuleBlockKind;
+  title: string;
+  requiredCount: number;
+  satisfiedCount: number;
+  isSatisfied: boolean;
+  options: SpecializationCourseReference[];
+  matchedCourseNumbers: string[];
+  note?: string;
+}
+
 export type SpecializationMode = 'single' | 'double';
 export type SpecializationGroupModeState = 'single_only' | 'single_and_double';
 
@@ -145,6 +163,7 @@ export interface SpecializationGroupEvaluation {
   additionalRuleSatisfied: boolean;
   mutualExclusionSatisfied: boolean;
   matchedCourseNumbers: string[];
+  ruleBlocks: SpecializationRuleBlock[];
   issues: string[];
 }
 

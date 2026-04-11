@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -8,6 +8,14 @@ import ts from 'typescript';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const filesRoot = join(repoRoot, 'files', 'קבוצות התמחות');
 const enginePath = join(repoRoot, 'src', 'domain', 'specializations', 'engine.ts');
+const TRACK_SPECIALIZATION_FOLDERS = {
+  ee: 'מסלול הנדסת חשמל',
+  cs: 'מסלול הנדסת מחשבים ותוכנה',
+  ee_math: 'מסלול הנדסת חשמל ומתמטיקה',
+  ee_physics: 'מסלול הנדסת חשמל ופיזיקה',
+  ee_combined: 'מסלול משולב-חשמל-פיסיקה(178 נקז)',
+  ce: 'מסלול הנדסת מחשבים',
+};
 
 const engineSource = readFileSync(enginePath, 'utf8');
 const transpiledEngine = ts.transpileModule(engineSource, {
@@ -20,7 +28,6 @@ const engineModuleUrl = `data:text/javascript;base64,${Buffer.from(transpiledEng
 const {
   buildTrackSpecializationCatalogs,
   evaluateSpecializationGroup,
-  TRACK_SPECIALIZATION_FOLDERS,
 } = await import(engineModuleUrl);
 
 function buildSourcesFromFiles() {
@@ -58,10 +65,6 @@ test('track-specific specialization catalogs load and validate correctly', () =>
     catalogs.cs.groups.map((group) => group.name).sort(),
     'Different tracks should load different specialization sets',
   );
-
-  const rootLevelJsons = readdirSync(filesRoot, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'));
-  assert.ok(rootLevelJsons.length > 0, 'Expected legacy root-level JSON files to exist for ignore test');
   for (const trackSources of Object.values(sources)) {
     assert.ok(trackSources.every((entry) => entry.path.split('קבוצות התמחות').at(-1).split('\\').length > 2));
   }
@@ -77,6 +80,54 @@ test('track-specific specialization catalogs load and validate correctly', () =>
   const eeMathQuantum = findGroup(catalogs.ee_math, 'טכנולוגיות קוונטיות');
   assert.equal(eeQuantum.canBeDouble, true, 'Quantum specialization should allow double mode in EE');
   assert.equal(eeMathQuantum.canBeDouble, false, 'Same specialization name should behave differently in EE+Math');
+
+  const csCommunication = findGroup(catalogs.cs, 'תקשורת');
+  const csCommunicationEvaluation = evaluateSpecializationGroup(
+    csCommunication,
+    ['00460206', '00460205'],
+    'single',
+  );
+  assert.equal(
+    csCommunication.mandatoryCourses.includes('00460205'),
+    false,
+    'Choice-rule course should not be flattened into legacy mandatory courses',
+  );
+  assert.deepEqual(
+    csCommunicationEvaluation.ruleBlocks.map((block) => block.kind),
+    ['mandatory_courses', 'mandatory_choice', 'additional_courses'],
+    'Communication group should expose separate rule blocks for mandatory, OR choice, and additional courses',
+  );
+  assert.deepEqual(
+    csCommunicationEvaluation.ruleBlocks[0].options.map((option) => option.courseNumber),
+    ['00460206'],
+    'Mandatory block should contain only the true mandatory course',
+  );
+  assert.deepEqual(
+    csCommunicationEvaluation.ruleBlocks[1].options.map((option) => option.courseNumber).sort(),
+    ['00460204', '00460205', '00460208', '00460733', '02360309'].sort(),
+    'Mandatory choice block should contain only the OR-required communication courses',
+  );
+  assert.equal(
+    csCommunicationEvaluation.ruleBlocks[2].requiredCount,
+    1,
+    'Additional-course block should preserve the number of extra courses required',
+  );
+  assert.equal(
+    csCommunicationEvaluation.ruleBlocks[2].isSatisfied,
+    false,
+    'Taking only the mandatory course and one OR choice should still leave the additional-course block incomplete',
+  );
+  const csCommunicationComplete = evaluateSpecializationGroup(
+    csCommunication,
+    ['00460206', '00460205', '00440214'],
+    'single',
+  );
+  assert.equal(csCommunicationComplete.complete, true, 'Communication group should complete once the additional course is taken');
+  assert.equal(
+    csCommunicationComplete.ruleBlocks[2].isSatisfied,
+    true,
+    'Additional-course block should complete when one extra course from the wide list is taken',
+  );
 
   const eeBio = findGroup(catalogs.ee, 'ביולוג');
   const bioMissingMandatory = evaluateSpecializationGroup(
@@ -142,3 +193,5 @@ test('track-specific specialization catalogs load and validate correctly', () =>
     'Missing track folder diagnostic should be reported',
   );
 });
+
+

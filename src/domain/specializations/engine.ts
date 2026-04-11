@@ -10,6 +10,7 @@ import type {
   SpecializationMutualExclusionRule,
   SpecializationReplacementRule,
   SpecializationRequirementSet,
+  SpecializationRuleBlock,
   SpecializationRuleEvaluation,
   TrackId,
   TrackSpecializationCatalog,
@@ -521,13 +522,9 @@ function buildGroupLegacyLists(
   requirementsByMode: Record<SpecializationMode, SpecializationRequirementSet | null>,
 ): Pick<SpecializationGroup, 'mandatoryCourses' | 'electiveCourses'> {
   const singleRequirements = requirementsByMode.single;
-  const mandatoryCourseNumbers = dedupeCourseNumbers([
-    ...(singleRequirements?.mandatoryCourses.map((course) => course.courseNumber) ?? []),
-    ...(
-      singleRequirements?.mandatoryChoiceRules.flatMap((rule) => collectRuleCourseNumbers(rule)) ??
-      []
-    ),
-  ]);
+  const mandatoryCourseNumbers = dedupeCourseNumbers(
+    singleRequirements?.mandatoryCourses.map((course) => course.courseNumber) ?? [],
+  );
   const electiveCourses = courses
     .map((course) => course.courseNumber)
     .filter((courseNumber) => !mandatoryCourseNumbers.includes(courseNumber));
@@ -864,6 +861,19 @@ function collectTrackGroupCourseNumbers(group: SpecializationGroup): string[] {
   return dedupeCourseNumbers([...direct, ...fromRequirements]);
 }
 
+function collectRuleOptions(rule: SpecializationChoiceRule | null): SpecializationCourseReference[] {
+  if (!rule) return [];
+  const result: SpecializationCourseReference[] = [];
+  for (const option of rule.options) {
+    if (option.kind === 'course') {
+      result.push({ courseNumber: option.courseNumber, courseName: option.courseName, category: option.category });
+    } else {
+      result.push(...collectRuleOptions(option));
+    }
+  }
+  return result;
+}
+
 export function evaluateSpecializationGroup(
   group: SpecializationGroup,
   takenCourseNumbers: Iterable<string>,
@@ -886,6 +896,7 @@ export function evaluateSpecializationGroup(
       additionalRuleSatisfied: false,
       mutualExclusionSatisfied: false,
       matchedCourseNumbers: [],
+      ruleBlocks: [],
       issues: ['חוקי ההתמחות אינם זמינים.'],
     };
   }
@@ -900,6 +911,81 @@ export function evaluateSpecializationGroup(
   const mutualExclusion = evaluateMutualExclusionRules(group.mutualExclusionRules, takenCourses);
   const allKnownCourseNumbers = collectTrackGroupCourseNumbers(group);
   const doneCount = allKnownCourseNumbers.filter((courseNumber) => takenCourses.has(courseNumber)).length;
+
+  const ruleBlocks: SpecializationRuleBlock[] = [];
+
+  if (requirements.mandatoryCourses.length > 0) {
+    const satisfiedMandatoryCount = requirements.mandatoryCourses.filter(
+      (course) => courseIsSatisfied(course.courseNumber, takenCourses, replacementMap).satisfied,
+    ).length;
+    ruleBlocks.push({
+      id: 'mandatory_courses',
+      kind: 'mandatory_courses',
+      title: 'קורסי חובה',
+      requiredCount: requirements.mandatoryCourses.length,
+      satisfiedCount: satisfiedMandatoryCount,
+      isSatisfied: mandatoryCourses.satisfied,
+      options: requirements.mandatoryCourses,
+      matchedCourseNumbers: mandatoryCourses.matchedCourseNumbers,
+    });
+  }
+
+  requirements.mandatoryChoiceRules.forEach((rule, i) => {
+    const ev = mandatoryChoices[i];
+    ruleBlocks.push({
+      id: `mandatory_choice_${i}`,
+      kind: 'mandatory_choice',
+      title: rule.groupName ?? `בחר ${rule.count} מתוך הקורסים הבאים`,
+      requiredCount: rule.count,
+      satisfiedCount: ev.satisfiedOptionCount,
+      isSatisfied: ev.satisfied,
+      options: collectRuleOptions(rule),
+      matchedCourseNumbers: ev.matchedCourseNumbers,
+      note: rule.note,
+    });
+  });
+
+  if (requirements.selectionRule) {
+    const rule = requirements.selectionRule;
+    ruleBlocks.push({
+      id: 'selection_rule',
+      kind: 'selection_rule',
+      title: rule.groupName ?? `בחר ${rule.count} קורסים`,
+      requiredCount: rule.count,
+      satisfiedCount: selectionRule.satisfiedOptionCount,
+      isSatisfied: selectionRule.satisfied,
+      options: collectRuleOptions(rule),
+      matchedCourseNumbers: selectionRule.matchedCourseNumbers,
+      note: rule.note,
+    });
+  }
+
+  if (requirements.additionalCoursesRequired > 0 && requirements.additionalCourseSelectionRule) {
+    // Re-evaluate against courses not already consumed by prior blocks so that
+    // a course used for mandatory or mandatory_choice doesn't also count here.
+    const consumedByPriorBlocks = new Set<string>([
+      ...mandatoryCourses.matchedCourseNumbers,
+      ...mandatoryChoices.flatMap((ev) => ev.matchedCourseNumbers),
+      ...selectionRule.matchedCourseNumbers,
+    ]);
+    const remainingForAdditional = new Set([...takenCourses].filter((c) => !consumedByPriorBlocks.has(c)));
+    const additionalRuleConsumed = evaluateChoiceRule(
+      requirements.additionalCourseSelectionRule,
+      remainingForAdditional,
+      replacementMap,
+    );
+    ruleBlocks.push({
+      id: 'additional_courses',
+      kind: 'additional_courses',
+      title: `יש להשלים עוד ${requirements.additionalCoursesRequired} קורסים מתוך הרשימה הבאה`,
+      requiredCount: requirements.additionalCoursesRequired,
+      satisfiedCount: additionalRuleConsumed.satisfiedOptionCount,
+      isSatisfied: additionalRuleConsumed.satisfied,
+      options: collectRuleOptions(requirements.additionalCourseSelectionRule),
+      matchedCourseNumbers: additionalRuleConsumed.matchedCourseNumbers,
+      note: requirements.additionalCourseSelectionRule.note,
+    });
+  }
 
   const issues: string[] = [];
   if (!mandatoryCourses.satisfied) issues.push('קורסי החובה לא הושלמו.');
@@ -935,6 +1021,7 @@ export function evaluateSpecializationGroup(
       ...selectionRule.matchedCourseNumbers,
       ...additionalRule.matchedCourseNumbers,
     ]),
+    ruleBlocks,
     issues,
   };
 }

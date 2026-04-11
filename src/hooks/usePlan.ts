@@ -274,15 +274,29 @@ export function useRequirementsProgress(
       return sum + (courses.get(id)?.credits ?? 0);
     }, 0);
 
-    const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => ({
-      id: group.id,
-      name: group.name,
-      done: evaluation.doneCount,
-      min: evaluation.requiredCount,
-      isDouble: mode === 'double',
-      complete: evaluation.complete,
-      issues: evaluation.issues,
-    }));
+    const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => {
+      const ruleRequired = evaluation.ruleBlocks.reduce((sum, block) => sum + block.requiredCount, 0);
+      const ruleDone = evaluation.ruleBlocks.reduce(
+        (sum, block) => sum + Math.min(block.satisfiedCount, block.requiredCount),
+        0,
+      );
+
+      return {
+        id: group.id,
+        name: group.name,
+        done: ruleDone,
+        min: ruleRequired,
+        isDouble: mode === 'double',
+        complete: evaluation.complete,
+        summaries: evaluation.ruleBlocks.map((block) => ({
+          id: block.id,
+          label: block.title,
+          done: block.satisfiedCount,
+          required: block.requiredCount,
+        })),
+        issues: evaluation.issues,
+      };
+    });
 
     const generalRequirements = buildGeneralRequirementsProgress({
       courses,
