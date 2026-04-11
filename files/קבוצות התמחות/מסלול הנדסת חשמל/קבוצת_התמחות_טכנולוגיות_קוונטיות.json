@@ -1,0 +1,280 @@
+{
+  "title": "קבוצת התמחות - טכנולוגיות קוונטיות",
+  "specialization_group_name": "טכנולוגיות קוונטיות",
+  "type": "specialization_group",
+  "group_modes": [
+    "single",
+    "double"
+  ],
+  "courses": [
+    {
+      "course_number": "00460243",
+      "course_name": "טכנולוגיות קוונטיות",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "01260604",
+      "course_name": "מעבדה בטכנולוגיות קוונטיות א",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "01260605",
+      "course_name": "מעבדה בטכנולוגיות קוונטיות מתקדמת",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360990",
+      "course_name": "מבוא לעיבוד אינפורמציה קוונטית",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "01160031",
+      "course_name": "מבוא לאינפורמציה וחישוב קוונטיים",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460052",
+      "course_name": "אופטואלקטרוניקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460053",
+      "course_name": "אופטיקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460054",
+      "course_name": "מחשוב קוונטי מודרני",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460232",
+      "course_name": "פרקים בננו אלקטרוניקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460240",
+      "course_name": "התקנים קוואנטים על מוליכים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460241",
+      "course_name": "מכניקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460734",
+      "course_name": "תורת האינפורמציה לתקשורת קוונטית",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "01160037",
+      "course_name": "מיחשוב קוונטי רועש",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "single_group_rules": {
+      "total_courses_required_for_group": 3,
+      "mandatory_courses": [
+        {
+          "course_number": "00460243",
+          "course_name": "טכנולוגיות קוונטיות"
+        }
+      ],
+      "mandatory_choice_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "01160031",
+            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+          },
+          {
+            "course_number": "00460734",
+            "course_name": "תורת האינפורמציה לתקשורת קוונטית"
+          }
+        ]
+      },
+      "additional_courses_required": 1,
+      "additional_course_selection_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "01260604",
+            "course_name": "מעבדה בטכנולוגיות קוונטיות א"
+          },
+          {
+            "course_number": "01260605",
+            "course_name": "מעבדה בטכנולוגיות קוונטיות מתקדמת"
+          },
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "01160031",
+            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+          },
+          {
+            "course_number": "00460052",
+            "course_name": "אופטואלקטרוניקה קוונטית"
+          },
+          {
+            "course_number": "00460053",
+            "course_name": "אופטיקה קוונטית"
+          },
+          {
+            "course_number": "00460054",
+            "course_name": "מחשוב קוונטי מודרני"
+          },
+          {
+            "course_number": "00460232",
+            "course_name": "פרקים בננו אלקטרוניקה"
+          },
+          {
+            "course_number": "00460240",
+            "course_name": "התקנים קוואנטים על מוליכים"
+          },
+          {
+            "course_number": "00460241",
+            "course_name": "מכניקה קוונטית"
+          },
+          {
+            "course_number": "00460734",
+            "course_name": "תורת האינפורמציה לתקשורת קוונטית"
+          },
+          {
+            "course_number": "01160037",
+            "course_name": "מיחשוב קוונטי רועש"
+          }
+        ]
+      },
+      "logical_expression": "00460243 AND 1_OF(02360990,01160031,00460734) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES_SUBJECT_TO_MUTUAL_EXCLUSION_RULES"
+    },
+    "double_group_rules": {
+      "total_courses_required_for_group": 6,
+      "mandatory_courses": [
+        {
+          "course_number": "00460243",
+          "course_name": "טכנולוגיות קוונטיות"
+        }
+      ],
+      "mandatory_choice_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "01160031",
+            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+          },
+          {
+            "course_number": "00460734",
+            "course_name": "תורת האינפורמציה לתקשורת קוונטית"
+          }
+        ]
+      },
+      "additional_courses_required": 4,
+      "additional_course_selection_rule": {
+        "type": "choose_4_from",
+        "options": [
+          {
+            "course_number": "01260604",
+            "course_name": "מעבדה בטכנולוגיות קוונטיות א"
+          },
+          {
+            "course_number": "01260605",
+            "course_name": "מעבדה בטכנולוגיות קוונטיות מתקדמת"
+          },
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "01160031",
+            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+          },
+          {
+            "course_number": "00460052",
+            "course_name": "אופטואלקטרוניקה קוונטית"
+          },
+          {
+            "course_number": "00460053",
+            "course_name": "אופטיקה קוונטית"
+          },
+          {
+            "course_number": "00460054",
+            "course_name": "מחשוב קוונטי מודרני"
+          },
+          {
+            "course_number": "00460232",
+            "course_name": "פרקים בננו אלקטרוניקה"
+          },
+          {
+            "course_number": "00460240",
+            "course_name": "התקנים קוואנטים על מוליכים"
+          },
+          {
+            "course_number": "00460241",
+            "course_name": "מכניקה קוונטית"
+          },
+          {
+            "course_number": "00460734",
+            "course_name": "תורת האינפורמציה לתקשורת קוונטית"
+          },
+          {
+            "course_number": "01160037",
+            "course_name": "מיחשוב קוונטי רועש"
+          }
+        ]
+      },
+      "logical_expression": "00460243 AND 1_OF(02360990,01160031,00460734) AND 4_ADDITIONAL_FROM_ALL_GROUP_COURSES_SUBJECT_TO_MUTUAL_EXCLUSION_RULES"
+    },
+    "mutual_exclusion_rules": [
+      {
+        "type": "choose_at_most_1_from",
+        "options": [
+          {
+            "course_number": "01260604",
+            "course_name": "מעבדה בטכנולוגיות קוונטיות א"
+          },
+          {
+            "course_number": "01260605",
+            "course_name": "מעבדה בטכנולוגיות קוונטיות מתקדמת"
+          }
+        ],
+        "note": "אפשר לקחת או את 01260604 או את 01260605, אבל לא את שניהם"
+      },
+      {
+        "type": "choose_at_most_1_from",
+        "options": [
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "01160031",
+            "course_name": "מבוא לאינפורמציה וחישוב קוונטיים"
+          }
+        ],
+        "note": "אפשר לקחת או את 02360990 או את 01160031, אבל לא את שניהם"
+      }
+    ]
+  },
+  "notes": [
+    "הקבוצה יכולה להיחשב כקבוצה בודדת או כקבוצה כפולה",
+    "בקבוצה בודדת נדרשים בסך הכל 3 מקצועות",
+    "בקבוצה כפולה נדרשים בסך הכל 6 מקצועות",
+    "00460243 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 02360990, 01160031, 00460734",
+    "הקורסים הנוספים נבחרים מתוך רשימת הקורסים של הקבוצה, בכפוף לכללי אי-בחירה-בו-זמנית",
+    "אסור לקחת יחד את 01260604 ו-01260605",
+    "אסור לקחת יחד את 02360990 ו-01160031"
+  ]
+}

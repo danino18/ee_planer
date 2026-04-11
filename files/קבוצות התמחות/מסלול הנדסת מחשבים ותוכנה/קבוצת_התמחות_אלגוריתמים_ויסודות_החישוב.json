@@ -1,0 +1,138 @@
+{
+  "title": "קבוצת התמחות - אלגוריתמים ויסודות החישוב",
+  "specialization_group_name": "אלגוריתמים ויסודות החישוב",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_replacement_option"
+    },
+    {
+      "course_number": "00460205",
+      "course_name": "מבוא לתורת הקידוד בתקשורת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460345",
+      "course_name": "גרפיקה ממוחשבת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460880",
+      "course_name": "תכן לוגי ממוחשב של שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360990",
+      "course_name": "מבוא לעיבוד אינפורמציה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "replacement_for_00460197"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [],
+    "selection_rule": {
+      "type": "choose_3_from",
+      "options": [
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "type": "choose_1_from",
+          "options": [
+            {
+              "course_number": "00460197",
+              "course_name": "שיטות חישוביות באופטימיזציה"
+            },
+            {
+              "course_number": "01040193",
+              "course_name": "תורת האופטימיזציה"
+            },
+            {
+              "course_number": "02360330",
+              "course_name": "מבוא לאופטימיזציה"
+            }
+          ],
+          "note": "ניתן לקחת אחד משני המקצועות החלופיים במקום 00460197"
+        },
+        {
+          "course_number": "00460205",
+          "course_name": "מבוא לתורת הקידוד בתקשורת"
+        },
+        {
+          "course_number": "00460272",
+          "course_name": "מערכות מבוזרות : עקרונות"
+        },
+        {
+          "course_number": "00460280",
+          "course_name": "עקרונות וכלים באבטחת מחשבים"
+        },
+        {
+          "course_number": "00460345",
+          "course_name": "גרפיקה ממוחשבת"
+        },
+        {
+          "course_number": "00460880",
+          "course_name": "תכן לוגי ממוחשב של שבבים"
+        },
+        {
+          "course_number": "02360990",
+          "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+        }
+      ]
+    },
+    "logical_expression": "3_OF(00460195,(00460197 OR 01040193 OR 02360330),00460205,00460272,00460280,00460345,00460880,02360990)"
+  },
+  "replacement_rules": [
+    {
+      "replaceable_course": {
+        "course_number": "00460197",
+        "course_name": "שיטות חישוביות באופטימיזציה"
+      },
+      "allowed_replacements": [
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        }
+      ],
+      "note": "אפשר לקחת את 01040193 או את 02360330 במקום 00460197"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "אין מקצוע חובה קבוע בקבוצה זו",
+    "יש לבחור 3 מקצועות מתוך רשימת הקורסים של הקבוצה",
+    "לפי ההערה במסמך, ניתן לקחת את 01040193 או את 02360330 במקום 00460197"
+  ]
+}

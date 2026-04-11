@@ -1,0 +1,130 @@
+{
+  "title": "קבוצת התמחות - מערכות תוכנה, תכנות מתקדם ושפות תכנות",
+  "specialization_group_name": "מערכות תוכנה, תכנות מתקדם ושפות תכנות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460005",
+      "course_name": "רשתות מחשבים ואינטרנט 2",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460266",
+      "course_name": "שיטות הידור (קומפילציה)",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460271",
+      "course_name": "תכנות ותכן מונחה עצמים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460275",
+      "course_name": "תרגום ואופטימיזציה של קוד בינארי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460277",
+      "course_name": "הבטחת נכונות של תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460278",
+      "course_name": "מאיצים חישוביים ומערכות מואצות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460279",
+      "course_name": "חישוב מקבילי מואץ",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360350",
+      "course_name": "הגנה ברשתות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360370",
+      "course_name": "תכנות מקבילי ומבוזר",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360496",
+      "course_name": "הנדסה לאחור",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [],
+    "selection_rule": {
+      "type": "choose_3_from",
+      "options": [
+        {
+          "course_number": "00460005",
+          "course_name": "רשתות מחשבים ואינטרנט 2"
+        },
+        {
+          "course_number": "00460266",
+          "course_name": "שיטות הידור (קומפילציה)"
+        },
+        {
+          "course_number": "00460271",
+          "course_name": "תכנות ותכן מונחה עצמים"
+        },
+        {
+          "course_number": "00460272",
+          "course_name": "מערכות מבוזרות : עקרונות"
+        },
+        {
+          "course_number": "00460275",
+          "course_name": "תרגום ואופטימיזציה של קוד בינארי"
+        },
+        {
+          "course_number": "00460277",
+          "course_name": "הבטחת נכונות של תוכנה"
+        },
+        {
+          "course_number": "00460278",
+          "course_name": "מאיצים חישוביים ומערכות מואצות"
+        },
+        {
+          "course_number": "00460279",
+          "course_name": "חישוב מקבילי מואץ"
+        },
+        {
+          "course_number": "00460280",
+          "course_name": "עקרונות וכלים באבטחת מחשבים"
+        },
+        {
+          "course_number": "02360350",
+          "course_name": "הגנה ברשתות"
+        },
+        {
+          "course_number": "02360370",
+          "course_name": "תכנות מקבילי ומבוזר"
+        },
+        {
+          "course_number": "02360496",
+          "course_name": "הנדסה לאחור"
+        }
+      ]
+    },
+    "logical_expression": "3_OF(00460005,00460266,00460271,00460272,00460275,00460277,00460278,00460279,00460280,02360350,02360370,02360496)"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "אין מקצוע חובה קבוע בקבוצה זו",
+    "יש לבחור 3 מקצועות מתוך רשימת הקורסים של הקבוצה"
+  ]
+}

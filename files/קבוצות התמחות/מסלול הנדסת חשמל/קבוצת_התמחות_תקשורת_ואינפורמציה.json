@@ -1,0 +1,329 @@
+{
+  "title": "קבוצת התמחות - תקשורת ואינפורמציה",
+  "specialization_group_name": "תקשורת ואינפורמציה",
+  "type": "specialization_group",
+  "group_modes": [
+    "single",
+    "double"
+  ],
+  "courses": [
+    {
+      "course_number": "00460206",
+      "course_name": "מבוא לתקשורת ספרתית",
+      "category": "core"
+    },
+    {
+      "course_number": "00460204",
+      "course_name": "תקשורת אנלוגית",
+      "category": "elective_and_mandatory_option"
+    },
+    {
+      "course_number": "00460205",
+      "course_name": "מבוא לתורת הקידוד בתקשורת",
+      "category": "elective_and_mandatory_option"
+    },
+    {
+      "course_number": "00460208",
+      "course_name": "טכניקות תקשורת מודרניות",
+      "category": "elective_and_mandatory_option"
+    },
+    {
+      "course_number": "00460733",
+      "course_name": "תורת האינפורמציה",
+      "category": "elective_and_mandatory_option"
+    },
+    {
+      "course_number": "02360309",
+      "course_name": "מבוא לתורת הצפינה",
+      "category": "elective_and_mandatory_option"
+    },
+    {
+      "course_number": "00440214",
+      "course_name": "טכניקות קליטה ושידור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440198",
+      "course_name": "מבוא לעיבוד ספרתי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440334",
+      "course_name": "רשתות מחשבים ואינטרנט 1",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460005",
+      "course_name": "רשתות מחשבים ואינטרנט 2",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460187",
+      "course_name": "תכן מעגלים אנלוגיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460201",
+      "course_name": "עיבוד אותות אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460216",
+      "course_name": "מיקרוגלים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460242",
+      "course_name": "פיזיקה סטטיסטית להנדסת החשמל",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460256",
+      "course_name": "אנטנות וקרינה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460734",
+      "course_name": "תורת האינפורמציה לתקשורת קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460743",
+      "course_name": "עיבוד אותות במרחב",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460868",
+      "course_name": "יסודות תהליכים אקראיים",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "single_group_rules": {
+      "total_courses_required_for_group": 3,
+      "mandatory_courses": [
+        {
+          "course_number": "00460206",
+          "course_name": "מבוא לתקשורת ספרתית"
+        }
+      ],
+      "mandatory_choice_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "00460205",
+            "course_name": "מבוא לתורת הקידוד בתקשורת"
+          },
+          {
+            "course_number": "02360309",
+            "course_name": "מבוא לתורת הצפינה"
+          },
+          {
+            "course_number": "00460204",
+            "course_name": "תקשורת אנלוגית"
+          },
+          {
+            "course_number": "00460733",
+            "course_name": "תורת האינפורמציה"
+          },
+          {
+            "course_number": "00460208",
+            "course_name": "טכניקות תקשורת מודרניות"
+          }
+        ]
+      },
+      "additional_courses_required": 1,
+      "additional_course_selection_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "00460204",
+            "course_name": "תקשורת אנלוגית"
+          },
+          {
+            "course_number": "00460205",
+            "course_name": "מבוא לתורת הקידוד בתקשורת"
+          },
+          {
+            "course_number": "00460208",
+            "course_name": "טכניקות תקשורת מודרניות"
+          },
+          {
+            "course_number": "00460733",
+            "course_name": "תורת האינפורמציה"
+          },
+          {
+            "course_number": "02360309",
+            "course_name": "מבוא לתורת הצפינה"
+          },
+          {
+            "course_number": "00440214",
+            "course_name": "טכניקות קליטה ושידור"
+          },
+          {
+            "course_number": "00440198",
+            "course_name": "מבוא לעיבוד ספרתי"
+          },
+          {
+            "course_number": "00440334",
+            "course_name": "רשתות מחשבים ואינטרנט 1"
+          },
+          {
+            "course_number": "00460005",
+            "course_name": "רשתות מחשבים ואינטרנט 2"
+          },
+          {
+            "course_number": "00460187",
+            "course_name": "תכן מעגלים אנלוגיים"
+          },
+          {
+            "course_number": "00460201",
+            "course_name": "עיבוד אותות אקראיים"
+          },
+          {
+            "course_number": "00460216",
+            "course_name": "מיקרוגלים"
+          },
+          {
+            "course_number": "00460242",
+            "course_name": "פיזיקה סטטיסטית להנדסת החשמל"
+          },
+          {
+            "course_number": "00460256",
+            "course_name": "אנטנות וקרינה"
+          },
+          {
+            "course_number": "00460734",
+            "course_name": "תורת האינפורמציה לתקשורת קוונטית"
+          },
+          {
+            "course_number": "00460743",
+            "course_name": "עיבוד אותות במרחב"
+          },
+          {
+            "course_number": "00460868",
+            "course_name": "יסודות תהליכים אקראיים"
+          }
+        ]
+      },
+      "logical_expression": "00460206 AND 1_OF(00460205,02360309,00460204,00460733,00460208) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+    },
+    "double_group_rules": {
+      "total_courses_required_for_group": 6,
+      "mandatory_courses": [
+        {
+          "course_number": "00460206",
+          "course_name": "מבוא לתקשורת ספרתית"
+        }
+      ],
+      "mandatory_choice_rule": {
+        "type": "choose_2_from",
+        "options": [
+          {
+            "course_number": "00460205",
+            "course_name": "מבוא לתורת הקידוד בתקשורת"
+          },
+          {
+            "course_number": "02360309",
+            "course_name": "מבוא לתורת הצפינה"
+          },
+          {
+            "course_number": "00460204",
+            "course_name": "תקשורת אנלוגית"
+          },
+          {
+            "course_number": "00460733",
+            "course_name": "תורת האינפורמציה"
+          },
+          {
+            "course_number": "00460208",
+            "course_name": "טכניקות תקשורת מודרניות"
+          }
+        ]
+      },
+      "additional_courses_required": 3,
+      "additional_course_selection_rule": {
+        "type": "choose_3_from",
+        "options": [
+          {
+            "course_number": "00460204",
+            "course_name": "תקשורת אנלוגית"
+          },
+          {
+            "course_number": "00460205",
+            "course_name": "מבוא לתורת הקידוד בתקשורת"
+          },
+          {
+            "course_number": "00460208",
+            "course_name": "טכניקות תקשורת מודרניות"
+          },
+          {
+            "course_number": "00460733",
+            "course_name": "תורת האינפורמציה"
+          },
+          {
+            "course_number": "02360309",
+            "course_name": "מבוא לתורת הצפינה"
+          },
+          {
+            "course_number": "00440214",
+            "course_name": "טכניקות קליטה ושידור"
+          },
+          {
+            "course_number": "00440198",
+            "course_name": "מבוא לעיבוד ספרתי"
+          },
+          {
+            "course_number": "00440334",
+            "course_name": "רשתות מחשבים ואינטרנט 1"
+          },
+          {
+            "course_number": "00460005",
+            "course_name": "רשתות מחשבים ואינטרנט 2"
+          },
+          {
+            "course_number": "00460187",
+            "course_name": "תכן מעגלים אנלוגיים"
+          },
+          {
+            "course_number": "00460201",
+            "course_name": "עיבוד אותות אקראיים"
+          },
+          {
+            "course_number": "00460216",
+            "course_name": "מיקרוגלים"
+          },
+          {
+            "course_number": "00460242",
+            "course_name": "פיזיקה סטטיסטית להנדסת החשמל"
+          },
+          {
+            "course_number": "00460256",
+            "course_name": "אנטנות וקרינה"
+          },
+          {
+            "course_number": "00460734",
+            "course_name": "תורת האינפורמציה לתקשורת קוונטית"
+          },
+          {
+            "course_number": "00460743",
+            "course_name": "עיבוד אותות במרחב"
+          },
+          {
+            "course_number": "00460868",
+            "course_name": "יסודות תהליכים אקראיים"
+          }
+        ]
+      },
+      "logical_expression": "00460206 AND 2_OF(00460205,02360309,00460204,00460733,00460208) AND 3_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+    }
+  },
+  "notes": [
+    "הקבוצה יכולה להיחשב כקבוצה בודדת או כקבוצה כפולה",
+    "בקבוצה בודדת נדרשים בסך הכל 3 קורסים",
+    "בקבוצה כפולה נדרשים בסך הכל 6 קורסים",
+    "בקבוצה בודדת חובה לקחת את 00460206 ועוד אחד מתוך חמשת קורסי הבחירה המחייבים",
+    "בקבוצה כפולה חובה לקחת את 00460206 ועוד שניים מתוך חמשת קורסי הבחירה המחייבים",
+    "בהתאם לאישור המשתמש, הקורסים הנוספים להשלמת הקבוצה יכולים להגיע מתוך כלל רשימת הקורסים של הקבוצה"
+  ]
+}

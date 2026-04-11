@@ -1,0 +1,163 @@
+{
+  "title": "קבוצת התמחות - אנרגיה ומערכות הספק",
+  "specialization_group_name": "אנרגיה ומערכות הספק",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460042",
+      "course_name": "מבוא למערכות הספק ורשת חכמה",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00440139",
+      "course_name": "ממירי מתח ממותגים",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00340034",
+      "course_name": "הנע חשמלי",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00440191",
+      "course_name": "מערכות בקרה 1",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440198",
+      "course_name": "מבוא לעיבוד ספרתי של אותות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460044",
+      "course_name": "מערכות אנרגיה מתחדשת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460045",
+      "course_name": "תכן ממירים ממותגים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_replacement_option"
+    },
+    {
+      "course_number": "00340035",
+      "course_name": "תרמודינמיקה 1",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "replacement_for_00460197"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00460042",
+        "course_name": "מבוא למערכות הספק ורשת חכמה"
+      }
+    ],
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440139",
+          "course_name": "ממירי מתח ממותגים"
+        },
+        {
+          "course_number": "00340034",
+          "course_name": "הנע חשמלי"
+        }
+      ]
+    },
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440139",
+          "course_name": "ממירי מתח ממותגים"
+        },
+        {
+          "course_number": "00340034",
+          "course_name": "הנע חשמלי"
+        },
+        {
+          "course_number": "00440191",
+          "course_name": "מערכות בקרה 1"
+        },
+        {
+          "course_number": "00440198",
+          "course_name": "מבוא לעיבוד ספרתי של אותות"
+        },
+        {
+          "course_number": "00460044",
+          "course_name": "מערכות אנרגיה מתחדשת"
+        },
+        {
+          "course_number": "00460045",
+          "course_name": "תכן ממירים ממותגים"
+        },
+        {
+          "type": "choose_1_from",
+          "options": [
+            {
+              "course_number": "00460197",
+              "course_name": "שיטות חישוביות באופטימיזציה"
+            },
+            {
+              "course_number": "01040193",
+              "course_name": "תורת האופטימיזציה"
+            },
+            {
+              "course_number": "02360330",
+              "course_name": "מבוא לאופטימיזציה"
+            }
+          ],
+          "note": "ניתן לקחת אחד משני המקצועות החלופיים במקום 00460197"
+        },
+        {
+          "course_number": "00340035",
+          "course_name": "תרמודינמיקה 1"
+        }
+      ]
+    },
+    "logical_expression": "00460042 AND 1_OF(00440139,00340034) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES_WITH_REPLACEMENT_RULE_FOR_00460197"
+  },
+  "replacement_rules": [
+    {
+      "replaceable_course": {
+        "course_number": "00460197",
+        "course_name": "שיטות חישוביות באופטימיזציה"
+      },
+      "allowed_replacements": [
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        }
+      ],
+      "note": "אפשר לקחת אחד משני המקצועות החלופיים במקום קורס 00460197"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00460042 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 00440139, 00340034",
+    "לאחר מכן נדרש עוד מקצוע אחד נוסף מתוך רשימת הקורסים של הקבוצה",
+    "לפי ההערה במסמך, ניתן לקחת אחד משני המקצועות החלופיים 01040193 או 02360330 במקום 00460197"
+  ]
+}

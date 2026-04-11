@@ -1,0 +1,195 @@
+{
+  "title": "קבוצת התמחות - רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים",
+  "specialization_group_name": "רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460005",
+      "course_name": "רשתות מחשבים ואינטרנט 2",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00460203",
+      "course_name": "תכנון ולמידה מחיזוקים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460205",
+      "course_name": "מבוא לתורת הקידוד בתקשורת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460237",
+      "course_name": "מעגלים משולבים - מבוא ל-VLSI",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460265",
+      "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460268",
+      "course_name": "הנדסת מעבדי מחשב",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460275",
+      "course_name": "תרגום ואופטימיזציה של קוד בינארי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460278",
+      "course_name": "מאיצים חישוביים ומערכות מואצות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460279",
+      "course_name": "חישוב מקבילי מואץ",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460733",
+      "course_name": "תורת האינפורמציה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460853",
+      "course_name": "ארכיטקטורות מחשבים מתקדמות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360309",
+      "course_name": "מבוא לתורת הצפינה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360496",
+      "course_name": "הנדסה לאחור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460864",
+      "course_name": "ערוצי תקשורת מהירים בין שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460881",
+      "course_name": "אימות פורמלי לחומרה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360350",
+      "course_name": "הגנה ברשתות",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00460005",
+        "course_name": "רשתות מחשבים ואינטרנט 2"
+      }
+    ],
+    "additional_courses_required": 2,
+    "additional_course_selection_rule": {
+      "type": "choose_2_from",
+      "options": [
+        {
+          "course_number": "00460203",
+          "course_name": "תכנון ולמידה מחיזוקים"
+        },
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "course_number": "00460205",
+          "course_name": "מבוא לתורת הקידוד בתקשורת"
+        },
+        {
+          "course_number": "00460237",
+          "course_name": "מעגלים משולבים - מבוא ל-VLSI"
+        },
+        {
+          "course_number": "00460265",
+          "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים"
+        },
+        {
+          "course_number": "00460268",
+          "course_name": "הנדסת מעבדי מחשב"
+        },
+        {
+          "course_number": "00460272",
+          "course_name": "מערכות מבוזרות : עקרונות"
+        },
+        {
+          "course_number": "00460275",
+          "course_name": "תרגום ואופטימיזציה של קוד בינארי"
+        },
+        {
+          "course_number": "00460278",
+          "course_name": "מאיצים חישוביים ומערכות מואצות"
+        },
+        {
+          "course_number": "00460279",
+          "course_name": "חישוב מקבילי מואץ"
+        },
+        {
+          "course_number": "00460733",
+          "course_name": "תורת האינפורמציה"
+        },
+        {
+          "course_number": "00460853",
+          "course_name": "ארכיטקטורות מחשבים מתקדמות"
+        },
+        {
+          "course_number": "02360309",
+          "course_name": "מבוא לתורת הצפינה"
+        },
+        {
+          "course_number": "02360496",
+          "course_name": "הנדסה לאחור"
+        },
+        {
+          "course_number": "00460280",
+          "course_name": "עקרונות וכלים באבטחת מחשבים"
+        },
+        {
+          "course_number": "00460864",
+          "course_name": "ערוצי תקשורת מהירים בין שבבים"
+        },
+        {
+          "course_number": "00460881",
+          "course_name": "אימות פורמלי לחומרה"
+        },
+        {
+          "course_number": "02360350",
+          "course_name": "הגנה ברשתות"
+        }
+      ]
+    },
+    "logical_expression": "00460005 AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00460005 הוא המקצוע המחייב",
+    "לאחר מכן נדרשים עוד 2 מקצועות נוספים מתוך רשימת הקורסים של הקבוצה"
+  ]
+}

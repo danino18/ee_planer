@@ -1,0 +1,316 @@
+{
+  "title": "קבוצת התמחות - אלקטרומגנטיות ופוטוניקה",
+  "specialization_group_name": "אלקטרומגנטיות ופוטוניקה",
+  "type": "specialization_group",
+  "group_modes": [
+    "single",
+    "double"
+  ],
+  "courses": [
+    {
+      "course_number": "00460248",
+      "course_name": "פוטוניקה לייזרים",
+      "category": "mandatory_option_single_and_required_double"
+    },
+    {
+      "course_number": "00460256",
+      "course_name": "אנטנות וקרינה",
+      "category": "mandatory_option_single_and_required_double"
+    },
+    {
+      "course_number": "00460052",
+      "course_name": "אופטואלקטרוניקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460053",
+      "course_name": "אופטיקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460055",
+      "course_name": "ננו-פוטוניקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460216",
+      "course_name": "מיקרוגלים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460241",
+      "course_name": "מכניקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460242",
+      "course_name": "פיזיקה סטטיסטית להנדסת חשמל",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460243",
+      "course_name": "טכנולוגיות קוונטיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460244",
+      "course_name": "תופעות גלים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460249",
+      "course_name": "מערכות אלקטרואופטיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460250",
+      "course_name": "אי לינאריות ומבנים מחזוריים בפוטוניקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460251",
+      "course_name": "פוטוניקה בסיליקון",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460257",
+      "course_name": "מבוא למאיצי חלקיקים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460342",
+      "course_name": "מבוא לתופעות אופטיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460773",
+      "course_name": "התקני מוליכים למחצה אלקטרו-אופטיים לגילוי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460851",
+      "course_name": "לייזרים של מוליכים למחצה והתקנים פוטוניים משולבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "01160210",
+      "course_name": "אופטיקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "01160041",
+      "course_name": "פיזיקה של לייזרים ואופטיקה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "03360504",
+      "course_name": "עקרונות דימות תהודה מגנטית",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "single_group_rules": {
+      "total_courses_required_for_group": 3,
+      "mandatory_choice_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "00460248",
+            "course_name": "פוטוניקה לייזרים"
+          },
+          {
+            "course_number": "00460256",
+            "course_name": "אנטנות וקרינה"
+          }
+        ]
+      },
+      "additional_courses_required": 2,
+      "additional_course_selection_rule": {
+        "type": "choose_2_from",
+        "options": [
+          {
+            "course_number": "00460248",
+            "course_name": "פוטוניקה לייזרים"
+          },
+          {
+            "course_number": "00460256",
+            "course_name": "אנטנות וקרינה"
+          },
+          {
+            "course_number": "00460052",
+            "course_name": "אופטואלקטרוניקה קוונטית"
+          },
+          {
+            "course_number": "00460053",
+            "course_name": "אופטיקה קוונטית"
+          },
+          {
+            "course_number": "00460055",
+            "course_name": "ננו-פוטוניקה"
+          },
+          {
+            "course_number": "00460216",
+            "course_name": "מיקרוגלים"
+          },
+          {
+            "course_number": "00460241",
+            "course_name": "מכניקה קוונטית"
+          },
+          {
+            "course_number": "00460242",
+            "course_name": "פיזיקה סטטיסטית להנדסת חשמל"
+          },
+          {
+            "course_number": "00460243",
+            "course_name": "טכנולוגיות קוונטיות"
+          },
+          {
+            "course_number": "00460244",
+            "course_name": "תופעות גלים"
+          },
+          {
+            "course_number": "00460249",
+            "course_name": "מערכות אלקטרואופטיות"
+          },
+          {
+            "course_number": "00460250",
+            "course_name": "אי לינאריות ומבנים מחזוריים בפוטוניקה"
+          },
+          {
+            "course_number": "00460251",
+            "course_name": "פוטוניקה בסיליקון"
+          },
+          {
+            "course_number": "00460257",
+            "course_name": "מבוא למאיצי חלקיקים"
+          },
+          {
+            "course_number": "00460342",
+            "course_name": "מבוא לתופעות אופטיות"
+          },
+          {
+            "course_number": "00460773",
+            "course_name": "התקני מוליכים למחצה אלקטרו-אופטיים לגילוי"
+          },
+          {
+            "course_number": "00460851",
+            "course_name": "לייזרים של מוליכים למחצה והתקנים פוטוניים משולבים"
+          },
+          {
+            "course_number": "01160210",
+            "course_name": "אופטיקה"
+          },
+          {
+            "course_number": "01160041",
+            "course_name": "פיזיקה של לייזרים ואופטיקה קוונטית"
+          },
+          {
+            "course_number": "03360504",
+            "course_name": "עקרונות דימות תהודה מגנטית"
+          }
+        ]
+      },
+      "logical_expression": "1_OF(00460248,00460256) AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+    },
+    "double_group_rules": {
+      "total_courses_required_for_group": 6,
+      "mandatory_courses": [
+        {
+          "course_number": "00460248",
+          "course_name": "פוטוניקה לייזרים"
+        },
+        {
+          "course_number": "00460256",
+          "course_name": "אנטנות וקרינה"
+        }
+      ],
+      "additional_courses_required": 4,
+      "additional_course_selection_rule": {
+        "type": "choose_4_from",
+        "options": [
+          {
+            "course_number": "00460052",
+            "course_name": "אופטואלקטרוניקה קוונטית"
+          },
+          {
+            "course_number": "00460053",
+            "course_name": "אופטיקה קוונטית"
+          },
+          {
+            "course_number": "00460055",
+            "course_name": "ננו-פוטוניקה"
+          },
+          {
+            "course_number": "00460216",
+            "course_name": "מיקרוגלים"
+          },
+          {
+            "course_number": "00460241",
+            "course_name": "מכניקה קוונטית"
+          },
+          {
+            "course_number": "00460242",
+            "course_name": "פיזיקה סטטיסטית להנדסת חשמל"
+          },
+          {
+            "course_number": "00460243",
+            "course_name": "טכנולוגיות קוונטיות"
+          },
+          {
+            "course_number": "00460244",
+            "course_name": "תופעות גלים"
+          },
+          {
+            "course_number": "00460249",
+            "course_name": "מערכות אלקטרואופטיות"
+          },
+          {
+            "course_number": "00460250",
+            "course_name": "אי לינאריות ומבנים מחזוריים בפוטוניקה"
+          },
+          {
+            "course_number": "00460251",
+            "course_name": "פוטוניקה בסיליקון"
+          },
+          {
+            "course_number": "00460257",
+            "course_name": "מבוא למאיצי חלקיקים"
+          },
+          {
+            "course_number": "00460342",
+            "course_name": "מבוא לתופעות אופטיות"
+          },
+          {
+            "course_number": "00460773",
+            "course_name": "התקני מוליכים למחצה אלקטרו-אופטיים לגילוי"
+          },
+          {
+            "course_number": "00460851",
+            "course_name": "לייזרים של מוליכים למחצה והתקנים פוטוניים משולבים"
+          },
+          {
+            "course_number": "01160210",
+            "course_name": "אופטיקה"
+          },
+          {
+            "course_number": "01160041",
+            "course_name": "פיזיקה של לייזרים ואופטיקה קוונטית"
+          },
+          {
+            "course_number": "03360504",
+            "course_name": "עקרונות דימות תהודה מגנטית"
+          }
+        ]
+      },
+      "logical_expression": "00460248 AND 00460256 AND 4_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+    }
+  },
+  "notes": [
+    "הקבוצה יכולה להיחשב כקבוצה בודדת או כקבוצה כפולה",
+    "בקבוצה בודדת נדרשים בסך הכל 3 קורסים",
+    "בקבוצה כפולה נדרשים בסך הכל 6 קורסים",
+    "בקבוצה בודדת חובה לקחת אחד מתוך: 00460248, 00460256",
+    "בקבוצה כפולה חובה לקחת את שני הקורסים: 00460248, 00460256",
+    "בהתאם לאישור המשתמש, הקורסים הנוספים להשלמת הקבוצה יכולים להגיע מתוך כלל רשימת הקורסים של הקבוצה"
+  ]
+}

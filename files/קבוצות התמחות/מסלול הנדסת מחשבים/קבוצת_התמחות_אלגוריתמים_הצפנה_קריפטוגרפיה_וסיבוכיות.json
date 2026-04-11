@@ -1,0 +1,159 @@
+{
+  "title": "קבוצת התמחות - אלגוריתמים, הצפנה, קריפטוגרפיה וסיבוכיות",
+  "specialization_group_name": "אלגוריתמים, הצפנה, קריפטוגרפיה וסיבוכיות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460205",
+      "course_name": "מבוא לתורת הקידוד בתקשורת",
+      "category": "elective"
+    },
+    {
+      "course_number": "02340129",
+      "course_name": "מבוא לתורת הקבוצות ואוטומטים למדמ\"ח",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360309",
+      "course_name": "מבוא לתורת הצפינה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360313",
+      "course_name": "תורת הסיבוכיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360343",
+      "course_name": "תורת החישוביות",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "02360359",
+      "course_name": "אלגוריתמים 2",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360374",
+      "course_name": "שיטות הסתברותיות ואלגוריתמים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360500",
+      "course_name": "קריפטאנליזה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360506",
+      "course_name": "קריפטולוגיה מודרנית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360525",
+      "course_name": "מבוא לקידוד רשת,חסמים ובניות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360520",
+      "course_name": "קידוד במערכות אחסון מידע",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360522",
+      "course_name": "אלגוריתמים בביולוגיה חישובית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360719",
+      "course_name": "גאומטריה חישובית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360760",
+      "course_name": "למידה חישובית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360990",
+      "course_name": "מבוא לעיבוד אינפורמציה קוונטית",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "02360343",
+        "course_name": "תורת החישוביות"
+      }
+    ],
+    "additional_courses_required": 2,
+    "additional_course_selection_rule": {
+      "type": "choose_2_from",
+      "options": [
+        {
+          "course_number": "00460205",
+          "course_name": "מבוא לתורת הקידוד בתקשורת"
+        },
+        {
+          "course_number": "02340129",
+          "course_name": "מבוא לתורת הקבוצות ואוטומטים למדמ\"ח"
+        },
+        {
+          "course_number": "02360309",
+          "course_name": "מבוא לתורת הצפינה"
+        },
+        {
+          "course_number": "02360313",
+          "course_name": "תורת הסיבוכיות"
+        },
+        {
+          "course_number": "02360359",
+          "course_name": "אלגוריתמים 2"
+        },
+        {
+          "course_number": "02360374",
+          "course_name": "שיטות הסתברותיות ואלגוריתמים"
+        },
+        {
+          "course_number": "02360500",
+          "course_name": "קריפטאנליזה"
+        },
+        {
+          "course_number": "02360506",
+          "course_name": "קריפטולוגיה מודרנית"
+        },
+        {
+          "course_number": "02360525",
+          "course_name": "מבוא לקידוד רשת,חסמים ובניות"
+        },
+        {
+          "course_number": "02360520",
+          "course_name": "קידוד במערכות אחסון מידע"
+        },
+        {
+          "course_number": "02360522",
+          "course_name": "אלגוריתמים בביולוגיה חישובית"
+        },
+        {
+          "course_number": "02360719",
+          "course_name": "גאומטריה חישובית"
+        },
+        {
+          "course_number": "02360760",
+          "course_name": "למידה חישובית"
+        },
+        {
+          "course_number": "02360990",
+          "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+        }
+      ]
+    },
+    "logical_expression": "02360343 AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "02360343 הוא המקצוע המחייב",
+    "לאחר מכן נדרשים עוד 2 מקצועות נוספים מתוך רשימת הקורסים של הקבוצה"
+  ]
+}

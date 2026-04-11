@@ -1,0 +1,277 @@
+{
+  "title": "קבוצת התמחות - רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים",
+  "specialization_group_name": "רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00440334",
+      "course_name": "רשתות מחשבים ואינטרנט 1",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "02360334",
+      "course_name": "מבוא לרשתות מחשבים",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460005",
+      "course_name": "רשתות מחשבים ואינטרנט 2",
+      "category": "paired_required_option"
+    },
+    {
+      "course_number": "02360341",
+      "course_name": "תקשורת באינטרנט",
+      "category": "paired_required_option"
+    },
+    {
+      "course_number": "02360755",
+      "course_name": "אלגוריתמים מבוזרים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460237",
+      "course_name": "מעגלים משולבים - מבוא ל-VLSI",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360351",
+      "course_name": "מערכות מבוזרות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360322",
+      "course_name": "מערכות אחסון מידע",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360370",
+      "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים ולמידה חישובית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360376",
+      "course_name": "הנדסת מערכות הפעלה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360490",
+      "course_name": "אבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360491",
+      "course_name": "תכנות מאובטח",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360496",
+      "course_name": "הנדסה לאחור",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360350",
+      "course_name": "הגנה ברשתות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460853",
+      "course_name": "ארכיטקטורות מחשבים מתקדמות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460268",
+      "course_name": "הנדסת מעבדי מחשב",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360268",
+      "course_name": "ארכיטקטורות מעבדים בגישה בונה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460275",
+      "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460278",
+      "course_name": "מאיצים חישוביים ומערכות מואצות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460265",
+      "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460279",
+      "course_name": "חישוב מקבילי מואץ",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460864",
+      "course_name": "ערוצי תקשורת מהירים בין שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460881",
+      "course_name": "אימות פורמלי לחומרה",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440334",
+          "course_name": "רשתות מחשבים ואינטרנט 1"
+        },
+        {
+          "course_number": "02360334",
+          "course_name": "מבוא לרשתות מחשבים"
+        }
+      ]
+    },
+    "pairing_rules": [
+      {
+        "if_chosen": {
+          "course_number": "00440334",
+          "course_name": "רשתות מחשבים ואינטרנט 1"
+        },
+        "allowed_paired_course_only": {
+          "course_number": "00460005",
+          "course_name": "רשתות מחשבים ואינטרנט 2"
+        },
+        "note": "אם נלקח 00440334, ניתן לקחת רק את 00460005"
+      },
+      {
+        "if_chosen": {
+          "course_number": "02360334",
+          "course_name": "מבוא לרשתות מחשבים"
+        },
+        "allowed_paired_course_only": {
+          "course_number": "02360341",
+          "course_name": "תקשורת באינטרנט"
+        },
+        "note": "אם נלקח 02360334, ניתן לקחת רק את 02360341"
+      }
+    ],
+    "additional_courses_required": 2,
+    "additional_course_selection_rule": {
+      "type": "choose_2_from",
+      "options": [
+        {
+          "course_number": "00460005",
+          "course_name": "רשתות מחשבים ואינטרנט 2"
+        },
+        {
+          "course_number": "02360341",
+          "course_name": "תקשורת באינטרנט"
+        },
+        {
+          "course_number": "02360755",
+          "course_name": "אלגוריתמים מבוזרים"
+        },
+        {
+          "course_number": "00460237",
+          "course_name": "מעגלים משולבים - מבוא ל-VLSI"
+        },
+        {
+          "course_number": "02360351",
+          "course_name": "מערכות מבוזרות"
+        },
+        {
+          "course_number": "00460272",
+          "course_name": "מערכות מבוזרות : עקרונות"
+        },
+        {
+          "course_number": "02360322",
+          "course_name": "מערכות אחסון מידע"
+        },
+        {
+          "course_number": "02360370",
+          "course_name": "תכנות מקבילי ומבוזר לעיבוד נתונים ולמידה חישובית"
+        },
+        {
+          "course_number": "02360376",
+          "course_name": "הנדסת מערכות הפעלה"
+        },
+        {
+          "course_number": "02360490",
+          "course_name": "אבטחת מחשבים"
+        },
+        {
+          "course_number": "02360491",
+          "course_name": "תכנות מאובטח"
+        },
+        {
+          "course_number": "02360496",
+          "course_name": "הנדסה לאחור"
+        },
+        {
+          "course_number": "02360350",
+          "course_name": "הגנה ברשתות"
+        },
+        {
+          "course_number": "00460853",
+          "course_name": "ארכיטקטורות מחשבים מתקדמות"
+        },
+        {
+          "course_number": "00460268",
+          "course_name": "הנדסת מעבדי מחשב"
+        },
+        {
+          "course_number": "02360268",
+          "course_name": "ארכיטקטורות מעבדים בגישה בונה"
+        },
+        {
+          "course_number": "00460275",
+          "course_name": "תרגום ואופטימיזציה דינמיים של קוד בינארי"
+        },
+        {
+          "course_number": "00460278",
+          "course_name": "מאיצים חישוביים ומערכות מואצות"
+        },
+        {
+          "course_number": "00460265",
+          "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים"
+        },
+        {
+          "course_number": "00460279",
+          "course_name": "חישוב מקבילי מואץ"
+        },
+        {
+          "course_number": "00460280",
+          "course_name": "עקרונות וכלים באבטחת מחשבים"
+        },
+        {
+          "course_number": "00460864",
+          "course_name": "ערוצי תקשורת מהירים בין שבבים"
+        },
+        {
+          "course_number": "00460881",
+          "course_name": "אימות פורמלי לחומרה"
+        }
+      ]
+    },
+    "logical_expression": "1_OF(00440334,02360334) AND CONDITIONAL_PAIRING_RULE AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "יש לבחור אחד מתוך: 00440334, 02360334",
+    "אם נלקח 00440334, ניתן לקחת רק את 00460005",
+    "אם נלקח 02360334, ניתן לקחת רק את 02360341"
+  ]
+}

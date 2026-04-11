@@ -1,0 +1,203 @@
+{
+  "title": "קבוצת התמחות - בקרה ורובוטיקה",
+  "specialization_group_name": "בקרה ורובוטיקה",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00440191",
+      "course_name": "מערכות בקרה 1",
+      "category": "required_core"
+    },
+    {
+      "course_number": "00460192",
+      "course_name": "מערכות בקרה 2",
+      "category": "required_choice_group"
+    },
+    {
+      "course_number": "00460212",
+      "course_name": "מבוא לרובוטיקה ח'",
+      "category": "required_choice_group"
+    },
+    {
+      "course_number": "00440139",
+      "course_name": "ממירי מתח ממותגים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460042",
+      "course_name": "מבוא למערכות הספק ורשת חכמה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440198",
+      "course_name": "מבוא לעיבוד ספרתי של אותות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460203",
+      "course_name": "תכנון ולמידה מחיזוקים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460196",
+      "course_name": "בקרה לא ליניארית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective",
+      "note": "במסמך הופיע עם כוכבית"
+    },
+    {
+      "course_number": "00460189",
+      "course_name": "תכן מסננים אנלוגיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460213",
+      "course_name": "רובוטים ניידים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460868",
+      "course_name": "יסודות התהליכים אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00350001",
+      "course_name": "מבוא לנוירופיסיקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00860755",
+      "course_name": "בקרה אוטומטית של כלי טיס",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "elective_alternative"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "elective_alternative"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00440191",
+        "course_name": "מערכות בקרה 1"
+      }
+    ],
+    "mandatory_choice_groups": [
+      {
+        "type": "choose_1_from",
+        "group_name": "קבוצת חובה חלופית",
+        "options": [
+          {
+            "course_number": "00460192",
+            "course_name": "מערכות בקרה 2"
+          },
+          {
+            "course_number": "00460212",
+            "course_name": "מבוא לרובוטיקה ח'"
+          }
+        ]
+      }
+    ],
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00460192",
+          "course_name": "מערכות בקרה 2"
+        },
+        {
+          "course_number": "00460212",
+          "course_name": "מבוא לרובוטיקה ח'"
+        },
+        {
+          "course_number": "00440139",
+          "course_name": "ממירי מתח ממותגים"
+        },
+        {
+          "course_number": "00460042",
+          "course_name": "מבוא למערכות הספק ורשת חכמה"
+        },
+        {
+          "course_number": "00440198",
+          "course_name": "מבוא לעיבוד ספרתי של אותות"
+        },
+        {
+          "course_number": "00460203",
+          "course_name": "תכנון ולמידה מחיזוקים"
+        },
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "course_number": "00460196",
+          "course_name": "בקרה לא ליניארית"
+        },
+        {
+          "course_number": "00460197",
+          "course_name": "שיטות חישוביות באופטימיזציה"
+        },
+        {
+          "course_number": "00460189",
+          "course_name": "תכן מסננים אנלוגיים"
+        },
+        {
+          "course_number": "00460213",
+          "course_name": "רובוטים ניידים"
+        },
+        {
+          "course_number": "00460868",
+          "course_name": "יסודות התהליכים אקראיים"
+        },
+        {
+          "course_number": "00350001",
+          "course_name": "מבוא לנוירופיסיקה"
+        },
+        {
+          "course_number": "00860755",
+          "course_name": "בקרה אוטומטית של כלי טיס"
+        },
+        {
+          "type": "choose_1_from",
+          "options": [
+            {
+              "course_number": "01040193",
+              "course_name": "תורת האופטימיזציה"
+            },
+            {
+              "course_number": "02360330",
+              "course_name": "מבוא לאופטימיזציה"
+            }
+          ],
+          "note": "ניתן לקחת גם אחד משני המקצועות החלופיים"
+        }
+      ]
+    },
+    "logical_expression": "00440191 AND 1_OF(00460192,00460212) AND 1_OF(00460192,00460212,00440139,00460042,00440198,00460203,00460195,00460196,00460197,00460189,00460213,00460868,00350001,00860755,(01040193 OR 02360330))"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00440191 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 00460192 או 00460212",
+    "לאחר מכן נדרש עוד מקצוע אחד נוסף מתוך רשימת האפשרויות",
+    "לפי אישור המשתמש, גם הקורס שלא נבחר מתוך 00460192 או 00460212 יכול להיחשב כמקצוע השלישי",
+    "לפי ההערה במסמך, ניתן לקחת גם אחד משני המקצועות החלופיים: 01040193 או 02360330"
+  ]
+}

@@ -1,0 +1,466 @@
+{
+  "title": "קבוצת התמחות - מחשבים",
+  "specialization_group_name": "מחשבים",
+  "type": "specialization_group",
+  "group_modes": [
+    "single",
+    "double"
+  ],
+  "courses": [
+    {
+      "course_number": "00460209",
+      "course_name": "מבנה מערכות הפעלה",
+      "category": "mandatory_single_and_double"
+    },
+    {
+      "course_number": "00460267",
+      "course_name": "מבנה מחשבים",
+      "category": "mandatory_option_single_and_mandatory_double"
+    },
+    {
+      "course_number": "00460002",
+      "course_name": "תכן ומימוש אלגוריתמים",
+      "category": "mandatory_option_single_and_mandatory_double"
+    },
+    {
+      "course_number": "00440334",
+      "course_name": "רשתות מחשבים ואינטרנט 1",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460005",
+      "course_name": "רשתות מחשבים ואינטרנט 2",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460054",
+      "course_name": "מחשוב קוונטי מודרני",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_replacement_option"
+    },
+    {
+      "course_number": "00460237",
+      "course_name": "מעגלים משולבים מבוא ל-VLSI",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460265",
+      "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460266",
+      "course_name": "שיטות הידור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460268",
+      "course_name": "הנדסת מעבדי מחשב",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460271",
+      "course_name": "תכנות ותכן מונחה עצמים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460275",
+      "course_name": "הבטחת נכונות של תוכנה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460277",
+      "course_name": "הבינה כמנוע של מדע",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460278",
+      "course_name": "מאיצים חישוביים ומערכות מואצות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460279",
+      "course_name": "חישוב מקבילי מואץ",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360350",
+      "course_name": "הגנה ברשתות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460345",
+      "course_name": "גרפיקה ממוחשבת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460853",
+      "course_name": "ארכיטקטורות מחשבים מתקדמות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460864",
+      "course_name": "ערוצי תקשורת מהירים בין שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460880",
+      "course_name": "תכן לוגי ממוחשב של שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460918",
+      "course_name": "תכן פיסי ממוחשב של שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360370",
+      "course_name": "תכנות מקבילי ומבוזר",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360990",
+      "course_name": "מבוא לעיבוד אינפורמציה קוונטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "replacement_for_00460197"
+    }
+  ],
+  "requirements": {
+    "single_group_rules": {
+      "total_courses_required_for_group": 4,
+      "mandatory_courses": [
+        {
+          "course_number": "00460209",
+          "course_name": "מבנה מערכות הפעלה"
+        }
+      ],
+      "mandatory_choice_rule": {
+        "type": "choose_1_from",
+        "options": [
+          {
+            "course_number": "00460267",
+            "course_name": "מבנה מחשבים"
+          },
+          {
+            "course_number": "00460002",
+            "course_name": "תכן ומימוש אלגוריתמים"
+          }
+        ]
+      },
+      "additional_courses_required": 2,
+      "additional_course_selection_rule": {
+        "type": "choose_2_from",
+        "options": [
+          {
+            "course_number": "00460267",
+            "course_name": "מבנה מחשבים"
+          },
+          {
+            "course_number": "00460002",
+            "course_name": "תכן ומימוש אלגוריתמים"
+          },
+          {
+            "course_number": "00440334",
+            "course_name": "רשתות מחשבים ואינטרנט 1"
+          },
+          {
+            "course_number": "00460005",
+            "course_name": "רשתות מחשבים ואינטרנט 2"
+          },
+          {
+            "course_number": "00460054",
+            "course_name": "מחשוב קוונטי מודרני"
+          },
+          {
+            "course_number": "00460195",
+            "course_name": "מערכות לומדות"
+          },
+          {
+            "type": "choose_1_from",
+            "options": [
+              {
+                "course_number": "00460197",
+                "course_name": "שיטות חישוביות באופטימיזציה"
+              },
+              {
+                "course_number": "01040193",
+                "course_name": "תורת האופטימיזציה"
+              },
+              {
+                "course_number": "02360330",
+                "course_name": "מבוא לאופטימיזציה"
+              }
+            ],
+            "note": "ניתן לקחת אחד משני המקצועות החלופיים במקום 00460197"
+          },
+          {
+            "course_number": "00460237",
+            "course_name": "מעגלים משולבים מבוא ל-VLSI"
+          },
+          {
+            "course_number": "00460265",
+            "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים"
+          },
+          {
+            "course_number": "00460266",
+            "course_name": "שיטות הידור"
+          },
+          {
+            "course_number": "00460268",
+            "course_name": "הנדסת מעבדי מחשב"
+          },
+          {
+            "course_number": "00460271",
+            "course_name": "תכנות ותכן מונחה עצמים"
+          },
+          {
+            "course_number": "00460272",
+            "course_name": "מערכות מבוזרות : עקרונות"
+          },
+          {
+            "course_number": "00460275",
+            "course_name": "הבטחת נכונות של תוכנה"
+          },
+          {
+            "course_number": "00460277",
+            "course_name": "הבינה כמנוע של מדע"
+          },
+          {
+            "course_number": "00460278",
+            "course_name": "מאיצים חישוביים ומערכות מואצות"
+          },
+          {
+            "course_number": "00460279",
+            "course_name": "חישוב מקבילי מואץ"
+          },
+          {
+            "course_number": "00460280",
+            "course_name": "עקרונות וכלים באבטחת מחשבים"
+          },
+          {
+            "course_number": "02360350",
+            "course_name": "הגנה ברשתות"
+          },
+          {
+            "course_number": "00460345",
+            "course_name": "גרפיקה ממוחשבת"
+          },
+          {
+            "course_number": "00460853",
+            "course_name": "ארכיטקטורות מחשבים מתקדמות"
+          },
+          {
+            "course_number": "00460864",
+            "course_name": "ערוצי תקשורת מהירים בין שבבים"
+          },
+          {
+            "course_number": "00460880",
+            "course_name": "תכן לוגי ממוחשב של שבבים"
+          },
+          {
+            "course_number": "00460918",
+            "course_name": "תכן פיסי ממוחשב של שבבים"
+          },
+          {
+            "course_number": "02360370",
+            "course_name": "תכנות מקבילי ומבוזר"
+          },
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          }
+        ]
+      },
+      "logical_expression": "00460209 AND 1_OF(00460267,00460002) AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES_WITH_REPLACEMENT_RULE_FOR_00460197"
+    },
+    "double_group_rules": {
+      "total_courses_required_for_group": 7,
+      "mandatory_courses": [
+        {
+          "course_number": "00460209",
+          "course_name": "מבנה מערכות הפעלה"
+        },
+        {
+          "course_number": "00460267",
+          "course_name": "מבנה מחשבים"
+        },
+        {
+          "course_number": "00460002",
+          "course_name": "תכן ומימוש אלגוריתמים"
+        }
+      ],
+      "additional_courses_required": 4,
+      "additional_course_selection_rule": {
+        "type": "choose_4_from",
+        "options": [
+          {
+            "course_number": "00440334",
+            "course_name": "רשתות מחשבים ואינטרנט 1"
+          },
+          {
+            "course_number": "00460005",
+            "course_name": "רשתות מחשבים ואינטרנט 2"
+          },
+          {
+            "course_number": "00460054",
+            "course_name": "מחשוב קוונטי מודרני"
+          },
+          {
+            "course_number": "00460195",
+            "course_name": "מערכות לומדות"
+          },
+          {
+            "type": "choose_1_from",
+            "options": [
+              {
+                "course_number": "00460197",
+                "course_name": "שיטות חישוביות באופטימיזציה"
+              },
+              {
+                "course_number": "01040193",
+                "course_name": "תורת האופטימיזציה"
+              },
+              {
+                "course_number": "02360330",
+                "course_name": "מבוא לאופטימיזציה"
+              }
+            ],
+            "note": "ניתן לקחת אחד משני המקצועות החלופיים במקום 00460197"
+          },
+          {
+            "course_number": "00460237",
+            "course_name": "מעגלים משולבים מבוא ל-VLSI"
+          },
+          {
+            "course_number": "00460265",
+            "course_name": "ארכיטקטורות מתקדמות ומעגלים בשילוב ממריסטורים"
+          },
+          {
+            "course_number": "00460266",
+            "course_name": "שיטות הידור"
+          },
+          {
+            "course_number": "00460268",
+            "course_name": "הנדסת מעבדי מחשב"
+          },
+          {
+            "course_number": "00460271",
+            "course_name": "תכנות ותכן מונחה עצמים"
+          },
+          {
+            "course_number": "00460272",
+            "course_name": "מערכות מבוזרות : עקרונות"
+          },
+          {
+            "course_number": "00460275",
+            "course_name": "הבטחת נכונות של תוכנה"
+          },
+          {
+            "course_number": "00460277",
+            "course_name": "הבינה כמנוע של מדע"
+          },
+          {
+            "course_number": "00460278",
+            "course_name": "מאיצים חישוביים ומערכות מואצות"
+          },
+          {
+            "course_number": "00460279",
+            "course_name": "חישוב מקבילי מואץ"
+          },
+          {
+            "course_number": "00460280",
+            "course_name": "עקרונות וכלים באבטחת מחשבים"
+          },
+          {
+            "course_number": "02360350",
+            "course_name": "הגנה ברשתות"
+          },
+          {
+            "course_number": "00460345",
+            "course_name": "גרפיקה ממוחשבת"
+          },
+          {
+            "course_number": "00460853",
+            "course_name": "ארכיטקטורות מחשבים מתקדמות"
+          },
+          {
+            "course_number": "00460864",
+            "course_name": "ערוצי תקשורת מהירים בין שבבים"
+          },
+          {
+            "course_number": "00460880",
+            "course_name": "תכן לוגי ממוחשב של שבבים"
+          },
+          {
+            "course_number": "00460918",
+            "course_name": "תכן פיסי ממוחשב של שבבים"
+          },
+          {
+            "course_number": "02360370",
+            "course_name": "תכנות מקבילי ומבוזר"
+          },
+          {
+            "course_number": "02360990",
+            "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          }
+        ]
+      },
+      "logical_expression": "00460209 AND 00460267 AND 00460002 AND 4_ADDITIONAL_FROM_ALL_GROUP_COURSES_WITH_REPLACEMENT_RULE_FOR_00460197"
+    },
+    "replacement_rules": [
+      {
+        "replaceable_course": {
+          "course_number": "00460197",
+          "course_name": "שיטות חישוביות באופטימיזציה"
+        },
+        "allowed_replacements": [
+          {
+            "course_number": "01040193",
+            "course_name": "תורת האופטימיזציה"
+          },
+          {
+            "course_number": "02360330",
+            "course_name": "מבוא לאופטימיזציה"
+          }
+        ],
+        "note": "אפשר לקחת אחד משני המקצועות החלופיים במקום קורס 00460197"
+      }
+    ]
+  },
+  "notes": [
+    "הקבוצה יכולה להיחשב כקבוצה בודדת או כקבוצה כפולה",
+    "בקבוצה בודדת נדרשים בסך הכל 4 מקצועות",
+    "בקבוצה כפולה נדרשים בסך הכל 7 מקצועות",
+    "בקבוצה בודדת חובה לקחת את 00460209 ועוד אחד מתוך 00460267 או 00460002",
+    "בקבוצה כפולה חובה לקחת את 00460209 ואת 00460267 ואת 00460002",
+    "לפי ההערה במסמך, ניתן לקחת אחד משני המקצועות החלופיים 01040193 או 02360330 במקום 00460197"
+  ]
+}

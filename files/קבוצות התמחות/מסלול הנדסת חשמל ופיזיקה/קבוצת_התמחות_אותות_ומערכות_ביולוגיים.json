@@ -1,0 +1,150 @@
+{
+  "title": "קבוצת התמחות - אותות ומערכות ביולוגיים",
+  "specialization_group_name": "אותות ומערכות ביולוגיים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460326",
+      "course_name": "מבוא לאותות ומערכות ביולוגיים",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00460332",
+      "course_name": "מערכות ראיה ושמיעה",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00440191",
+      "course_name": "מערכות בקרה 1",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "03360522",
+      "course_name": "מבוא לבקרה במערכות ביו-רפואיות",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460010",
+      "course_name": "הסקה סטטיסטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460041",
+      "course_name": "רשתות עצביות ביולוגיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460743",
+      "course_name": "עיבוד אותות מרחבי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460831",
+      "course_name": "מבוא לדימות רפואי",
+      "category": "elective"
+    },
+    {
+      "course_number": "01340058",
+      "course_name": "ביולוגיה 1",
+      "category": "elective"
+    },
+    {
+      "course_number": "01160029",
+      "course_name": "מבוא לביו-פיזיקה",
+      "category": "elective"
+    },
+    {
+      "course_number": "03360208",
+      "course_name": "שיטות באנליזה של אותות ביולוגיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "03360504",
+      "course_name": "עקרונות דימות תהודה מגנטית",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00460326",
+        "course_name": "מבוא לאותות ומערכות ביולוגיים"
+      }
+    ],
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440191",
+          "course_name": "מערכות בקרה 1"
+        },
+        {
+          "course_number": "03360522",
+          "course_name": "מבוא לבקרה במערכות ביו-רפואיות"
+        },
+        {
+          "course_number": "00460332",
+          "course_name": "מערכות ראיה ושמיעה"
+        }
+      ]
+    },
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00460332",
+          "course_name": "מערכות ראיה ושמיעה"
+        },
+        {
+          "course_number": "00440191",
+          "course_name": "מערכות בקרה 1"
+        },
+        {
+          "course_number": "03360522",
+          "course_name": "מבוא לבקרה במערכות ביו-רפואיות"
+        },
+        {
+          "course_number": "00460010",
+          "course_name": "הסקה סטטיסטית"
+        },
+        {
+          "course_number": "00460041",
+          "course_name": "רשתות עצביות ביולוגיות"
+        },
+        {
+          "course_number": "00460743",
+          "course_name": "עיבוד אותות מרחבי"
+        },
+        {
+          "course_number": "00460831",
+          "course_name": "מבוא לדימות רפואי"
+        },
+        {
+          "course_number": "01340058",
+          "course_name": "ביולוגיה 1"
+        },
+        {
+          "course_number": "01160029",
+          "course_name": "מבוא לביו-פיזיקה"
+        },
+        {
+          "course_number": "03360208",
+          "course_name": "שיטות באנליזה של אותות ביולוגיים"
+        },
+        {
+          "course_number": "03360504",
+          "course_name": "עקרונות דימות תהודה מגנטית"
+        }
+      ]
+    },
+    "logical_expression": "00460326 AND 1_OF(00440191,03360522,00460332) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00460326 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 00440191, 03360522, 00460332",
+    "לאחר מכן נדרש עוד מקצוע אחד נוסף מתוך רשימת הקורסים של הקבוצה"
+  ]
+}

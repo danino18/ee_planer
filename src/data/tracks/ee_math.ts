@@ -32,11 +32,11 @@ export const eeMathTrack: TrackDefinition = {
     },
     {
       semester: 6,
-      courses: ['00440167','00440148','01040165'],
+      courses: ['00440167','00440148'],
     },
     {
       semester: 7,
-      courses: ['00440169'],
+      courses: ['00440169','01040165'],
     },
   ],
 };

@@ -1,0 +1,132 @@
+{
+  "title": "קבוצת התמחות - מתמטית למצטיינים",
+  "specialization_group_name": "מתמטית למצטיינים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "01040142",
+      "course_name": "מבוא למרחבים מטריים וטופולוגיים",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "01040158",
+      "course_name": "מבוא לחבורות",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "01040165",
+      "course_name": "פונקציות ממשיות",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "01040286",
+      "course_name": "קומבינטוריקה",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "01040144",
+      "course_name": "טופולוגיה",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040177",
+      "course_name": "גאומטריה דיפרנציאלית",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040279",
+      "course_name": "מבוא לחוגים ושדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040280",
+      "course_name": "מודולים, חוגים וחבורות",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040293",
+      "course_name": "תורת הקבוצות",
+      "category": "elective"
+    },
+    {
+      "course_number": "01060349",
+      "course_name": "הסתברות מתקדמת",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "01040142",
+        "course_name": "מבוא למרחבים מטריים וטופולוגיים"
+      }
+    ],
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "01040158",
+          "course_name": "מבוא לחבורות"
+        },
+        {
+          "course_number": "01040165",
+          "course_name": "פונקציות ממשיות"
+        },
+        {
+          "course_number": "01040286",
+          "course_name": "קומבינטוריקה"
+        }
+      ]
+    },
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "01040158",
+          "course_name": "מבוא לחבורות"
+        },
+        {
+          "course_number": "01040165",
+          "course_name": "פונקציות ממשיות"
+        },
+        {
+          "course_number": "01040286",
+          "course_name": "קומבינטוריקה"
+        },
+        {
+          "course_number": "01040144",
+          "course_name": "טופולוגיה"
+        },
+        {
+          "course_number": "01040177",
+          "course_name": "גאומטריה דיפרנציאלית"
+        },
+        {
+          "course_number": "01040279",
+          "course_name": "מבוא לחוגים ושדות"
+        },
+        {
+          "course_number": "01040280",
+          "course_name": "מודולים, חוגים וחבורות"
+        },
+        {
+          "course_number": "01040293",
+          "course_name": "תורת הקבוצות"
+        },
+        {
+          "course_number": "01060349",
+          "course_name": "הסתברות מתקדמת"
+        }
+      ]
+    },
+    "logical_expression": "01040142 AND 1_OF(01040158,01040165,01040286) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "01040142 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 01040158, 01040165, 01040286",
+    "לאחר מכן נדרש עוד מקצוע אחד נוסף מתוך רשימת הקורסים של הקבוצה"
+  ]
+}

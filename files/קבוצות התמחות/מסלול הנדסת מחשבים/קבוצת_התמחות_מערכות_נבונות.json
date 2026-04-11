@@ -1,0 +1,277 @@
+{
+  "title": "קבוצת התמחות - מערכות נבונות",
+  "specialization_group_name": "מערכות נבונות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460345",
+      "course_name": "גרפיקה ממוחשבת",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360216",
+      "course_name": "גרפיקה ממוחשבת 1",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360501",
+      "course_name": "מבוא לבינה מלאכותית",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "02360927",
+      "course_name": "מבוא לרובוטיקה",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460212",
+      "course_name": "מבוא לרובוטיקה ח׳",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460010",
+      "course_name": "הסקה סטטיסטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460213",
+      "course_name": "רובוטים ניידים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02340292",
+      "course_name": "לוגיקה למדמ\"ח",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360372",
+      "course_name": "רשתות בייסיאניות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360373",
+      "course_name": "סינתזה של תמונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360716",
+      "course_name": "מודלים גאומטריים במערכות תיב\"ם",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360766",
+      "course_name": "מבוא ללמידת מכונה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360760",
+      "course_name": "למידה חישובית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360781",
+      "course_name": "למידה עמוקה על מאיצים חישוביים",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460217",
+      "course_name": "למידה עמוקה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460203",
+      "course_name": "תכנון ולמידה מחיזוקים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460215",
+      "course_name": "למידה עמוקה וחבורות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360329",
+      "course_name": "עיבוד ספרתי של גאומטריה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360861",
+      "course_name": "ראיה חישובית גאומטרית",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360873",
+      "course_name": "ראיה ממוחשבת",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460746",
+      "course_name": "אלגוריתמים ויישומים בראייה ממוחשבת",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460747",
+      "course_name": "למידה עמוקה לאותות ודיבור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460853",
+      "course_name": "ארכיטקטורות מחשבים מתקדמות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460200",
+      "course_name": "עיבוד וניתוח תמונות",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360860",
+      "course_name": "עיבוד תמונות דיגיטלי",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360862",
+      "course_name": "עיבוד מודלים גנרטיביים ויישומיהם בעיבוד אותות ותמונות",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "02360501",
+        "course_name": "מבוא לבינה מלאכותית"
+      }
+    ],
+    "mandatory_choice_rules": [
+      {
+        "type": "choose_1_from",
+        "group_name": "אפשרות חובה 1",
+        "options": [
+          {
+            "course_number": "00460345",
+            "course_name": "גרפיקה ממוחשבת"
+          },
+          {
+            "course_number": "02360216",
+            "course_name": "גרפיקה ממוחשבת 1"
+          }
+        ]
+      },
+      {
+        "type": "choose_1_from",
+        "group_name": "אפשרות חובה 2",
+        "options": [
+          {
+            "course_number": "00460212",
+            "course_name": "מבוא לרובוטיקה ח׳"
+          },
+          {
+            "course_number": "02360927",
+            "course_name": "מבוא לרובוטיקה"
+          }
+        ]
+      }
+    ],
+    "additional_courses_required": 0,
+    "logical_expression": "1_OF(00460345,02360216) AND 1_OF(00460212,02360927) AND 02360501"
+  },
+  "mutual_exclusion_rules": [
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460345",
+          "course_name": "גרפיקה ממוחשבת"
+        },
+        {
+          "course_number": "02360216",
+          "course_name": "גרפיקה ממוחשבת 1"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460345 ו-02360216"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "02360927",
+          "course_name": "מבוא לרובוטיקה"
+        },
+        {
+          "course_number": "00460212",
+          "course_name": "מבוא לרובוטיקה ח׳"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 02360927 ו-00460212"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "02360766",
+          "course_name": "מבוא ללמידת מכונה"
+        },
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 02360766 ו-00460195"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "02360781",
+          "course_name": "למידה עמוקה על מאיצים חישוביים"
+        },
+        {
+          "course_number": "00460217",
+          "course_name": "למידה עמוקה"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 02360781 ו-00460217"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        },
+        {
+          "course_number": "02360860",
+          "course_name": "עיבוד תמונות דיגיטלי"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460200 ו-02360860"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "02360873",
+          "course_name": "ראיה ממוחשבת"
+        },
+        {
+          "course_number": "00460746",
+          "course_name": "אלגוריתמים ויישומים בראייה ממוחשבת"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 02360873 ו-00460746"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "02360501 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך 00460345 או 02360216",
+    "ובנוסף יש לקחת אחד מתוך 00460212 או 02360927",
+    "שלושת המקצועות הללו מספיקים להשלמת הקבוצה",
+    "יש כללי OR נוספים בתוך הקבוצה, ולכן אי אפשר לקחת יחד את כל הקורסים שבקבוצות ההחרגה ההדדית"
+  ]
+}

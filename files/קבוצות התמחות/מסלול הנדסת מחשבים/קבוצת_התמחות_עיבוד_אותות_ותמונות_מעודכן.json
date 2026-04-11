@@ -1,0 +1,326 @@
+{
+  "title": "קבוצת התמחות - עיבוד אותות ותמונות",
+  "specialization_group_name": "עיבוד אותות ותמונות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00440198",
+      "course_name": "מבוא לעיבוד ספרתי של אותות",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00440202",
+      "course_name": "אותות אקראיים",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460200",
+      "course_name": "עיבוד וניתוח תמונות",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360860",
+      "course_name": "עיבוד תמונות דיגיטלי",
+      "category": "mandatory_choice_option_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460010",
+      "course_name": "הסקה סטטיסטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460345",
+      "course_name": "גרפיקה ממוחשבת",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360216",
+      "course_name": "גרפיקה ממוחשבת 1",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460201",
+      "course_name": "עיבוד אותות אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460332",
+      "course_name": "מערכות ראיה ושמיעה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460745",
+      "course_name": "עיבוד ספרתי של אותות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460746",
+      "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360873",
+      "course_name": "ראיה ממוחשבת",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "00460747",
+      "course_name": "למידה עמוקה לאותות ודיבור",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360373",
+      "course_name": "סינתזה של תמונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360861",
+      "course_name": "ראיה חישובית גאומטרית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460733",
+      "course_name": "תורת האינפורמציה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460831",
+      "course_name": "מבוא לדימות רפואי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360766",
+      "course_name": "מבוא ללמידת מכונה",
+      "category": "elective_with_mutual_exclusion"
+    },
+    {
+      "course_number": "02360329",
+      "course_name": "עיבוד ספרתי של גאומטריה",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00440198",
+        "course_name": "מבוא לעיבוד ספרתי של אותות"
+      }
+    ],
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440202",
+          "course_name": "אותות אקראיים"
+        },
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        },
+        {
+          "course_number": "02360860",
+          "course_name": "עיבוד תמונות דיגיטלי"
+        }
+      ]
+    },
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440202",
+          "course_name": "אותות אקראיים"
+        },
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        },
+        {
+          "course_number": "02360860",
+          "course_name": "עיבוד תמונות דיגיטלי"
+        },
+        {
+          "course_number": "00460010",
+          "course_name": "הסקה סטטיסטית"
+        },
+        {
+          "course_number": "00460345",
+          "course_name": "גרפיקה ממוחשבת"
+        },
+        {
+          "course_number": "02360216",
+          "course_name": "גרפיקה ממוחשבת 1"
+        },
+        {
+          "course_number": "00460197",
+          "course_name": "שיטות חישוביות באופטימיזציה"
+        },
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        },
+        {
+          "course_number": "00460201",
+          "course_name": "עיבוד אותות אקראיים"
+        },
+        {
+          "course_number": "00460332",
+          "course_name": "מערכות ראיה ושמיעה"
+        },
+        {
+          "course_number": "00460745",
+          "course_name": "עיבוד ספרתי של אותות"
+        },
+        {
+          "course_number": "00460746",
+          "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת"
+        },
+        {
+          "course_number": "02360873",
+          "course_name": "ראיה ממוחשבת"
+        },
+        {
+          "course_number": "00460747",
+          "course_name": "למידה עמוקה לאותות ודיבור"
+        },
+        {
+          "course_number": "02360373",
+          "course_name": "סינתזה של תמונות"
+        },
+        {
+          "course_number": "02360861",
+          "course_name": "ראיה חישובית גאומטרית"
+        },
+        {
+          "course_number": "00460733",
+          "course_name": "תורת האינפורמציה"
+        },
+        {
+          "course_number": "00460831",
+          "course_name": "מבוא לדימות רפואי"
+        },
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "course_number": "02360766",
+          "course_name": "מבוא ללמידת מכונה"
+        },
+        {
+          "course_number": "02360329",
+          "course_name": "עיבוד ספרתי של גאומטריה"
+        }
+      ]
+    },
+    "logical_expression": "00440198 AND 1_OF(00440202,00460200,02360860) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES_SUBJECT_TO_MUTUAL_EXCLUSION_RULES"
+  },
+  "mutual_exclusion_rules": [
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        },
+        {
+          "course_number": "02360860",
+          "course_name": "עיבוד תמונות דיגיטלי"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460200 ו-02360860"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460345",
+          "course_name": "גרפיקה ממוחשבת"
+        },
+        {
+          "course_number": "02360216",
+          "course_name": "גרפיקה ממוחשבת 1"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460345 ו-02360216"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460197",
+          "course_name": "שיטות חישוביות באופטימיזציה"
+        },
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460197, 01040193, 02360330"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460746",
+          "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת"
+        },
+        {
+          "course_number": "02360873",
+          "course_name": "ראיה ממוחשבת"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460746 ו-02360873"
+    },
+    {
+      "type": "choose_at_most_1_from",
+      "options": [
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "course_number": "02360766",
+          "course_name": "מבוא ללמידת מכונה"
+        }
+      ],
+      "note": "אפשר לקחת רק אחד מבין 00460195 ו-02360766"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00440198 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 00440202, 00460200, 02360860",
+    "לאחר מכן נדרש עוד מקצוע אחד נוסף מתוך רשימת הקורסים של הקבוצה",
+    "יש כללי OR נוספים בתוך הקבוצה, ולכן אי אפשר לקחת יחד את כל הקורסים שבקבוצות ההחרגה ההדדית"
+  ]
+}

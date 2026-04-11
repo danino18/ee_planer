@@ -1,0 +1,232 @@
+{
+  "title": "קבוצת התמחות - עיבוד אותות ותמונות",
+  "specialization_group_name": "עיבוד אותות ותמונות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00440198",
+      "course_name": "מבוא לעיבוד ספרתי של אותות",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460200",
+      "course_name": "עיבוד וניתוח תמונות",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460010",
+      "course_name": "הסקה סטטיסטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460745",
+      "course_name": "עיבוד ספרתי של אותות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_replacement_option"
+    },
+    {
+      "course_number": "00460201",
+      "course_name": "עיבוד אותות אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460249",
+      "course_name": "מערכות אלקטרואופטיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460332",
+      "course_name": "מערכות ראיה ושמיעה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460345",
+      "course_name": "גרפיקה ממוחשבת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460733",
+      "course_name": "תורת האינפורמציה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460743",
+      "course_name": "עיבוד אותות מרחבי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460746",
+      "course_name": "אלגוריתמים ויישומים בראייה ממוחשבת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460747",
+      "course_name": "למידה עמוקה לאותות ודיבור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460831",
+      "course_name": "מבוא לדימות רפואי",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460868",
+      "course_name": "יסודות תהליכים אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "03360504",
+      "course_name": "עקרונות דימות תהודה מגנטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "replacement_for_00460197"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 4,
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00440198",
+          "course_name": "מבוא לעיבוד ספרתי של אותות"
+        },
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        }
+      ]
+    },
+    "additional_courses_required": 3,
+    "additional_course_selection_rule": {
+      "type": "choose_3_from",
+      "options": [
+        {
+          "course_number": "00440198",
+          "course_name": "מבוא לעיבוד ספרתי של אותות"
+        },
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        },
+        {
+          "course_number": "00460010",
+          "course_name": "הסקה סטטיסטית"
+        },
+        {
+          "course_number": "00460745",
+          "course_name": "עיבוד ספרתי של אותות"
+        },
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "type": "choose_1_from",
+          "options": [
+            {
+              "course_number": "00460197",
+              "course_name": "שיטות חישוביות באופטימיזציה"
+            },
+            {
+              "course_number": "01040193",
+              "course_name": "תורת האופטימיזציה"
+            },
+            {
+              "course_number": "02360330",
+              "course_name": "מבוא לאופטימיזציה"
+            }
+          ],
+          "note": "ניתן לקחת אחד משני המקצועות החלופיים במקום 00460197"
+        },
+        {
+          "course_number": "00460201",
+          "course_name": "עיבוד אותות אקראיים"
+        },
+        {
+          "course_number": "00460249",
+          "course_name": "מערכות אלקטרואופטיות"
+        },
+        {
+          "course_number": "00460332",
+          "course_name": "מערכות ראיה ושמיעה"
+        },
+        {
+          "course_number": "00460345",
+          "course_name": "גרפיקה ממוחשבת"
+        },
+        {
+          "course_number": "00460733",
+          "course_name": "תורת האינפורמציה"
+        },
+        {
+          "course_number": "00460743",
+          "course_name": "עיבוד אותות מרחבי"
+        },
+        {
+          "course_number": "00460746",
+          "course_name": "אלגוריתמים ויישומים בראייה ממוחשבת"
+        },
+        {
+          "course_number": "00460747",
+          "course_name": "למידה עמוקה לאותות ודיבור"
+        },
+        {
+          "course_number": "00460831",
+          "course_name": "מבוא לדימות רפואי"
+        },
+        {
+          "course_number": "00460868",
+          "course_name": "יסודות תהליכים אקראיים"
+        },
+        {
+          "course_number": "03360504",
+          "course_name": "עקרונות דימות תהודה מגנטית"
+        }
+      ]
+    },
+    "logical_expression": "1_OF(00440198,00460200) AND 3_ADDITIONAL_FROM_ALL_GROUP_COURSES_WITH_REPLACEMENT_RULE_FOR_00460197"
+  },
+  "replacement_rules": [
+    {
+      "replaceable_course": {
+        "course_number": "00460197",
+        "course_name": "שיטות חישוביות באופטימיזציה"
+      },
+      "allowed_replacements": [
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        }
+      ],
+      "note": "אפשר לקחת אחד משני המקצועות החלופיים במקום קורס 00460197"
+    }
+  ],
+  "notes": [
+    "נדרשים 4 מקצועות להשלמת הקבוצה",
+    "המקצוע המחייב הוא אחד מן: 00440198, 00460200",
+    "לאחר מכן נדרשים עוד 3 מקצועות נוספים מתוך רשימת הקורסים של הקבוצה",
+    "לפי ההערה במסמך, ניתן לקחת אחד משני המקצועות החלופיים 01040193 או 02360330 במקום 00460197"
+  ]
+}

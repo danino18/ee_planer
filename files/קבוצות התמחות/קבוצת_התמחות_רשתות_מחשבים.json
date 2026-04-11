@@ -1,0 +1,203 @@
+{
+  "title": "קבוצת התמחות - רשתות מחשבים",
+  "specialization_group_name": "רשתות מחשבים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00440334",
+      "course_name": "רשתות מחשבים ואינטרנט 1",
+      "category": "required"
+    },
+    {
+      "course_number": "00460005",
+      "course_name": "רשתות מחשבים ואינטרנט 2",
+      "category": "required"
+    },
+    {
+      "course_number": "00460001",
+      "course_name": "הנדסת מערכות תוכנה מבוזרות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460002",
+      "course_name": "תכן וניתוח אלגוריתמים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460203",
+      "course_name": "תכנון ולמידה מחיזוקים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_replacement_option"
+    },
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460205",
+      "course_name": "מבוא לתורת הקידוד בתקשורת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460209",
+      "course_name": "מבנה מערכות הפעלה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460272",
+      "course_name": "מערכות מבוזרות : עקרונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460280",
+      "course_name": "עקרונות וכלים באבטחת מחשבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360350",
+      "course_name": "הגנה ברשתות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460733",
+      "course_name": "תורת האינפורמציה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460881",
+      "course_name": "אימות פורמלי לחומרה",
+      "category": "elective"
+    },
+    {
+      "course_number": "02360309",
+      "course_name": "מבוא לתורת הצפינה",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "replacement_for_00460197"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00440334",
+        "course_name": "רשתות מחשבים ואינטרנט 1"
+      },
+      {
+        "course_number": "00460005",
+        "course_name": "רשתות מחשבים ואינטרנט 2"
+      }
+    ],
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00460001",
+          "course_name": "הנדסת מערכות תוכנה מבוזרות"
+        },
+        {
+          "course_number": "00460002",
+          "course_name": "תכן וניתוח אלגוריתמים"
+        },
+        {
+          "course_number": "00460203",
+          "course_name": "תכנון ולמידה מחיזוקים"
+        },
+        {
+          "type": "choose_1_from",
+          "options": [
+            {
+              "course_number": "00460197",
+              "course_name": "שיטות חישוביות באופטימיזציה"
+            },
+            {
+              "course_number": "01040193",
+              "course_name": "תורת האופטימיזציה"
+            },
+            {
+              "course_number": "02360330",
+              "course_name": "מבוא לאופטימיזציה"
+            }
+          ],
+          "note": "ניתן לקחת את 01040193 או את 02360330 במקום 00460197"
+        },
+        {
+          "course_number": "00460195",
+          "course_name": "מערכות לומדות"
+        },
+        {
+          "course_number": "00460205",
+          "course_name": "מבוא לתורת הקידוד בתקשורת"
+        },
+        {
+          "course_number": "00460209",
+          "course_name": "מבנה מערכות הפעלה"
+        },
+        {
+          "course_number": "00460272",
+          "course_name": "מערכות מבוזרות : עקרונות"
+        },
+        {
+          "course_number": "00460280",
+          "course_name": "עקרונות וכלים באבטחת מחשבים"
+        },
+        {
+          "course_number": "02360350",
+          "course_name": "הגנה ברשתות"
+        },
+        {
+          "course_number": "00460733",
+          "course_name": "תורת האינפורמציה"
+        },
+        {
+          "course_number": "00460881",
+          "course_name": "אימות פורמלי לחומרה"
+        },
+        {
+          "course_number": "02360309",
+          "course_name": "מבוא לתורת הצפינה"
+        }
+      ]
+    },
+    "logical_expression": "(00440334 AND 00460005) AND 1_OF(00460001,00460002,00460203,(00460197 OR 01040193 OR 02360330),00460195,00460205,00460209,00460272,00460280,02360350,00460733,00460881,02360309)"
+  },
+  "replacement_rules": [
+    {
+      "replaceable_course": {
+        "course_number": "00460197",
+        "course_name": "שיטות חישוביות באופטימיזציה"
+      },
+      "allowed_replacements": [
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        }
+      ],
+      "note": "אפשר לקחת את 01040193 או את 02360330 במקום 00460197"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "שני מקצועות הם חובה: 00440334, 00460005",
+    "נדרש עוד מקצוע אחד לבחירה מתוך רשימת האפשרויות",
+    "לפי ההערה המעודכנת, ניתן לקחת את 01040193 או את 02360330 במקום 00460197"
+  ]
+}

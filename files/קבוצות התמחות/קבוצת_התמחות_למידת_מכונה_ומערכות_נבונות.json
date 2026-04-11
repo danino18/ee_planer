@@ -1,0 +1,239 @@
+{
+  "title": "קבוצת התמחות - למידת מכונה ומערכות נבונות",
+  "specialization_group_name": "למידת מכונה ומערכות נבונות",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460195",
+      "course_name": "מערכות לומדות",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00460202",
+      "course_name": "עיבוד וניתוח מידע",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460203",
+      "course_name": "תכנון ולמידה מחיזוקים",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460217",
+      "course_name": "למידה עמוקה",
+      "category": "mandatory_choice_option"
+    },
+    {
+      "course_number": "00460010",
+      "course_name": "הסקה סטטיסטית",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440191",
+      "course_name": "מערכות בקרה 1",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460197",
+      "course_name": "שיטות חישוביות באופטימיזציה",
+      "category": "elective_with_replacement_option"
+    },
+    {
+      "course_number": "00460201",
+      "course_name": "עיבוד אותות אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460212",
+      "course_name": "מבוא לרובוטיקה ח׳",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460215",
+      "course_name": "למידה עמוקה וחבורות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460733",
+      "course_name": "תורת האינפורמציה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460041",
+      "course_name": "רשתות עצביות ביולוגיות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460200",
+      "course_name": "עיבוד וניתוח תמונות",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460213",
+      "course_name": "רובוטים ניידים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460746",
+      "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460747",
+      "course_name": "למידה עמוקה לאותות ודיבור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460853",
+      "course_name": "ארכיטקטורות מחשבים מתקדמות",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040193",
+      "course_name": "תורת האופטימיזציה",
+      "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "02360330",
+      "course_name": "מבוא לאופטימיזציה",
+      "category": "replacement_for_00460197"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00460195",
+        "course_name": "מערכות לומדות"
+      }
+    ],
+    "mandatory_choice_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00460202",
+          "course_name": "עיבוד וניתוח מידע"
+        },
+        {
+          "course_number": "00460203",
+          "course_name": "תכנון ולמידה מחיזוקים"
+        },
+        {
+          "course_number": "00460217",
+          "course_name": "למידה עמוקה"
+        }
+      ]
+    },
+    "additional_courses_required": 1,
+    "additional_course_selection_rule": {
+      "type": "choose_1_from",
+      "options": [
+        {
+          "course_number": "00460202",
+          "course_name": "עיבוד וניתוח מידע"
+        },
+        {
+          "course_number": "00460203",
+          "course_name": "תכנון ולמידה מחיזוקים"
+        },
+        {
+          "course_number": "00460217",
+          "course_name": "למידה עמוקה"
+        },
+        {
+          "course_number": "00460010",
+          "course_name": "הסקה סטטיסטית"
+        },
+        {
+          "course_number": "00440191",
+          "course_name": "מערכות בקרה 1"
+        },
+        {
+          "type": "choose_1_from",
+          "options": [
+            {
+              "course_number": "00460197",
+              "course_name": "שיטות חישוביות באופטימיזציה"
+            },
+            {
+              "course_number": "01040193",
+              "course_name": "תורת האופטימיזציה"
+            },
+            {
+              "course_number": "02360330",
+              "course_name": "מבוא לאופטימיזציה"
+            }
+          ],
+          "note": "ניתן לקחת אחד משני המקצועות החלופיים במקום 00460197"
+        },
+        {
+          "course_number": "00460201",
+          "course_name": "עיבוד אותות אקראיים"
+        },
+        {
+          "course_number": "00460212",
+          "course_name": "מבוא לרובוטיקה ח׳"
+        },
+        {
+          "course_number": "00460215",
+          "course_name": "למידה עמוקה וחבורות"
+        },
+        {
+          "course_number": "00460733",
+          "course_name": "תורת האינפורמציה"
+        },
+        {
+          "course_number": "00460041",
+          "course_name": "רשתות עצביות ביולוגיות"
+        },
+        {
+          "course_number": "00460200",
+          "course_name": "עיבוד וניתוח תמונות"
+        },
+        {
+          "course_number": "00460213",
+          "course_name": "רובוטים ניידים"
+        },
+        {
+          "course_number": "00460746",
+          "course_name": "אלגוריתמים ויישומים בראיה ממוחשבת"
+        },
+        {
+          "course_number": "00460747",
+          "course_name": "למידה עמוקה לאותות ודיבור"
+        },
+        {
+          "course_number": "00460853",
+          "course_name": "ארכיטקטורות מחשבים מתקדמות"
+        }
+      ]
+    },
+    "logical_expression": "00460195 AND 1_OF(00460202,00460203,00460217) AND 1_ADDITIONAL_FROM_ALL_GROUP_COURSES_WITH_REPLACEMENT_RULE_FOR_00460197"
+  },
+  "replacement_rules": [
+    {
+      "replaceable_course": {
+        "course_number": "00460197",
+        "course_name": "שיטות חישוביות באופטימיזציה"
+      },
+      "allowed_replacements": [
+        {
+          "course_number": "01040193",
+          "course_name": "תורת האופטימיזציה"
+        },
+        {
+          "course_number": "02360330",
+          "course_name": "מבוא לאופטימיזציה"
+        }
+      ],
+      "note": "אפשר לקחת אחד משני המקצועות החלופיים במקום קורס 00460197"
+    }
+  ],
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00460195 הוא מקצוע חובה",
+    "בנוסף יש לקחת אחד מתוך: 00460202, 00460203, 00460217",
+    "לאחר מכן נדרש עוד מקצוע אחד נוסף מתוך רשימת הקורסים של הקבוצה",
+    "לפי ההערה במסמך, ניתן לקחת אחד משני המקצועות החלופיים 01040193 או 02360330 במקום 00460197"
+  ]
+}

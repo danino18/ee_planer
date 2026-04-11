@@ -1,0 +1,150 @@
+{
+  "title": "קבוצת התמחות - מעגלים אלקטרוניים משולבים",
+  "specialization_group_name": "מעגלים אלקטרוניים משולבים",
+  "type": "specialization_group",
+  "courses": [
+    {
+      "course_number": "00460237",
+      "course_name": "מעגלים משולבים - מבוא ל-VLSI",
+      "category": "mandatory_core"
+    },
+    {
+      "course_number": "00460045",
+      "course_name": "תכן ממירים ממותגים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460187",
+      "course_name": "תכן מעגלים אנלוגיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460188",
+      "course_name": "מעגלים אלקטרוניים לאותות מעורבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460903",
+      "course_name": "מעגלים משולבים - CMOS בתדר רדיו (RF)",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440139",
+      "course_name": "ממירי מתח ממותגים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440294",
+      "course_name": "מכשור אלקטרוני",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460189",
+      "course_name": "תכן מסננים אנלוגיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460265",
+      "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460880",
+      "course_name": "תכן לוגי ממוחשב של שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00440214",
+      "course_name": "טכניקות קליטה ושידור",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460864",
+      "course_name": "ערוצי תקשורת מהירים בין שבבים",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460881",
+      "course_name": "אימות פורמלי לחומרה",
+      "category": "elective"
+    },
+    {
+      "course_number": "00460918",
+      "course_name": "תכן פיסי ממוחשב של שבבים",
+      "category": "elective"
+    }
+  ],
+  "requirements": {
+    "total_courses_required_for_group": 3,
+    "mandatory_courses": [
+      {
+        "course_number": "00460237",
+        "course_name": "מעגלים משולבים - מבוא ל-VLSI"
+      }
+    ],
+    "additional_courses_required": 2,
+    "additional_course_selection_rule": {
+      "type": "choose_2_from",
+      "options": [
+        {
+          "course_number": "00460045",
+          "course_name": "תכן ממירים ממותגים"
+        },
+        {
+          "course_number": "00460187",
+          "course_name": "תכן מעגלים אנלוגיים"
+        },
+        {
+          "course_number": "00460188",
+          "course_name": "מעגלים אלקטרוניים לאותות מעורבים"
+        },
+        {
+          "course_number": "00460903",
+          "course_name": "מעגלים משולבים - CMOS בתדר רדיו (RF)"
+        },
+        {
+          "course_number": "00440139",
+          "course_name": "ממירי מתח ממותגים"
+        },
+        {
+          "course_number": "00440294",
+          "course_name": "מכשור אלקטרוני"
+        },
+        {
+          "course_number": "00460189",
+          "course_name": "תכן מסננים אנלוגיים"
+        },
+        {
+          "course_number": "00460265",
+          "course_name": "ארכיטקטורות מעגלים בשילוב ממריסטורים"
+        },
+        {
+          "course_number": "00460880",
+          "course_name": "תכן לוגי ממוחשב של שבבים"
+        },
+        {
+          "course_number": "00440214",
+          "course_name": "טכניקות קליטה ושידור"
+        },
+        {
+          "course_number": "00460864",
+          "course_name": "ערוצי תקשורת מהירים בין שבבים"
+        },
+        {
+          "course_number": "00460881",
+          "course_name": "אימות פורמלי לחומרה"
+        },
+        {
+          "course_number": "00460918",
+          "course_name": "תכן פיסי ממוחשב של שבבים"
+        }
+      ]
+    },
+    "logical_expression": "00460237 AND 2_ADDITIONAL_FROM_ALL_GROUP_COURSES"
+  },
+  "notes": [
+    "נדרשים 3 מקצועות להשלמת הקבוצה",
+    "00460237 הוא המקצוע המחייב",
+    "לאחר מכן נדרשים עוד 2 מקצועות נוספים מתוך רשימת הקורסים של הקבוצה"
+  ]
+}
