@@ -4,7 +4,7 @@ import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
 import type { SpecializationDiagnostic } from '../types';
-import type { EnglishRequirementItem } from '../hooks/usePlan';
+import type { EnglishRequirementItem, CoreSlot } from '../hooks/usePlan';
 
 interface ProgressRowProps {
   label: string;
@@ -223,7 +223,13 @@ interface Props {
     freeElective: { earned: number; required: number };
     generalRequirements: GeneralRequirementProgress[];
     labPoolProgress: { earned: number; required: number; mandatory: boolean; max?: number } | null;
-    coreRequirementProgress: { completed: number; required: number; total: number } | null;
+    coreRequirementProgress: {
+      completed: number;
+      required: number;
+      total: number;
+      slots: CoreSlot[];
+      canRelease: string[];
+    } | null;
     english: {
       placed: { id: string; name: string }[];
       hasExemption: boolean;
@@ -242,14 +248,18 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setMiluimCredits,
     setEnglishScore,
     toggleEnglishTaughtCourse,
+    setCoreToChainOverrides,
     miluimCredits,
     englishTaughtCourses,
+    coreToChainOverrides,
   } = usePlanStore(useShallow((state) => ({
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
     toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
+    setCoreToChainOverrides: state.setCoreToChainOverrides,
     miluimCredits: state.miluimCredits,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
+    coreToChainOverrides: state.coreToChainOverrides ?? [],
   })));
   const compactRequirements = useMemo(() => (
     (progress?.generalRequirements ?? []).filter((req) => (
@@ -292,20 +302,68 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
       {progress.coreRequirementProgress && (() => {
-        const { completed, required } = progress.coreRequirementProgress!;
+        const { completed, required, slots, canRelease } = progress.coreRequirementProgress!;
         const done = completed >= required;
-        const pct = Math.min(100, (completed / required) * 100);
+        const pct = Math.min(100, required > 0 ? (completed / required) * 100 : 0);
         return (
-          <div className="mb-3">
+          <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm text-gray-700">קורסי ליבה</span>
+              <span className="text-sm font-medium text-gray-800">קורסי ליבה</span>
               <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}`}>
                 {completed} / {required} {done ? 'קורסים ✓' : 'קורסים'}
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
               <div className={`h-2 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-orange-500'}`} style={{ width: `${pct}%` }} />
             </div>
+            <div className="space-y-1">
+              {slots.map((slot) => (
+                <div key={slot.ids.join('|')} className="flex items-start gap-1.5 text-xs">
+                  <span className={`font-bold mt-0.5 shrink-0 ${slot.done ? 'text-green-600' : slot.released ? 'text-purple-500' : 'text-gray-400'}`}>
+                    {slot.done ? '✓' : slot.released ? '↗' : '○'}
+                  </span>
+                  <div className="min-w-0">
+                    <span className={slot.done ? 'text-green-700' : slot.released ? 'text-purple-600' : 'text-gray-500'}>
+                      {slot.ids.length > 1
+                        ? `${slot.ids.join(' / ')} (אחד מהשניים)`
+                        : `${slot.ids[0]} ${slot.names[0]}`}
+                    </span>
+                    {slot.ids.length > 1 && slot.activeId && (
+                      <span className="text-gray-400 ms-1">({slot.activeId} {slot.names[slot.ids.indexOf(slot.activeId)]})</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {canRelease.length > 0 && (
+              <div className="mt-2.5 pt-2 border-t border-gray-200">
+                <p className="text-xs text-gray-500 mb-1.5">שחרור עודף לשרשרת:</p>
+                <div className="space-y-1">
+                  {canRelease.map((id) => {
+                    const isReleased = coreToChainOverrides.includes(id);
+                    const slot = slots.find((s) => s.ids.includes(id));
+                    const name = slot?.names[slot.ids.indexOf(id)] ?? id;
+                    return (
+                      <label key={id} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={isReleased}
+                          onChange={() => {
+                            if (isReleased) {
+                              setCoreToChainOverrides(coreToChainOverrides.filter((x) => x !== id));
+                            } else {
+                              setCoreToChainOverrides([...coreToChainOverrides, id]);
+                            }
+                          }}
+                          className="rounded"
+                        />
+                        <span>{id} {name} → לשרשרת</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}

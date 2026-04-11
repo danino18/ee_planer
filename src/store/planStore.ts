@@ -45,6 +45,7 @@ interface PlanState extends StudentPlan {
   toggleEnglishExemption: () => void;
   setBinaryPass: (courseId: string, value: boolean | null) => void;
   setMiluimCredits: (n: number | null) => void;
+  setCoreToChainOverrides: (ids: string[]) => void;
   setEnglishScore: (score: number | null) => void;
   toggleEnglishTaughtCourse: (courseId: string) => void;
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
@@ -156,6 +157,7 @@ const initialState: StudentPlan = {
   facultyColorOverrides: {},
   completedInstances: [],
   dismissedRecommendedCourses: {},
+  coreToChainOverrides: [],
 };
 
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
@@ -227,6 +229,7 @@ function captureSnapshot(state: PlanState): StudentPlan {
     facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}) },
     completedInstances: [...(state.completedInstances ?? [])],
     dismissedRecommendedCourses: { ...(state.dismissedRecommendedCourses ?? {}) },
+    coreToChainOverrides: [...(state.coreToChainOverrides ?? [])],
   };
 }
 
@@ -606,6 +609,9 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      setCoreToChainOverrides: (ids) =>
+        set(() => ({ coreToChainOverrides: ids })),
+
       setFacultyColorOverride: (faculty, colorKey) =>
         set((state) => ({
           facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}), [faculty]: colorKey },
@@ -659,6 +665,7 @@ export const usePlanStore = create<PlanState>()(
           facultyColorOverrides: migratedPlan.facultyColorOverrides ?? {},
           completedInstances: migratedPlan.completedInstances ?? [],
           dismissedRecommendedCourses: migratedPlan.dismissedRecommendedCourses ?? {},
+          coreToChainOverrides: migratedPlan.coreToChainOverrides ?? [],
           // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
           savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
           _history: [],

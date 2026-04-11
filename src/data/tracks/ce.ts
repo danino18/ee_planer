@@ -9,6 +9,11 @@ export const ceTrack: TrackDefinition = {
   electiveCreditsRequired: 27,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 2,
+  coreRequirement: {
+    courses: ['00440198', '00440202', '02360334', '00440334', '02340292', '02360343'],
+    required: 2,
+    orGroups: [['02360334', '00440334']],
+  },
   labPool: {
     required: 0,
     mandatory: false,

@@ -33,6 +33,7 @@ export interface TrackDefinition {
   coreRequirement?: {
     courses: string[];
     required: number;     // "complete N out of courses.length"
+    orGroups?: string[][];  // each inner array = mutually exclusive alternatives (only 1 slot counts)
   };
 }
 
@@ -204,4 +205,5 @@ export interface StudentPlan {
   englishTaughtCourses?: string[];  // course IDs student marked as taught in English
   dismissedRecommendedCourses?: Record<string, string[]>;
   facultyColorOverrides?: Record<string, string>;  // faculty name → color key override
+  coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
 }

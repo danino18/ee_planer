@@ -154,6 +154,14 @@ export type EnglishRequirementItem = {
   neededCount?: number;
 };
 
+export interface CoreSlot {
+  ids: string[];        // 1 ID normally; 2 IDs for OR pair
+  names: string[];      // corresponding course names
+  done: boolean;        // locked in core AND placed
+  released: boolean;    // placed but released to chain by user
+  activeId?: string;    // which specific ID is placed (for OR pairs)
+}
+
 export function useRequirementsProgress(
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null,
@@ -168,6 +176,7 @@ export function useRequirementsProgress(
   const englishScore = usePlanStore((s) => s.englishScore);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
+  const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -176,6 +185,31 @@ export function useRequirementsProgress(
       ...completedCourses,
       ...Object.values(semesters).flat(),
     ]);
+
+    // Core-locked courses: placed core courses NOT released to chain.
+    // These are excluded from specialization evaluation (can't double-count).
+    let coreLockedSet = new Set<string>();
+    if (trackDef.coreRequirement) {
+      const { courses: coreCourseIds, orGroups = [] } = trackDef.coreRequirement;
+      const corePlaced = coreCourseIds.filter((id) => allPlaced.has(id));
+      const coreLocked = corePlaced.filter((id) => !coreToChainOverrides.includes(id));
+      // For OR groups: only the first found member is "active" (locked); block the rest
+      const blockedOrIds = new Set<string>();
+      for (const g of orGroups) {
+        let foundActive = false;
+        for (const id of g) {
+          if (coreLocked.includes(id)) {
+            if (!foundActive) { foundActive = true; }
+            else { blockedOrIds.add(id); }
+          }
+        }
+      }
+      for (const id of coreLocked) {
+        if (!blockedOrIds.has(id)) coreLockedSet.add(id);
+      }
+    }
+    // Courses available for specialization: allPlaced minus core-locked ones
+    const specializationPlaced = new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
 
     const orderedLabPool: string[] = [];
     if (trackDef.labPool) {
@@ -255,7 +289,7 @@ export function useRequirementsProgress(
       const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
         ? 'double'
         : 'single';
-      const evaluation = evaluateSpecializationGroup(group, allPlaced, mode);
+      const evaluation = evaluateSpecializationGroup(group, specializationPlaced, mode);
       return {
         group,
         mode,
@@ -360,13 +394,91 @@ export function useRequirementsProgress(
 
     const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
 
-    const coreProgress = trackDef.coreRequirement
-      ? {
-          completed: trackDef.coreRequirement.courses.filter((id) => allPlaced.has(id)).length,
-          required: trackDef.coreRequirement.required,
-          total: trackDef.coreRequirement.courses.length,
+    let coreProgress: {
+      completed: number;
+      required: number;
+      total: number;
+      slots: CoreSlot[];
+      canRelease: string[];
+    } | null = null;
+    if (trackDef.coreRequirement) {
+      const { courses: coreCourseIds, required: coreRequired, orGroups = [] } = trackDef.coreRequirement;
+      const orGroupedIds = new Set(orGroups.flat());
+
+      // Count completed slots (OR-group aware) using the locked set
+      let slotsDone = 0;
+      const processedGroupsCount = new Set<number>();
+      for (const id of coreLockedSet) {
+        if (orGroupedIds.has(id)) {
+          const gi = orGroups.findIndex((g) => g.includes(id));
+          if (!processedGroupsCount.has(gi)) {
+            processedGroupsCount.add(gi);
+            slotsDone++;
+          }
+        } else {
+          slotsDone++;
         }
-      : null;
+      }
+
+      // Count total slots (OR-group aware)
+      let totalSlots = 0;
+      const processedGroupsTotal = new Set<number>();
+      for (const id of coreCourseIds) {
+        if (orGroupedIds.has(id)) {
+          const gi = orGroups.findIndex((g) => g.includes(id));
+          if (!processedGroupsTotal.has(gi)) {
+            processedGroupsTotal.add(gi);
+            totalSlots++;
+          }
+        } else {
+          totalSlots++;
+        }
+      }
+
+      // Build display slots (one row per slot, OR pairs merged)
+      const processedGroupsDisplay = new Set<number>();
+      const slots: CoreSlot[] = [];
+      for (const id of coreCourseIds) {
+        if (orGroupedIds.has(id)) {
+          const gi = orGroups.findIndex((g) => g.includes(id));
+          if (processedGroupsDisplay.has(gi)) continue;
+          processedGroupsDisplay.add(gi);
+          const group = orGroups[gi];
+          const activeId = group.find((gid) => coreLockedSet.has(gid));
+          const releasedId = group.find((gid) => coreToChainOverrides.includes(gid) && allPlaced.has(gid));
+          slots.push({
+            ids: group,
+            names: group.map((gid) => courses.get(gid)?.name ?? gid),
+            done: !!activeId,
+            released: !activeId && !!releasedId,
+            activeId,
+          });
+        } else {
+          const isLocked = coreLockedSet.has(id);
+          const isReleased = coreToChainOverrides.includes(id) && allPlaced.has(id);
+          slots.push({
+            ids: [id],
+            names: [courses.get(id)?.name ?? id],
+            done: isLocked,
+            released: isReleased,
+            activeId: isLocked ? id : undefined,
+          });
+        }
+      }
+
+      // canRelease: locked placed courses (visible for selection when we have overflow)
+      const canRelease = slotsDone > coreRequired
+        ? [...coreLockedSet].filter((id) => !orGroups.flat().some((oid) => oid !== id && coreLockedSet.has(oid) && orGroups.some((g) => g.includes(id) && g.includes(oid))))
+        : [];
+
+      coreProgress = {
+        completed: slotsDone,
+        required: coreRequired,
+        total: totalSlots,
+        slots,
+        canRelease,
+      };
+    }
 
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
@@ -419,7 +531,7 @@ export function useRequirementsProgress(
         totalCredits >= trackDef.totalCreditsRequired &&
         (!coreProgress || coreProgress.completed >= coreProgress.required),
     };
-  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder]);
+  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides]);
 }
 
 export function useChainRecommendations(

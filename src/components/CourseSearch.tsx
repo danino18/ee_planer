@@ -5,6 +5,39 @@ import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
 import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
 
+const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
+  english: [
+    {
+      href: 'https://ugportal.technion.ac.il/%d7%94%d7%95%d7%a8%d7%90%d7%94-%d7%95%d7%91%d7%97%d7%99%d7%a0%d7%95%d7%aa/%d7%aa%d7%a7%d7%a0%d7%94-1-3-3-%d7%97%d7%95%d7%91%d7%aa-%d7%9c%d7%99%d7%9e%d7%95%d7%93-%d7%a7%d7%95%d7%a8%d7%a1%d7%99%d7%9d-%d7%91%d7%a9%d7%a4%d7%94-%d7%94%d7%90%d7%a0%d7%92%d7%9c%d7%99%d7%aa-compuls/',
+      label: 'קורסי אנגלית',
+    },
+  ],
+  melag: [
+    {
+      href: 'https://humanities.technion.ac.il/courses/%d7%a7%d7%95%d7%a8%d7%a1-%d7%94%d7%a2%d7%a9%d7%a8%d7%94/',
+      label: 'קורסי העשרה',
+    },
+    {
+      href: 'https://ugportal.technion.ac.il/%D7%94%D7%95%D7%A8%D7%90%D7%94-%D7%95%D7%91%D7%97%D7%99%D7%A0%D7%95%D7%AA/%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99-%D7%94%D7%A2%D7%A9%D7%A8%D7%94/',
+      label: 'מל"גים',
+    },
+  ],
+  winter: [
+    {
+      href: 'https://ece.technion.ac.il/degree-studies-programs/undergraduate-studies/study-programs-courses/?lang=he',
+      label: 'קורסי אביב וחורף',
+      tooltip: 'לרדת למטה בדף עד לטבלת הקורסים לפי סמסטר',
+    },
+  ],
+  spring: [
+    {
+      href: 'https://ece.technion.ac.il/degree-studies-programs/undergraduate-studies/study-programs-courses/?lang=he',
+      label: 'קורסי אביב וחורף',
+      tooltip: 'לרדת למטה בדף עד לטבלת הקורסים לפי סמסטר',
+    },
+  ],
+};
+
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
@@ -224,39 +257,50 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
         </button>
       </div>
 
-      <div className="flex items-center gap-2 mt-2 px-1">
-        <button
-          onClick={() => toggleFilter('english')}
-          className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-            filters.english ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'
-          }`}
-        >
-          אנגלית
-        </button>
-        <button
-          onClick={() => toggleFilter('melag')}
-          className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-            filters.melag ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
-          }`}
-        >
-          ב"ח
-        </button>
-        <button
-          onClick={() => toggleFilter('winter')}
-          className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-            filters.winter ? 'bg-cyan-100 text-cyan-700 border-cyan-300' : 'bg-white text-gray-500 border-gray-200 hover:border-cyan-300'
-          }`}
-        >
-          חורף
-        </button>
-        <button
-          onClick={() => toggleFilter('spring')}
-          className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-            filters.spring ? 'bg-pink-100 text-pink-700 border-pink-300' : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300'
-          }`}
-        >
-          אביב
-        </button>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2 px-1">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => toggleFilter('english')}
+            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+              filters.english ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'
+            }`}
+          >
+            אנגלית
+          </button>
+          <a href={FILTER_LINKS.english![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.english![0].label} className="text-[10px] text-blue-400 hover:text-blue-600 shrink-0">↗</a>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => toggleFilter('melag')}
+            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+              filters.melag ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
+            }`}
+          >
+            ב"ח
+          </button>
+          {FILTER_LINKS.melag!.map((link) => (
+            <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" title={link.label} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">{link.label} ↗</a>
+          ))}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => toggleFilter('winter')}
+            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+              filters.winter ? 'bg-cyan-100 text-cyan-700 border-cyan-300' : 'bg-white text-gray-500 border-gray-200 hover:border-cyan-300'
+            }`}
+          >
+            חורף
+          </button>
+          <button
+            onClick={() => toggleFilter('spring')}
+            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+              filters.spring ? 'bg-pink-100 text-pink-700 border-pink-300' : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300'
+            }`}
+          >
+            אביב
+          </button>
+          <a href={FILTER_LINKS.winter![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.winter![0].tooltip} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">{FILTER_LINKS.winter![0].label} ↗</a>
+        </div>
       </div>
 
       {showDropdown && (
