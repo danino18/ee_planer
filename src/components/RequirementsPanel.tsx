@@ -12,6 +12,13 @@ import {
   ROBOTICS_LIST5_MIN_COURSES,
   ROBOTICS_LIST5_MIN_OUTSIDE_EE,
 } from '../data/roboticsMinor';
+import type { EntrepreneurshipMinorProgress } from '../hooks/useEntrepreneurshipMinor';
+import {
+  ENTREPRENEURSHIP_COURSES,
+  ENTREPRENEURSHIP_MINOR_MIN_GPA,
+  ENTREPRENEURSHIP_MINOR_MIN_TOTAL_CREDITS,
+  ENTREPRENEURSHIP_MINOR_MIN_CREDITS,
+} from '../data/entrepreneurshipMinor';
 
 interface ProgressRowProps {
   label: string;
@@ -246,6 +253,7 @@ interface Props {
       englishInPlan: string[];
     };
     roboticsMinorProgress: RoboticsMinorProgress | null;
+    entrepreneurshipMinorProgress: EntrepreneurshipMinorProgress | null;
     isReady: boolean;
   } | null;
   weightedAverage: number | null;
@@ -258,20 +266,24 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     toggleEnglishTaughtCourse,
     setCoreToChainOverrides,
     toggleRoboticsMinor,
+    toggleEntrepreneurshipMinor,
     miluimCredits,
     englishTaughtCourses,
     coreToChainOverrides,
     roboticsMinorEnabled,
+    entrepreneurshipMinorEnabled,
   } = usePlanStore(useShallow((state) => ({
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
     toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
     setCoreToChainOverrides: state.setCoreToChainOverrides,
     toggleRoboticsMinor: state.toggleRoboticsMinor,
+    toggleEntrepreneurshipMinor: state.toggleEntrepreneurshipMinor,
     miluimCredits: state.miluimCredits,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     coreToChainOverrides: state.coreToChainOverrides ?? [],
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
+    entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
   })));
   const compactRequirements = useMemo(() => (
     (progress?.generalRequirements ?? []).filter((req) => (
@@ -471,6 +483,73 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 ? ` (${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה)`
                 : ` — ${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה ✓`}
             </div>
+          </div>
+        );
+      })()}
+
+      <div className="mb-2 flex items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={entrepreneurshipMinorEnabled}
+            onChange={toggleEntrepreneurshipMinor}
+            className="rounded"
+          />
+          התמחות משנית במנהיגות יזמית
+        </label>
+      </div>
+
+      {entrepreneurshipMinorEnabled && progress.entrepreneurshipMinorProgress && (() => {
+        const ep = progress.entrepreneurshipMinorProgress;
+        const mandatoryCourses = ENTREPRENEURSHIP_COURSES.filter((c) => c.mandatory);
+        return (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
+            <div className="text-xs text-amber-800 space-y-0.5">
+              <p className="font-semibold">דרישות קבלה להתמחות המשנית</p>
+              <p className={ep.missingTotalCredits ? 'text-red-600' : 'text-green-700'}>
+                {ep.missingTotalCredits
+                  ? `נדרשות לפחות ${ENTREPRENEURSHIP_MINOR_MIN_TOTAL_CREDITS} נק"ז — חסר`
+                  : `לפחות ${ENTREPRENEURSHIP_MINOR_MIN_TOTAL_CREDITS} נק"ז ✓`}
+              </p>
+              <p className={ep.missingGpa ? 'text-red-600' : 'text-green-700'}>
+                {ep.missingGpa
+                  ? `נדרש ממוצע > ${ENTREPRENEURSHIP_MINOR_MIN_GPA} — חסר`
+                  : `ממוצע > ${ENTREPRENEURSHIP_MINOR_MIN_GPA} ✓`}
+              </p>
+              <p className="text-amber-700">יש להגיש בקשת סטודנט במזכירות הסמכה בפקולטה</p>
+            </div>
+
+            <ProgressRow
+              label={`נק"ז מקורסי ההתמחות (מינ' ${ENTREPRENEURSHIP_MINOR_MIN_CREDITS})`}
+              earned={ep.creditsEarned}
+              required={ep.creditsRequired}
+              color={ep.creditsSatisfied ? 'bg-green-500' : 'bg-amber-400'}
+            />
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-700">
+                קורסי חובה: {ep.mandatoryCompleted}/{ep.mandatoryRequired}
+              </p>
+              {mandatoryCourses.map((course) => {
+                const placed = course.id !== null && ep.placedMandatoryIds.includes(course.id);
+                const unknown = course.id === null;
+                return (
+                  <div key={course.name} className="flex items-start gap-1.5 text-xs">
+                    <span className={`font-bold shrink-0 ${placed ? 'text-green-600' : unknown ? 'text-amber-600' : 'text-gray-400'}`}>
+                      {placed ? '✓' : unknown ? '?' : '○'}
+                    </span>
+                    <span className={placed ? 'text-green-700' : unknown ? 'text-amber-700' : 'text-gray-500'}>
+                      {course.name}
+                      {unknown ? ' (מספר קורס לא ידוע)' : ''}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p className="text-xs text-gray-500">
+              {`קורסי בחירה שסומנו: ${ep.electivesCompleted}`}
+            </p>
           </div>
         );
       })()}

@@ -12,6 +12,9 @@ import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
 import { computeRoboticsMinorProgress } from './useRoboticsMinor';
 import type { RoboticsMinorProgress } from './useRoboticsMinor';
 import { ROBOTICS_MINOR_EXTRA_CREDITS } from '../data/roboticsMinor';
+import { computeEntrepreneurshipMinorProgress } from './useEntrepreneurshipMinor';
+import type { EntrepreneurshipMinorProgress } from './useEntrepreneurshipMinor';
+import { ENTREPRENEURSHIP_MINOR_EXTRA_CREDITS } from '../data/entrepreneurshipMinor';
 import {
   isCourseTaughtInEnglish,
   isFreeElectiveCourseId,
@@ -182,6 +185,7 @@ export function useRequirementsProgress(
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
   const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
   const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
+  const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -315,6 +319,10 @@ export function useRequirementsProgress(
 
     const roboticsMinorProgress: RoboticsMinorProgress | null = roboticsMinorEnabled
       ? computeRoboticsMinorProgress(allPlaced, courses, mandatoryIds, weightedAverage, totalCredits)
+      : null;
+
+    const entrepreneurshipMinorProgress: EntrepreneurshipMinorProgress | null = entrepreneurshipMinorEnabled
+      ? computeEntrepreneurshipMinorProgress(allPlaced, courses, weightedAverage, totalCredits)
       : null;
 
     const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => {
@@ -492,7 +500,7 @@ export function useRequirementsProgress(
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
-      total: { earned: totalCredits, required: trackDef.totalCreditsRequired + (roboticsMinorEnabled ? ROBOTICS_MINOR_EXTRA_CREDITS : 0) },
+      total: { earned: totalCredits, required: trackDef.totalCreditsRequired + (roboticsMinorEnabled ? ROBOTICS_MINOR_EXTRA_CREDITS : 0) + (entrepreneurshipMinorEnabled ? ENTREPRENEURSHIP_MINOR_EXTRA_CREDITS : 0) },
       specializationGroups: {
         completed: specializationCatalog.interactionDisabled ? 0 : completedCount,
         required: trackDef.specializationGroupsRequired,
@@ -532,6 +540,7 @@ export function useRequirementsProgress(
         englishInPlan,
       },
       roboticsMinorProgress,
+      entrepreneurshipMinorProgress,
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
@@ -541,7 +550,7 @@ export function useRequirementsProgress(
         totalCredits >= trackDef.totalCreditsRequired &&
         (!coreProgress || coreProgress.completed >= coreProgress.required),
     };
-  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, roboticsMinorEnabled, weightedAverage]);
+  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage]);
 }
 
 export function useChainRecommendations(
