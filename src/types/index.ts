@@ -206,4 +206,5 @@ export interface StudentPlan {
   dismissedRecommendedCourses?: Record<string, string[]>;
   facultyColorOverrides?: Record<string, string>;  // faculty name → color key override
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
+  roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
 }

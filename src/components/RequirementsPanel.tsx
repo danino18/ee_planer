@@ -5,6 +5,13 @@ import type { GeneralRequirementProgress } from '../domain/generalRequirements/t
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
 import type { SpecializationDiagnostic } from '../types';
 import type { EnglishRequirementItem, CoreSlot } from '../hooks/usePlan';
+import type { RoboticsMinorProgress } from '../hooks/useRoboticsMinor';
+import {
+  ROBOTICS_MINOR_MIN_GPA,
+  ROBOTICS_MINOR_MIN_TOTAL_CREDITS,
+  ROBOTICS_LIST5_MIN_COURSES,
+  ROBOTICS_LIST5_MIN_OUTSIDE_EE,
+} from '../data/roboticsMinor';
 
 interface ProgressRowProps {
   label: string;
@@ -238,6 +245,7 @@ interface Props {
       taughtCourses: string[];
       englishInPlan: string[];
     };
+    roboticsMinorProgress: RoboticsMinorProgress | null;
     isReady: boolean;
   } | null;
   weightedAverage: number | null;
@@ -249,17 +257,21 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setEnglishScore,
     toggleEnglishTaughtCourse,
     setCoreToChainOverrides,
+    toggleRoboticsMinor,
     miluimCredits,
     englishTaughtCourses,
     coreToChainOverrides,
+    roboticsMinorEnabled,
   } = usePlanStore(useShallow((state) => ({
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
     toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
     setCoreToChainOverrides: state.setCoreToChainOverrides,
+    toggleRoboticsMinor: state.toggleRoboticsMinor,
     miluimCredits: state.miluimCredits,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     coreToChainOverrides: state.coreToChainOverrides ?? [],
+    roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
   })));
   const compactRequirements = useMemo(() => (
     (progress?.generalRequirements ?? []).filter((req) => (
@@ -401,6 +413,67 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           </div>
         )}
       </div>
+
+      <div className="mb-2 flex items-center gap-2">
+        <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={roboticsMinorEnabled}
+            onChange={toggleRoboticsMinor}
+            className="rounded"
+          />
+          התמחות משנה ברובוטיקה
+        </label>
+      </div>
+
+      {roboticsMinorEnabled && progress.roboticsMinorProgress && (() => {
+        const rp = progress.roboticsMinorProgress;
+        return (
+          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
+            <div className="text-xs text-amber-800 space-y-0.5">
+              <p className="font-semibold">דרישות קבלה להתמחות המשנה</p>
+              <p className={rp.missingTotalCredits ? 'text-red-600' : 'text-green-700'}>
+                {rp.missingTotalCredits
+                  ? `נדרשות לפחות ${ROBOTICS_MINOR_MIN_TOTAL_CREDITS} נק"ז — חסר`
+                  : `לפחות ${ROBOTICS_MINOR_MIN_TOTAL_CREDITS} נק"ז ✓`}
+              </p>
+              <p className={rp.missingGpa ? 'text-red-600' : 'text-green-700'}>
+                {rp.missingGpa
+                  ? `נדרש ממוצע ≥ ${ROBOTICS_MINOR_MIN_GPA} — חסר`
+                  : `ממוצע ≥ ${ROBOTICS_MINOR_MIN_GPA} ✓`}
+              </p>
+              <p className="text-amber-700">נדרש גם עמידה בתהליך מיון</p>
+            </div>
+
+            <ProgressRow
+              label='נק"ז מרשימות הרובוטיקה'
+              earned={rp.poolEarned}
+              required={rp.poolRequired}
+              color={rp.poolSatisfied ? 'bg-green-500' : 'bg-amber-400'}
+            />
+
+            <div className="flex flex-wrap gap-1">
+              {rp.listProgress.map((lp) => (
+                <span
+                  key={lp.listNumber}
+                  className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                    lp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  רשימה {lp.listNumber}: {lp.satisfiedCount}/{lp.minCourses}{lp.satisfied ? ' ✓' : ''}
+                </span>
+              ))}
+            </div>
+
+            <div className={`text-xs ${rp.list5Satisfied ? 'text-green-700' : 'text-gray-600'}`}>
+              {`רשימה 5: ${rp.list5TotalCourses}/${ROBOTICS_LIST5_MIN_COURSES} קורסים`}
+              {rp.list5OutsideEECourses < ROBOTICS_LIST5_MIN_OUTSIDE_EE
+                ? ` (${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה)`
+                : ` — ${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה ✓`}
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="border-t pt-3 mt-1 space-y-2">
         <div className="flex justify-between items-center">

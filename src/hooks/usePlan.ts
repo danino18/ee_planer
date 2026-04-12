@@ -9,6 +9,9 @@ import type {
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { evaluateSpecializationGroup } from '../domain/specializations';
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
+import { computeRoboticsMinorProgress } from './useRoboticsMinor';
+import type { RoboticsMinorProgress } from './useRoboticsMinor';
+import { ROBOTICS_MINOR_EXTRA_CREDITS } from '../data/roboticsMinor';
 import {
   isCourseTaughtInEnglish,
   isFreeElectiveCourseId,
@@ -165,7 +168,8 @@ export interface CoreSlot {
 export function useRequirementsProgress(
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null,
-  specializationCatalog: TrackSpecializationCatalog
+  specializationCatalog: TrackSpecializationCatalog,
+  weightedAverage: number | null
 ) {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
@@ -177,6 +181,7 @@ export function useRequirementsProgress(
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
   const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
+  const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
 
   return useMemo(() => {
     if (!trackDef) return null;
@@ -307,6 +312,10 @@ export function useRequirementsProgress(
     const totalCredits = [...allPlaced].reduce((sum, id) => {
       return sum + (courses.get(id)?.credits ?? 0);
     }, 0);
+
+    const roboticsMinorProgress: RoboticsMinorProgress | null = roboticsMinorEnabled
+      ? computeRoboticsMinorProgress(allPlaced, courses, mandatoryIds, weightedAverage, totalCredits)
+      : null;
 
     const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => {
       const ruleRequired = evaluation.ruleBlocks.reduce((sum, block) => sum + block.requiredCount, 0);
@@ -483,7 +492,7 @@ export function useRequirementsProgress(
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
-      total: { earned: totalCredits, required: trackDef.totalCreditsRequired },
+      total: { earned: totalCredits, required: trackDef.totalCreditsRequired + (roboticsMinorEnabled ? ROBOTICS_MINOR_EXTRA_CREDITS : 0) },
       specializationGroups: {
         completed: specializationCatalog.interactionDisabled ? 0 : completedCount,
         required: trackDef.specializationGroupsRequired,
@@ -522,6 +531,7 @@ export function useRequirementsProgress(
         taughtCourses: englishTaughtCourses,
         englishInPlan,
       },
+      roboticsMinorProgress,
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
@@ -531,7 +541,7 @@ export function useRequirementsProgress(
         totalCredits >= trackDef.totalCreditsRequired &&
         (!coreProgress || coreProgress.completed >= coreProgress.required),
     };
-  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides]);
+  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, roboticsMinorEnabled, weightedAverage]);
 }
 
 export function useChainRecommendations(

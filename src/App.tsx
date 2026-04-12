@@ -102,8 +102,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
   const specs = specializationCatalog.groups;
-  const progress = useRequirementsProgress(courses, trackDef, specializationCatalog);
   const weightedAverage = useWeightedAverage(courses);
+  const progress = useRequirementsProgress(courses, trackDef, specializationCatalog, weightedAverage);
 
   const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();

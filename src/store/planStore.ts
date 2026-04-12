@@ -46,6 +46,7 @@ interface PlanState extends StudentPlan {
   setBinaryPass: (courseId: string, value: boolean | null) => void;
   setMiluimCredits: (n: number | null) => void;
   setCoreToChainOverrides: (ids: string[]) => void;
+  toggleRoboticsMinor: () => void;
   setEnglishScore: (score: number | null) => void;
   toggleEnglishTaughtCourse: (courseId: string) => void;
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
@@ -159,6 +160,7 @@ const initialState: StudentPlan = {
   completedInstances: [],
   dismissedRecommendedCourses: {},
   coreToChainOverrides: [],
+  roboticsMinorEnabled: false,
 };
 
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
@@ -231,6 +233,7 @@ function captureSnapshot(state: PlanState): StudentPlan {
     completedInstances: [...(state.completedInstances ?? [])],
     dismissedRecommendedCourses: { ...(state.dismissedRecommendedCourses ?? {}) },
     coreToChainOverrides: [...(state.coreToChainOverrides ?? [])],
+    roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
   };
 }
 
@@ -612,6 +615,9 @@ export const usePlanStore = create<PlanState>()(
 
       setCoreToChainOverrides: (ids) =>
         set(() => ({ coreToChainOverrides: ids })),
+
+      toggleRoboticsMinor: () =>
+        set((state) => ({ roboticsMinorEnabled: !state.roboticsMinorEnabled })),
 
       setFacultyColorOverride: (faculty, colorKey) =>
         set((state) => ({
