@@ -318,7 +318,7 @@ export function useRequirementsProgress(
     }, 0);
 
     const roboticsMinorProgress: RoboticsMinorProgress | null = roboticsMinorEnabled
-      ? computeRoboticsMinorProgress(allPlaced, courses, mandatoryIds, weightedAverage, totalCredits)
+      ? computeRoboticsMinorProgress(allPlaced, courses, weightedAverage, totalCredits)
       : null;
 
     const entrepreneurshipMinorProgress: EntrepreneurshipMinorProgress | null = entrepreneurshipMinorEnabled

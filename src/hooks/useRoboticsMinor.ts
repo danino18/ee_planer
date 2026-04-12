@@ -30,7 +30,6 @@ export interface RoboticsMinorProgress {
 export function computeRoboticsMinorProgress(
   allPlaced: Set<string>,
   courses: Map<string, SapCourse>,
-  mandatoryIds: Set<string>,
   weightedAverage: number | null,
   totalCredits: number,
 ): RoboticsMinorProgress {
@@ -41,7 +40,6 @@ export function computeRoboticsMinorProgress(
     const matchedCourseIds: string[] = [];
 
     for (const rc of list.courses) {
-      if (mandatoryIds.has(rc.id)) continue;
       if (!allPlaced.has(rc.id)) continue;
       matchedCourseIds.push(rc.id);
       poolEarned += courses.get(rc.id)?.credits ?? rc.credits;
