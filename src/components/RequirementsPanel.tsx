@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
@@ -20,6 +20,11 @@ import {
   ENTREPRENEURSHIP_MINOR_MIN_TOTAL_CREDITS,
   ENTREPRENEURSHIP_MINOR_MIN_CREDITS,
 } from '../data/entrepreneurshipMinor';
+
+const SEM_LABELS = [
+  "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
+  "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
+];
 
 interface ProgressRowProps {
   label: string;
@@ -268,11 +273,16 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setCoreToChainOverrides,
     toggleRoboticsMinor,
     toggleEntrepreneurshipMinor,
+    addCourseToSemester,
     miluimCredits,
     englishTaughtCourses,
     coreToChainOverrides,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
+    semesterOrder,
+    summerSemesters,
+    semesters,
+    completedCourses,
   } = usePlanStore(useShallow((state) => ({
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
@@ -280,13 +290,44 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setCoreToChainOverrides: state.setCoreToChainOverrides,
     toggleRoboticsMinor: state.toggleRoboticsMinor,
     toggleEntrepreneurshipMinor: state.toggleEntrepreneurshipMinor,
+    addCourseToSemester: state.addCourseToSemester,
     miluimCredits: state.miluimCredits,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     coreToChainOverrides: state.coreToChainOverrides ?? [],
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
+    semesterOrder: state.semesterOrder,
+    summerSemesters: state.summerSemesters,
+    semesters: state.semesters,
+    completedCourses: state.completedCourses,
   })));
   const [expandedRoboticsList, setExpandedRoboticsList] = useState<number | null>(null);
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onClickOutside(event: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        setPickerFor(null);
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const semesterOptions = useMemo(() => [
+    { label: 'ללא שיבוץ', value: 0 },
+    ...semesterOrder.map((sem) => ({
+      label: summerSemesters.includes(sem) ? 'סמסטר קיץ' : `סמסטר ${SEM_LABELS[sem - 1] ?? sem}`,
+      value: sem,
+    })),
+  ], [semesterOrder, summerSemesters]);
+
+  const allPlaced = useMemo(() => new Set([
+    ...completedCourses,
+    ...Object.values(semesters).flat(),
+  ]), [completedCourses, semesters]);
+
   const compactRequirements = useMemo(() => (
     (progress?.generalRequirements ?? []).filter((req) => (
       req.requirementId === 'free_elective' ||
@@ -313,6 +354,45 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   }, [compactRequirements]);
 
   if (!progress) return null;
+
+  function renderMinorAddButton(courseId: string) {
+    const isPickerOpen = pickerFor === courseId;
+    return (
+      <div className="relative shrink-0" ref={isPickerOpen ? pickerRef : undefined}>
+        <button
+          onClick={(event) => {
+            event.stopPropagation();
+            setPickerFor(isPickerOpen ? null : courseId);
+          }}
+          className={`text-[10px] border px-1 py-0.5 rounded transition-colors ${
+            isPickerOpen
+              ? 'bg-blue-500 text-white border-blue-500'
+              : 'text-blue-500 hover:text-blue-700 border-blue-200 hover:border-blue-400'
+          }`}
+          title="הוסף לסמסטר"
+        >
+          +
+        </button>
+        {isPickerOpen && (
+          <div className="absolute start-0 top-full mt-0.5 z-[60] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[130px]">
+            {semesterOptions.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  addCourseToSemester(courseId, value);
+                  setPickerFor(null);
+                }}
+                className="w-full text-right text-[11px] px-2.5 py-1 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const isMiluim = miluimCredits !== undefined;
 
@@ -484,16 +564,17 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                     {isExpanded && (
                       <div className="mt-0.5 ms-2 space-y-0.5">
                         {listData.courses.map((course) => {
-                          const placed = lp.matchedCourseIds.includes(course.id);
+                          const placed = allPlaced.has(course.id);
                           return (
                             <div key={course.id} className="flex items-center gap-1 text-[11px]">
                               <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
                                 {placed ? '✓' : '○'}
                               </span>
-                              <span className={placed ? 'text-green-700' : 'text-gray-500'}>
+                              <span className={`${placed ? 'text-green-700' : 'text-gray-500'} flex-1 min-w-0`}>
                                 {course.name}
                               </span>
-                              <span className="text-gray-300 ms-auto">{course.credits} נק"ז</span>
+                              <span className="text-gray-300 shrink-0">{course.credits} נק"ז</span>
+                              {!placed && renderMinorAddButton(course.id)}
                             </div>
                           );
                         })}
@@ -563,16 +644,17 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 קורסי חובה: {ep.mandatoryCompleted}/{ep.mandatoryRequired}
               </p>
               {mandatoryCourses.map((course) => {
-                const placed = course.id !== null && ep.placedMandatoryIds.includes(course.id);
+                const placed = course.id !== null && allPlaced.has(course.id);
                 return (
-                  <div key={course.name} className="flex items-start gap-1.5 text-xs">
+                  <div key={course.name} className="flex items-center gap-1.5 text-xs">
                     <span className={`font-bold shrink-0 ${placed ? 'text-green-600' : 'text-gray-400'}`}>
                       {placed ? '✓' : '○'}
                     </span>
-                    <span className={placed ? 'text-green-700' : 'text-gray-500'}>
+                    <span className={`${placed ? 'text-green-700' : 'text-gray-500'} flex-1 min-w-0`}>
                       {course.name}
                       {course.id === null && <span className="text-gray-400"> (מ"ק ?)</span>}
                     </span>
+                    {course.id !== null && !placed && renderMinorAddButton(course.id)}
                   </div>
                 );
               })}
@@ -583,16 +665,17 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 {`קורסי בחירה שסומנו: ${ep.electivesCompleted}`}
               </p>
               {ENTREPRENEURSHIP_COURSES.filter((c) => !c.mandatory).map((course) => {
-                const placed = course.id !== null && ep.placedElectiveIds.includes(course.id);
+                const placed = course.id !== null && allPlaced.has(course.id);
                 return (
-                  <div key={course.name} className="flex items-start gap-1.5 text-xs">
+                  <div key={course.name} className="flex items-center gap-1.5 text-xs">
                     <span className={`font-bold shrink-0 ${placed ? 'text-green-600' : 'text-gray-400'}`}>
                       {placed ? '✓' : '○'}
                     </span>
-                    <span className={placed ? 'text-green-700' : 'text-gray-500'}>
+                    <span className={`${placed ? 'text-green-700' : 'text-gray-500'} flex-1 min-w-0`}>
                       {course.name}
                       {course.id === null && <span className="text-gray-400"> (מ"ק ?)</span>}
                     </span>
+                    {course.id !== null && !placed && renderMinorAddButton(course.id)}
                   </div>
                 );
               })}
