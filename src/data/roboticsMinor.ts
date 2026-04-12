@@ -15,7 +15,7 @@ export interface RoboticsMinorList {
 export const ROBOTICS_MINOR_LISTS: RoboticsMinorList[] = [
   {
     listNumber: 1,
-    title: 'קדם',
+    title: 'מקצועות קדם',
     minCourses: 1,
     courses: [
       { id: '00340040', name: 'מבוא לבקרה', credits: 3.0 },
@@ -32,7 +32,7 @@ export const ROBOTICS_MINOR_LISTS: RoboticsMinorList[] = [
   },
   {
     listNumber: 2,
-    title: 'מבוא לרובוטיקה',
+    title: 'קורסי מבוא לרובוטיקה',
     minCourses: 1,
     courses: [
       { id: '00350001', name: 'מבוא לרובוטיקה', credits: 2.5 },
@@ -55,7 +55,7 @@ export const ROBOTICS_MINOR_LISTS: RoboticsMinorList[] = [
   },
   {
     listNumber: 4,
-    title: 'עבודה מעשית',
+    title: 'מעבדה מעשית',
     minCourses: 1,
     courses: [
       { id: '00340401', name: 'מעבדה מתקדמת לרובוטים', credits: 2.5 },
@@ -68,7 +68,7 @@ export const ROBOTICS_MINOR_LISTS: RoboticsMinorList[] = [
   },
   {
     listNumber: 5,
-    title: 'קורסים מתקדמים',
+    title: 'קורסי ליבה ברובוטיקה',
     minCourses: 4,
     courses: [
       { id: '00360026', name: 'קינמטיקה דינמיקה ובקרה של רובוטים', credits: 3.0, outsideEE: true },

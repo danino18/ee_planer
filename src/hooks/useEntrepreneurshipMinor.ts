@@ -13,6 +13,7 @@ export interface EntrepreneurshipMinorProgress {
   mandatoryCompleted: number;
   mandatoryRequired: number;
   placedMandatoryIds: string[];
+  placedElectiveIds: string[];
   electivesCompleted: number;
   missingGpa: boolean;
   missingTotalCredits: boolean;
@@ -29,6 +30,7 @@ export function computeEntrepreneurshipMinorProgress(
   let mandatoryCompleted = 0;
   let electivesCompleted = 0;
   const placedMandatoryIds: string[] = [];
+  const placedElectiveIds: string[] = [];
   const hasUnknownMandatory = ENTREPRENEURSHIP_COURSES.some((c) => c.mandatory && c.id === null);
 
   for (const course of ENTREPRENEURSHIP_COURSES) {
@@ -43,6 +45,7 @@ export function computeEntrepreneurshipMinorProgress(
       placedMandatoryIds.push(course.id);
     } else {
       electivesCompleted++;
+      placedElectiveIds.push(course.id);
     }
   }
 
@@ -53,6 +56,7 @@ export function computeEntrepreneurshipMinorProgress(
     mandatoryCompleted,
     mandatoryRequired: ENTREPRENEURSHIP_COURSES.filter((c) => c.mandatory).length,
     placedMandatoryIds,
+    placedElectiveIds,
     electivesCompleted,
     missingGpa: weightedAverage === null || weightedAverage < ENTREPRENEURSHIP_MINOR_MIN_GPA,
     missingTotalCredits: totalCredits < ENTREPRENEURSHIP_MINOR_MIN_TOTAL_CREDITS,

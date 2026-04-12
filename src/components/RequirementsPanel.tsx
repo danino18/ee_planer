@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
@@ -11,6 +11,7 @@ import {
   ROBOTICS_MINOR_MIN_TOTAL_CREDITS,
   ROBOTICS_LIST5_MIN_COURSES,
   ROBOTICS_LIST5_MIN_OUTSIDE_EE,
+  ROBOTICS_MINOR_LISTS,
 } from '../data/roboticsMinor';
 import type { EntrepreneurshipMinorProgress } from '../hooks/useEntrepreneurshipMinor';
 import {
@@ -285,6 +286,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
   })));
+  const [expandedRoboticsList, setExpandedRoboticsList] = useState<number | null>(null);
   const compactRequirements = useMemo(() => (
     (progress?.generalRequirements ?? []).filter((req) => (
       req.requirementId === 'free_elective' ||
@@ -464,25 +466,55 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
               color={rp.poolSatisfied ? 'bg-green-500' : 'bg-amber-400'}
             />
 
-            <div className="flex flex-wrap gap-1">
-              {rp.listProgress.map((lp) => (
-                <span
-                  key={lp.listNumber}
-                  className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                    lp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  רשימה {lp.listNumber}: {lp.satisfiedCount}/{lp.minCourses}{lp.satisfied ? ' ✓' : ''}
-                </span>
-              ))}
+            <div className="space-y-1">
+              {rp.listProgress.map((lp) => {
+                const isExpanded = expandedRoboticsList === lp.listNumber;
+                const listData = ROBOTICS_MINOR_LISTS.find((l) => l.listNumber === lp.listNumber)!;
+                return (
+                  <div key={lp.listNumber}>
+                    <button
+                      onClick={() => setExpandedRoboticsList(isExpanded ? null : lp.listNumber)}
+                      className={`text-[11px] px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
+                        lp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      <span>{isExpanded ? '▲' : '▼'}</span>
+                      <span>{lp.title}{lp.satisfied ? ' ✓' : ` ${lp.satisfiedCount}/${lp.minCourses}`}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="mt-0.5 ms-2 space-y-0.5">
+                        {listData.courses.map((course) => {
+                          const placed = lp.matchedCourseIds.includes(course.id);
+                          return (
+                            <div key={course.id} className="flex items-center gap-1 text-[11px]">
+                              <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
+                                {placed ? '✓' : '○'}
+                              </span>
+                              <span className={placed ? 'text-green-700' : 'text-gray-500'}>
+                                {course.name}
+                              </span>
+                              <span className="text-gray-300 ms-auto">{course.credits} נק"ז</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className={`text-xs ${rp.list5Satisfied ? 'text-green-700' : 'text-gray-600'}`}>
-              {`רשימה 5: ${rp.list5TotalCourses}/${ROBOTICS_LIST5_MIN_COURSES} קורסים`}
-              {rp.list5OutsideEECourses < ROBOTICS_LIST5_MIN_OUTSIDE_EE
-                ? ` (${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה)`
-                : ` — ${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה ✓`}
-            </div>
+            {(() => {
+              const list5 = rp.listProgress.find((l) => l.listNumber === 5)!;
+              return (
+                <div className={`text-xs ${rp.list5Satisfied ? 'text-green-700' : 'text-gray-600'}`}>
+                  {`${list5.title}: ${rp.list5TotalCourses}/${ROBOTICS_LIST5_MIN_COURSES} קורסים`}
+                  {rp.list5OutsideEECourses < ROBOTICS_LIST5_MIN_OUTSIDE_EE
+                    ? ` (${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה)`
+                    : ` — ${rp.list5OutsideEECourses}/${ROBOTICS_LIST5_MIN_OUTSIDE_EE} מחוץ לפקולטה ✓`}
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
@@ -532,24 +564,39 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
               </p>
               {mandatoryCourses.map((course) => {
                 const placed = course.id !== null && ep.placedMandatoryIds.includes(course.id);
-                const unknown = course.id === null;
                 return (
                   <div key={course.name} className="flex items-start gap-1.5 text-xs">
-                    <span className={`font-bold shrink-0 ${placed ? 'text-green-600' : unknown ? 'text-amber-600' : 'text-gray-400'}`}>
-                      {placed ? '✓' : unknown ? '?' : '○'}
+                    <span className={`font-bold shrink-0 ${placed ? 'text-green-600' : 'text-gray-400'}`}>
+                      {placed ? '✓' : '○'}
                     </span>
-                    <span className={placed ? 'text-green-700' : unknown ? 'text-amber-700' : 'text-gray-500'}>
+                    <span className={placed ? 'text-green-700' : 'text-gray-500'}>
                       {course.name}
-                      {unknown ? ' (מספר קורס לא ידוע)' : ''}
+                      {course.id === null && <span className="text-gray-400"> (מ"ק ?)</span>}
                     </span>
                   </div>
                 );
               })}
             </div>
 
-            <p className="text-xs text-gray-500">
-              {`קורסי בחירה שסומנו: ${ep.electivesCompleted}`}
-            </p>
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-700">
+                {`קורסי בחירה שסומנו: ${ep.electivesCompleted}`}
+              </p>
+              {ENTREPRENEURSHIP_COURSES.filter((c) => !c.mandatory).map((course) => {
+                const placed = course.id !== null && ep.placedElectiveIds.includes(course.id);
+                return (
+                  <div key={course.name} className="flex items-start gap-1.5 text-xs">
+                    <span className={`font-bold shrink-0 ${placed ? 'text-green-600' : 'text-gray-400'}`}>
+                      {placed ? '✓' : '○'}
+                    </span>
+                    <span className={placed ? 'text-green-700' : 'text-gray-500'}>
+                      {course.name}
+                      {course.id === null && <span className="text-gray-400"> (מ"ק ?)</span>}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       })()}
