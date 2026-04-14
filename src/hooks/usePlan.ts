@@ -8,7 +8,7 @@ import type {
 } from '../types';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { evaluateSpecializationGroup } from '../domain/specializations';
-import { buildGeneralRequirementsProgress, normalizeMiluimCredits } from './useGeneralRequirements';
+import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
 import { computeRoboticsMinorProgress } from './useRoboticsMinor';
 import type { RoboticsMinorProgress } from './useRoboticsMinor';
 import { ROBOTICS_MINOR_EXTRA_CREDITS } from '../data/roboticsMinor';
@@ -183,7 +183,7 @@ export function useRequirementsProgress(
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
   const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
   const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
-  const miluimCredits = usePlanStore((s) => normalizeMiluimCredits(s.miluimCredits));
+  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? { generalElectives: 0, freeElective: 0 });
   const englishScore = usePlanStore((s) => s.englishScore);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
