@@ -12,14 +12,13 @@ import { CourseSearch } from './components/CourseSearch';
 import { ChainRecommendations } from './components/ChainRecommendations';
 import { LoginButton } from './components/LoginButton';
 import { Toast } from './components/Toast';
-import { VersionManagerModal } from './components/VersionManagerModal';
 import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
 import { eePhysicsTrack } from './data/tracks/ee_physics';
 import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
-import type { SapCourse, StoredStudentPlan, TrackDefinition, StudentPlan } from './types';
+import type { SapCourse, TrackDefinition, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
@@ -35,8 +34,8 @@ const SYNC_RETRY_DELAY_MS = 5000;
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
-function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StoredStudentPlan {
-  const currentSnapshot: StudentPlan = {
+function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
+  return {
     trackId: state.trackId,
     semesters: state.semesters,
     completedCourses: state.completedCourses,
@@ -56,38 +55,13 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StoredStu
     manualSapAverages: state.manualSapAverages,
     binaryPass: state.binaryPass,
     completedInstances: state.completedInstances,
+    savedTracks: state.savedTracks,
     dismissedRecommendedCourses: state.dismissedRecommendedCourses,
     miluimCredits: state.miluimCredits,
     englishScore: state.englishScore,
     englishTaughtCourses: state.englishTaughtCourses,
     facultyColorOverrides: state.facultyColorOverrides ?? {},
     coreToChainOverrides: state.coreToChainOverrides,
-    roboticsMinorEnabled: state.roboticsMinorEnabled,
-    entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled,
-  };
-  const syncedSavedTracks = {
-    ...state.savedTracks,
-    ...(state.trackId ? { [state.trackId]: currentSnapshot } : {}),
-  };
-
-  const versions = state.activeVersionId
-    ? state.versions.map((version) => (
-      version.id === state.activeVersionId
-        ? {
-          ...version,
-          trackId: state.trackId,
-          plan: currentSnapshot,
-          trackPlans: { ...(version.trackPlans ?? {}), ...syncedSavedTracks },
-        }
-        : version
-    ))
-    : state.versions;
-
-  return {
-    ...currentSnapshot,
-    savedTracks: syncedSavedTracks,
-    versions,
-    activeVersionId: state.activeVersionId,
   };
 }
 
@@ -145,7 +119,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
-  const [showVersions, setShowVersions] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCourseAdded = useCallback((courseName: string, semesterLabel: string) => {
@@ -372,12 +345,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               ⟳ מומלצת
             </button>
             <button
-              onClick={() => setShowVersions(true)}
-              className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              גרסאות
-            </button>
-            <button
               onClick={beginTrackSwitch}
               className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
             >
@@ -399,9 +366,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           </div>
         </div>
       </main>
-      {showVersions && (
-        <VersionManagerModal courses={courses} tracks={ALL_TRACKS} onClose={() => setShowVersions(false)} />
-      )}
     </div>
   );
 }
