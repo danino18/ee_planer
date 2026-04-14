@@ -1,6 +1,6 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import type { StudentPlan } from '../types';
+import type { StoredStudentPlan } from '../types';
 import { sanitizeStudentPlan } from './planValidation';
 
 type FirestoreLikeError = Error & { code?: string };
@@ -32,7 +32,7 @@ export function isRetryableSyncError(error: unknown): boolean {
   );
 }
 
-export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{ success: boolean }> {
+export async function savePlanToCloud(uid: string, plan: StoredStudentPlan): Promise<{ success: boolean }> {
   const planRef = doc(db, 'plans', uid);
   await setDoc(planRef, stripUndefined(plan));
   return { success: true };
@@ -40,7 +40,7 @@ export async function savePlanToCloud(uid: string, plan: StudentPlan): Promise<{
 
 export function subscribeToCloudPlan(
   uid: string,
-  onData: (plan: StudentPlan) => void,
+  onData: (plan: StoredStudentPlan) => void,
   onNotFound: () => void,
   onError?: (error: Error) => void,
 ): () => void {

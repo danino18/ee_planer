@@ -479,7 +479,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             checked={isMiluim}
             onChange={(event) => {
               if (event.target.checked) {
-                setMiluimCredits(0);
+                setMiluimCredits({ generalElectives: 0, freeElective: 0 });
               } else {
                 setMiluimCredits(null);
               }
@@ -489,20 +489,35 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           מילואים
         </label>
         {isMiluim && (
-          <div className="flex items-center gap-1">
-            <input
-              key={miluimCredits ?? 'empty'}
-              type="number"
-              min={0}
-              max={10}
-              defaultValue={miluimCredits ?? ''}
-              onChange={(event) => {
-                const parsed = parseInt(event.target.value, 10);
-                if (!Number.isNaN(parsed)) setMiluimCredits(parsed);
-              }}
-              className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
-              placeholder="0-10"
-            />
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="flex items-center gap-1">
+              <span className="text-gray-500">׳₪׳§׳•׳׳˜׳™׳×</span>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                value={miluimCredits?.generalElectives ?? 0}
+                onChange={(event) => {
+                  const parsed = parseInt(event.target.value, 10);
+                  if (!Number.isNaN(parsed)) setMiluimCredits({ generalElectives: parsed });
+                }}
+                className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              <span className="text-gray-500">׳—׳•׳₪׳©׳™׳×</span>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                value={miluimCredits?.freeElective ?? 0}
+                onChange={(event) => {
+                  const parsed = parseInt(event.target.value, 10);
+                  if (!Number.isNaN(parsed)) setMiluimCredits({ freeElective: parsed });
+                }}
+                className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
+              />
+            </label>
             <span className="text-xs text-gray-400">נק"ז</span>
           </div>
         )}

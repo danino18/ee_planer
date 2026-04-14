@@ -12,7 +12,10 @@ interface BuildParams {
   semesters: Record<number, string[]>;
   completedCourses: string[];
   englishTaughtCourses: string[];
-  miluimCredits: number;
+  miluimCredits: {
+    generalElectives: number;
+    freeElective: number;
+  };
   englishScore?: number;
 }
 
@@ -60,7 +63,14 @@ export function buildGeneralRequirementsProgress({
     if (rule.id === 'general_electives') {
       return {
         ...rule,
-        targetValue: Math.max(0, trackDef.generalCreditsRequired - miluimCredits),
+        targetValue: Math.max(0, trackDef.generalCreditsRequired - miluimCredits.generalElectives),
+      };
+    }
+
+    if (rule.id === 'free_elective') {
+      return {
+        ...rule,
+        targetValue: Math.max(0, rule.targetValue - miluimCredits.freeElective),
       };
     }
 
@@ -113,7 +123,7 @@ export function useGeneralRequirements(
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
-  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
+  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? { generalElectives: 0, freeElective: 0 });
   const englishScore = usePlanStore((s) => s.englishScore);
 
   return useMemo(() => {
