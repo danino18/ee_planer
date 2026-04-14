@@ -14,6 +14,19 @@ export interface SapCourse {
   sapAverage?: number;  // grade average from SAP data, if available
 }
 
+export interface SemesterScheduleAlternativeGroup {
+  courseIds: string[];
+  showBoth?: boolean;
+  defaultCourseId?: string;
+  warningText?: string;
+}
+
+export interface SemesterScheduleEntry {
+  semester: number;
+  courses: string[];
+  alternativeGroups?: SemesterScheduleAlternativeGroup[];
+}
+
 export interface TrackDefinition {
   id: TrackId;
   name: string;
@@ -21,7 +34,7 @@ export interface TrackDefinition {
   mandatoryCredits: number;
   electiveCreditsRequired: number;
   generalCreditsRequired: number;
-  semesterSchedule: { semester: number; courses: string[] }[];
+  semesterSchedule: SemesterScheduleEntry[];
   specializationGroupsRequired: number;
   description: string;
   labPool?: {

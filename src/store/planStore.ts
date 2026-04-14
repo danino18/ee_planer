@@ -7,6 +7,7 @@ import { eeMathTrack } from '../data/tracks/ee_math';
 import { eePhysicsTrack } from '../data/tracks/ee_physics';
 import { eeCombinedTrack } from '../data/tracks/ee_combined';
 import { ceTrack } from '../data/tracks/ce';
+import { getAllScheduledCourseIds } from '../data/tracks/semesterSchedule';
 import {
   getTrackSpecializationCatalog,
   sanitizeTrackSpecializationSelections,
@@ -94,7 +95,7 @@ const AUTO_SEEDED_COURSES_BY_TRACK = Object.fromEntries(
   TRACKS.map((track) => [
     track.id,
     new Set([
-      ...track.semesterSchedule.flatMap(({ courses }) => courses),
+      ...getAllScheduledCourseIds(track),
       ...AUTO_SEEDED_POOL_IDS,
     ]),
   ]),

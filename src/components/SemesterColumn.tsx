@@ -34,6 +34,7 @@ interface Props {
   courseChainMap?: Map<string, string>;
   isDragging?: boolean;
   ruleWarnings?: ('melag' | 'sport')[];
+  mutualExclusionWarnings?: string[];
 }
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -52,6 +53,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   summerIndex, isRowMode,
   semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, isDragging: isDraggingActive,
   ruleWarnings = [],
+  mutualExclusionWarnings = [],
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const {
@@ -191,6 +193,16 @@ export const SemesterColumn = memo(function SemesterColumn({
               ⚠️ בטכניון ניתן לקחת קורס ספורט אחד בסמסטר
             </p>
           )}
+        </div>
+      )}
+
+      {mutualExclusionWarnings.length > 0 && semester > 0 && (
+        <div className="px-2 pb-1 space-y-1">
+          {mutualExclusionWarnings.map((warning) => (
+            <p key={warning} className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              {warning}
+            </p>
+          ))}
         </div>
       )}
 

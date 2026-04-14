@@ -21,6 +21,10 @@ import {
   isSportCourseId,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
+import {
+  getSatisfiedAlternativeCourseId,
+  getVisibleMandatoryCourseIds,
+} from '../data/tracks/semesterSchedule';
 
 const PREREQ_EQUIVALENCES: string[][] = [
   ['01040064', '01040065', '01040016'],
@@ -264,11 +268,20 @@ export function useRequirementsProgress(
       }
     }
 
-    const mandatoryIds = new Set(trackDef.semesterSchedule.flatMap((semester) => semester.courses));
+    const mandatoryIds = getVisibleMandatoryCourseIds(trackDef, courses, englishScore);
     let mandatoryDone = 0;
-    for (const { courses: semesterCourseIds } of trackDef.semesterSchedule) {
-      for (const id of semesterCourseIds) {
-        if (allPlaced.has(id)) mandatoryDone += courses.get(id)?.credits ?? 0;
+    for (const semesterEntry of trackDef.semesterSchedule) {
+      for (const id of semesterEntry.courses) {
+        if (mandatoryIds.has(id) && allPlaced.has(id)) {
+          mandatoryDone += courses.get(id)?.credits ?? 0;
+        }
+      }
+
+      for (const group of semesterEntry.alternativeGroups ?? []) {
+        const satisfiedCourseId = getSatisfiedAlternativeCourseId(group, allPlaced, courses, englishScore);
+        if (satisfiedCourseId) {
+          mandatoryDone += courses.get(satisfiedCourseId)?.credits ?? 0;
+        }
       }
     }
     for (const id of mandatoryLabIdSet) {
@@ -356,6 +369,7 @@ export function useRequirementsProgress(
       completedCourses,
       miluimCredits,
       englishTaughtCourses,
+      englishScore,
     });
     const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');

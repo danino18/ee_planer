@@ -20,6 +20,7 @@ import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
 import type { SapCourse, TrackDefinition, StudentPlan } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
+import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
   getTrackSpecializationCatalog,
   reportTrackSpecializationDiagnostics,
@@ -84,6 +85,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     _initKey,
     isSwitchingTrack,
     dismissedRecommendedCourses,
+    englishScore,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -99,6 +101,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     _initKey: state._initKey,
     isSwitchingTrack: state.isSwitchingTrack,
     dismissedRecommendedCourses: state.dismissedRecommendedCourses,
+    englishScore: state.englishScore,
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
   const specs = specializationCatalog.groups;
@@ -143,15 +146,16 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     const allPlaced = new Set(Object.values(semesters).flat());
     const alreadyInitialized = new Set<string>();
     const dismissedForTrack = new Set(dismissedRecommendedCourses?.[trackId] ?? []);
-    for (const { semester, courses: ids } of trackDef.semesterSchedule) {
+    for (const entry of trackDef.semesterSchedule) {
+      const ids = getRecommendedCourseIdsForEntry(entry, courses, englishScore);
       for (const id of ids) {
         if (!allPlaced.has(id) && !alreadyInitialized.has(id) && courses.has(id) && !dismissedForTrack.has(id)) {
-          addCourseToSemester(id, semester);
+          addCourseToSemester(id, entry.semester);
           alreadyInitialized.add(id);
         }
       }
     }
-  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses]);
+  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore]);
 
   useEffect(() => {
     const clearSyncTimers = () => {

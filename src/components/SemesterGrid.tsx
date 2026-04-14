@@ -13,6 +13,7 @@ import { usePlanStore, REPEATABLE_COURSES, gradeKey, MAX_SEMESTERS } from '../st
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
+import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 
 function computeSemesterAverage(
   courseIds: string[],
@@ -50,6 +51,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
     grades, binaryPass, selectedSpecializations, facultyColorOverrides, setFacultyColorOverride,
+    englishScore,
   } = usePlanStore(useShallow((state) => ({
     semesters: state.semesters,
     moveCourse: state.moveCourse,
@@ -74,6 +76,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     selectedSpecializations: state.selectedSpecializations,
     facultyColorOverrides: state.facultyColorOverrides,
     setFacultyColorOverride: state.setFacultyColorOverride,
+    englishScore: state.englishScore,
   })));
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
 
@@ -95,9 +98,9 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   }, [trackDef, semesters, semesterOrder]);
 
   const mandatoryIds = useMemo(() => new Set([
-    ...trackDef.semesterSchedule.flatMap((s) => s.courses),
+    ...getVisibleMandatoryCourseIds(trackDef, courses, englishScore),
     ...mandatoryLabIds,
-  ]), [trackDef.semesterSchedule, mandatoryLabIds]);
+  ]), [trackDef, mandatoryLabIds, courses, englishScore]);
   const completedSet = useMemo(() => new Set(completedCourses), [completedCourses]);
 
   // Map courseId → chain name for selected specializations
@@ -225,6 +228,30 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     return warnings;
   }, [semesters]);
 
+  const semesterMutualExclusionWarnings = useMemo(() => {
+    const warnings: Record<number, string[]> = {};
+
+    for (const entry of trackDef.semesterSchedule) {
+      const semesterCourseIds = semesters[entry.semester] ?? [];
+      const entryWarnings: string[] = [];
+
+      for (const group of entry.alternativeGroups ?? []) {
+        const placedCount = group.courseIds.filter((id) => semesterCourseIds.includes(id)).length;
+        if (placedCount > 1) {
+          entryWarnings.push(
+            group.warningText ?? `⚠️ בסמסטר הזה אפשר לקחת רק אחד מהקורסים: ${group.courseIds.join(' / ')}`,
+          );
+        }
+      }
+
+      if (entryWarnings.length > 0) {
+        warnings[entry.semester] = entryWarnings;
+      }
+    }
+
+    return warnings;
+  }, [trackDef.semesterSchedule, semesters]);
+
   const semColProps = (sem: number) => {
     return {
       semester: sem,
@@ -249,6 +276,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       courseChainMap,
       isDragging: !!activeCourseId,
       ruleWarnings: semesterRuleWarnings[sem] ?? [],
+      mutualExclusionWarnings: semesterMutualExclusionWarnings[sem] ?? [],
     };
   };
 

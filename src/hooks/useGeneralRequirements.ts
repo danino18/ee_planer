@@ -13,6 +13,7 @@ interface BuildParams {
   completedCourses: string[];
   englishTaughtCourses: string[];
   miluimCredits: number;
+  englishScore?: number;
 }
 
 export function buildGeneralRequirementsProgress({
@@ -22,6 +23,7 @@ export function buildGeneralRequirementsProgress({
   completedCourses,
   englishTaughtCourses,
   miluimCredits,
+  englishScore,
 }: BuildParams): GeneralRequirementProgress[] {
   const allPlacedIds = new Set<string>([
     ...completedCourses,
@@ -62,6 +64,38 @@ export function buildGeneralRequirementsProgress({
       };
     }
 
+    if (rule.id === 'english') {
+      return {
+        ...rule,
+        courseMatcher: {
+          predicate: (course) => {
+            if (course.language !== 'EN') return false;
+            const isTechnicalEnglish = course.name.includes('אנגלית');
+
+            if (englishScore === undefined) {
+              return true;
+            }
+
+            if (englishScore >= 104 && englishScore <= 119) {
+              return isTechnicalEnglish;
+            }
+
+            if (englishScore >= 120 && englishScore <= 133) {
+              return course.name.includes("מתקדמים ב'") ||
+                course.name.includes('מתקדמים ב') ||
+                !isTechnicalEnglish;
+            }
+
+            if (englishScore >= 134 && englishScore <= 150) {
+              return !isTechnicalEnglish;
+            }
+
+            return true;
+          },
+        },
+      };
+    }
+
     return rule;
   });
 
@@ -80,6 +114,7 @@ export function useGeneralRequirements(
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
+  const englishScore = usePlanStore((s) => s.englishScore);
 
   return useMemo(() => {
     if (!trackDef) return [];
@@ -91,6 +126,7 @@ export function useGeneralRequirements(
       completedCourses,
       englishTaughtCourses,
       miluimCredits,
+      englishScore,
     });
-  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses, miluimCredits]);
+  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses, miluimCredits, englishScore]);
 }

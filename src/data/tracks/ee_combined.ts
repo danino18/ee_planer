@@ -12,7 +12,13 @@ export const eeCombinedTrack: TrackDefinition = {
   semesterSchedule: [
     {
       semester: 1,
-      courses: ['00440102','01040012','01040064','01040016','01140020','01140074','02340117','03240033'],
+      courses: ['00440102','01040012','01140020','01140074','02340117','03240033'],
+      alternativeGroups: [
+        {
+          courseIds: ['01040064', '01040016'],
+          defaultCourseId: '01040064',
+        },
+      ],
     },
     {
       semester: 2,
@@ -24,7 +30,14 @@ export const eeCombinedTrack: TrackDefinition = {
     },
     {
       semester: 4,
-      courses: ['00440127','00440131','00440157','01150203','01140246','00440140','01140036'],
+      courses: ['00440127','00440131','00440157','01150203','01140036'],
+      alternativeGroups: [
+        {
+          courseIds: ['01140246', '00440140'],
+          showBoth: true,
+          warningText: '⚠️ במסלול הזה יש לבחור רק אחד: שדות אלקטרומגנטיים או אלקטרומגנטיות ואלקטרודינמיקה',
+        },
+      ],
     },
     {
       semester: 5,
@@ -40,7 +53,14 @@ export const eeCombinedTrack: TrackDefinition = {
     },
     {
       semester: 8,
-      courses: ['01140250','01140252'],
+      courses: [],
+      alternativeGroups: [
+        {
+          courseIds: ['01140250', '01140252'],
+          showBoth: true,
+          warningText: '⚠️ במסלול הזה יש לבחור רק אחד: 01140250 או 01140252',
+        },
+      ],
     },
   ],
 };

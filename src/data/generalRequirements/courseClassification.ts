@@ -10,12 +10,18 @@ function normalizeCourseName(name: string): string {
   return name.replace(/['׳"]/g, '');
 }
 
-export function isTechnicalEnglishCourseName(name: string): boolean {
+export function isTechnicalEnglishAdvancedAName(name: string): boolean {
   const normalized = normalizeCourseName(name);
-  return normalized.includes('אנגלית טכנית') && (
-    normalized.includes('מתקדמים א') ||
-    normalized.includes('מתקדמים ב')
-  );
+  return normalized.includes('אנגלית טכנית') && normalized.includes('מתקדמים א');
+}
+
+export function isTechnicalEnglishAdvancedBName(name: string): boolean {
+  const normalized = normalizeCourseName(name);
+  return normalized.includes('אנגלית טכנית') && normalized.includes('מתקדמים ב');
+}
+
+export function isTechnicalEnglishCourseName(name: string): boolean {
+  return isTechnicalEnglishAdvancedAName(name) || isTechnicalEnglishAdvancedBName(name);
 }
 
 export function isManualEnglishEligible(courseId: string): boolean {
