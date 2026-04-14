@@ -463,9 +463,6 @@ export const usePlanStore = create<PlanState>()(
           return {
             ...initialState,
             ...migratedPlan,
-            semesterOrder: migratedPlan.semesterOrder?.length
-              ? migratedPlan.semesterOrder
-              : Array.from({ length: migratedPlan.maxSemester }, (_, i) => i + 1),
             savedTracks: cloneSavedTracks(targetVersion.trackPlans ?? {}),
             versions: syncedVersions,
             activeVersionId: versionId,
@@ -503,9 +500,6 @@ export const usePlanStore = create<PlanState>()(
           return {
             ...initialState,
             ...migratedPlan,
-            semesterOrder: migratedPlan.semesterOrder?.length
-              ? migratedPlan.semesterOrder
-              : Array.from({ length: migratedPlan.maxSemester }, (_, i) => i + 1),
             savedTracks: cloneSavedTracks(fallbackVersion.trackPlans ?? {}),
             versions: remainingVersions,
             activeVersionId: fallbackVersion.id,
@@ -816,9 +810,7 @@ export const usePlanStore = create<PlanState>()(
             return { miluimCredits: undefined };
           }
 
-          const current = (state.miluimCredits && typeof state.miluimCredits === 'object')
-            ? state.miluimCredits
-            : { generalElectives: 0, freeElective: 0 };
+          const current = state.miluimCredits ?? { generalElectives: 0, freeElective: 0 };
           const nextGeneral = Math.max(0, Math.min(10, allocation.generalElectives ?? current.generalElectives));
           const nextFree = Math.max(0, Math.min(10, allocation.freeElective ?? current.freeElective));
           if (nextGeneral + nextFree > 10) {
