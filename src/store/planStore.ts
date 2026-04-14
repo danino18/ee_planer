@@ -188,6 +188,9 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
     miluimCredits: typeof plan.miluimCredits === 'number'
       ? { generalElectives: plan.miluimCredits, freeElective: 0 }
       : plan.miluimCredits,
+    semesterOrder: plan.semesterOrder?.length
+      ? plan.semesterOrder
+      : Array.from({ length: plan.maxSemester ?? DEFAULT_SEMESTERS }, (_, i) => i + 1),
   };
 
   if (migrated.trackId === 'ce') {
@@ -1038,6 +1041,39 @@ export const usePlanStore = create<PlanState>()(
         const { _history: _h, _initKey: _ik, isSwitchingTrack: _st, ...rest } = state as PlanState;
         void _h; void _ik; void _st;
         return rest;
+      },
+      merge: (persistedStateUnknown, currentState) => {
+        // Normalize legacy shapes from localStorage BEFORE state goes live,
+        // so consumers never observe old miluimCredits (number) / missing
+        // semesterOrder / etc. Mirrors what loadPlan does for cloud payloads.
+        const persisted = (persistedStateUnknown ?? {}) as Partial<PlanState>;
+        const migratedTop = applyPlanMigrations(persisted as StudentPlan);
+
+        const migratedSavedTracks = Object.fromEntries(
+          Object.entries(persisted.savedTracks ?? {}).map(
+            ([trackId, plan]) => [trackId, applyPlanMigrations(plan as StudentPlan)],
+          ),
+        ) as Record<string, StudentPlan>;
+
+        const migratedVersions = (persisted.versions ?? []).map((v) => ({
+          ...v,
+          plan: applyPlanMigrations(v.plan),
+          trackPlans: v.trackPlans
+            ? Object.fromEntries(
+                Object.entries(v.trackPlans).map(
+                  ([tid, p]) => [tid, applyPlanMigrations(p as StudentPlan)],
+                ),
+              ) as Record<string, StudentPlan>
+            : undefined,
+        }));
+
+        return {
+          ...currentState,
+          ...migratedTop,
+          savedTracks: migratedSavedTracks,
+          versions: migratedVersions,
+          activeVersionId: persisted.activeVersionId ?? null,
+        };
       },
     }
   )

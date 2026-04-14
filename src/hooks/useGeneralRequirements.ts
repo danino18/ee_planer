@@ -1,10 +1,27 @@
 import { useMemo } from 'react';
 import { usePlanStore } from '../store/planStore';
-import type { SapCourse, TrackDefinition } from '../types';
+import type { MiluimCreditsAllocation, SapCourse, TrackDefinition } from '../types';
 import { GENERAL_REQUIREMENTS_RULES } from '../data/generalRequirements/generalRules';
 import { calculateGeneralRequirements } from '../domain/generalRequirements/rulesEngine';
 import type { CourseRef, GeneralRequirementRule, GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
+
+// Defensive normalizer: converts any legacy shape (number from pre-versions
+// saves, partial object, null, undefined) into the canonical allocation.
+// Used as a safety net so consumers never do arithmetic on undefined.
+export function normalizeMiluimCredits(value: unknown): MiluimCreditsAllocation {
+  if (value && typeof value === 'object') {
+    const o = value as Partial<MiluimCreditsAllocation>;
+    return {
+      generalElectives: typeof o.generalElectives === 'number' ? o.generalElectives : 0,
+      freeElective: typeof o.freeElective === 'number' ? o.freeElective : 0,
+    };
+  }
+  if (typeof value === 'number') {
+    return { generalElectives: value, freeElective: 0 };
+  }
+  return { generalElectives: 0, freeElective: 0 };
+}
 
 interface BuildParams {
   courses: Map<string, SapCourse>;
@@ -12,10 +29,7 @@ interface BuildParams {
   semesters: Record<number, string[]>;
   completedCourses: string[];
   englishTaughtCourses: string[];
-  miluimCredits: {
-    generalElectives: number;
-    freeElective: number;
-  };
+  miluimCredits: unknown;
   englishScore?: number;
 }
 
@@ -25,9 +39,10 @@ export function buildGeneralRequirementsProgress({
   semesters,
   completedCourses,
   englishTaughtCourses,
-  miluimCredits,
+  miluimCredits: rawMiluimCredits,
   englishScore,
 }: BuildParams): GeneralRequirementProgress[] {
+  const miluimCredits = normalizeMiluimCredits(rawMiluimCredits);
   const allPlacedIds = new Set<string>([
     ...completedCourses,
     ...Object.values(semesters).flat(),
@@ -123,7 +138,7 @@ export function useGeneralRequirements(
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
-  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? { generalElectives: 0, freeElective: 0 });
+  const miluimCredits = usePlanStore((s) => s.miluimCredits);
   const englishScore = usePlanStore((s) => s.englishScore);
 
   return useMemo(() => {
