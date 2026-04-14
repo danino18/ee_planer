@@ -486,12 +486,12 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             }}
             className="rounded"
           />
-          {"\u05de\u05d9\u05dc\u05d5\u05d0\u05d9\u05dd"}
+          מילואים
         </label>
         {isMiluim && (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <label className="flex items-center gap-1">
-              <span className="text-gray-500">{"\u05d1\u05d7\u05d9\u05e8\u05d4 \u05e4\u05e7\u05d5\u05dc\u05d8\u05d9\u05ea"}</span>
+              <span className="text-gray-500">׳₪׳§׳•׳׳˜׳™׳×</span>
               <input
                 type="number"
                 min={0}
@@ -505,7 +505,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
               />
             </label>
             <label className="flex items-center gap-1">
-              <span className="text-gray-500">{"\u05d1\u05d7\u05d9\u05e8\u05d4 \u05d7\u05d5\u05e4\u05e9\u05d9\u05ea"}</span>
+              <span className="text-gray-500">׳—׳•׳₪׳©׳™׳×</span>
               <input
                 type="number"
                 min={0}
@@ -518,9 +518,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
               />
             </label>
-            <span className="text-gray-500">
-              {"\u05e1\u05d4\"\u05db"} {(miluimCredits?.generalElectives ?? 0) + (miluimCredits?.freeElective ?? 0)} / 10
-            </span>
+            <span className="text-xs text-gray-400">נק"ז</span>
           </div>
         )}
       </div>
