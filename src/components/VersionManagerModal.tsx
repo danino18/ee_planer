@@ -50,14 +50,14 @@ function isStudentPlanVersion(value: unknown): value is StudentPlanVersion {
   return (
     typeof candidate.id === 'string' &&
     typeof candidate.name === 'string' &&
-    typeof candidate.trackId === 'string' &&
+    (candidate.trackId === null || typeof candidate.trackId === 'string') &&
     !!candidate.plan &&
     typeof candidate.plan === 'object'
   );
 }
 
 function computeSummary(plan: StudentPlan, courses: Map<string, SapCourse>) {
-  const courseIds = new Set([...plan.completedCourses, ...Object.values(plan.semesters).flat()]);
+  const courseIds = new Set([...(plan.completedCourses ?? []), ...Object.values(plan.semesters ?? {}).flat()]);
   const totalCredits = [...courseIds].reduce((sum, id) => sum + (courses.get(id)?.credits ?? 0), 0);
 
   let weightedSum = 0;
