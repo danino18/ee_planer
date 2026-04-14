@@ -238,8 +238,9 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       for (const group of entry.alternativeGroups ?? []) {
         const placedCount = group.courseIds.filter((id) => semesterCourseIds.includes(id)).length;
         if (placedCount > 1) {
+          const courseLabels = group.courseIds.map((id) => courses.get(id)?.name ?? id);
           entryWarnings.push(
-            group.warningText ?? `⚠️ בסמסטר הזה אפשר לקחת רק אחד מהקורסים: ${group.courseIds.join(' / ')}`,
+            group.warningText ?? `⚠️ בסמסטר הזה אפשר לקחת רק אחד מהקורסים: ${courseLabels.join(' / ')}`,
           );
         }
       }
@@ -250,7 +251,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     }
 
     return warnings;
-  }, [trackDef.semesterSchedule, semesters]);
+  }, [trackDef.semesterSchedule, semesters, courses]);
 
   const semColProps = (sem: number) => {
     return {

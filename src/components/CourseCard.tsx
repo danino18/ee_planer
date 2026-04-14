@@ -4,6 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
+import { getTeachingSemesterBadge } from '../utils/teachingSemester';
 import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
 
 interface Props {
@@ -97,11 +98,7 @@ export const CourseCard = memo(function CourseCard({
   const facultyStyle = course.faculty
     ? getFacultyStyle(course.faculty, course.id, facultyColorOverrides)
     : null;
-  const seasonLabel = course.teachingSemester === 'winter'
-    ? '❄️'
-    : course.teachingSemester === 'spring'
-      ? '🌸'
-      : null;
+  const seasonBadge = getTeachingSemesterBadge(course.teachingSemester);
 
   return (
     <>
@@ -177,9 +174,9 @@ export const CourseCard = memo(function CourseCard({
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            {seasonLabel && (
-              <span className="text-xs leading-none" title={course.teachingSemester === 'winter' ? 'חורף בלבד' : 'אביב בלבד'}>
-                {seasonLabel}
+            {seasonBadge && (
+              <span className="text-xs leading-none" title={seasonBadge.title}>
+                {seasonBadge.emoji}
               </span>
             )}
             {showsEnglishBadge && (

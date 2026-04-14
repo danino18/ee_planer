@@ -58,7 +58,6 @@ export const eeCombinedTrack: TrackDefinition = {
         {
           courseIds: ['01140250', '01140252'],
           showBoth: true,
-          warningText: '⚠️ במסלול הזה יש לבחור רק אחד: 01140250 או 01140252',
         },
       ],
     },

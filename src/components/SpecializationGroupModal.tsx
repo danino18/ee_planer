@@ -5,6 +5,7 @@ import type { SpecializationCourseReference, SpecializationGroup, Specialization
 import { evaluateSpecializationGroup } from '../domain/specializations';
 import { usePlanStore } from '../store/planStore';
 import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
+import { getTeachingSemesterBadge } from '../utils/teachingSemester';
 
 interface Props {
   group: SpecializationGroup;
@@ -65,18 +66,14 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     const inPlan = allPlaced.has(id);
     const isFav = favoriteSet.has(id);
     const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
-    const seasonLabel = course?.teachingSemester === 'winter'
-      ? 'חורף'
-      : course?.teachingSemester === 'spring'
-        ? 'אביב'
-        : null;
+    const seasonBadge = getTeachingSemesterBadge(course?.teachingSemester);
     return (
       <div key={id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
         <div className="flex-1 min-w-0 ml-2">
           <p className="text-sm text-gray-800 truncate">{course?.name ?? courseRef.courseName ?? id}</p>
           <div className="flex items-center gap-1 flex-wrap mt-0.5">
-            {seasonLabel && (
-              <span className="text-[11px] leading-none text-gray-400">{seasonLabel}</span>
+            {seasonBadge && (
+              <span className="text-[11px] leading-none" title={seasonBadge.title}>{seasonBadge.emoji}</span>
             )}
             {showsEnglishBadge && (
               <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס באנגלית">

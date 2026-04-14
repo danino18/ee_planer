@@ -4,6 +4,7 @@ import {
   isEnglishCourseId,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
+import { teachingSemesterFallbackCourses } from '../data/teachingSemesterFallback';
 
 const BASE_URL = 'https://raw.githubusercontent.com/michael-maltsev/technion-sap-info-fetcher/gh-pages';
 
@@ -131,6 +132,18 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     }
   }
 
+  for (const fallbackCourse of teachingSemesterFallbackCourses) {
+    if (!merged.has(fallbackCourse.id)) {
+      merged.set(fallbackCourse.id, {
+        id: fallbackCourse.id,
+        name: fallbackCourse.name,
+        credits: fallbackCourse.credits ?? 0,
+        prerequisites: [],
+        faculty: '',
+      });
+    }
+  }
+
   // Remove self-referencing prerequisites (e.g. פיזיקה 1מ listing itself as prereq)
   for (const [id, course] of merged) {
     course.prerequisites = course.prerequisites
@@ -199,6 +212,9 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '00460205': 'spring', // מבוא לתורת הקידוד בתקשורת
     '03260010': 'spring', // אופקים אתיים: חקר נוף המטאוורס (הישאם)
   };
+  for (const fallbackCourse of teachingSemesterFallbackCourses) {
+    TEACHING_SEMESTER[fallbackCourse.id] = fallbackCourse.teachingSemester;
+  }
   for (const [id, sem] of Object.entries(TEACHING_SEMESTER)) {
     const course = merged.get(id);
     if (course) course.teachingSemester = sem;
