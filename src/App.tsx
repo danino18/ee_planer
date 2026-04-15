@@ -218,7 +218,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       if (lastLoadedUid.current !== null) {
         applyingCloudPlan.current = true;
         resetPlan();
-        latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+        latestLocalSignature.current = getPlanSignature(extractEnvelope(usePlanStore.getState()));
         applyingCloudPlan.current = false;
       }
       lastLoadedUid.current = null;
@@ -229,7 +229,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     if (lastLoadedUid.current && lastLoadedUid.current !== user.uid) {
       applyingCloudPlan.current = true;
       resetPlan();
-      latestLocalSignature.current = getPlanSignature(extractPlan(usePlanStore.getState()));
+      latestLocalSignature.current = getPlanSignature(extractEnvelope(usePlanStore.getState()));
       applyingCloudPlan.current = false;
     }
 

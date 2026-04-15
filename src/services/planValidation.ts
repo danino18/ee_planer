@@ -31,6 +31,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'coreToChainOverrides',
   'roboticsMinorEnabled',
   'entrepreneurshipMinorEnabled',
+  'initializedTracks',
 ]);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -475,6 +476,12 @@ function sanitizeStudentPlanRecord(
   if ('entrepreneurshipMinorEnabled' in value) {
     if (typeof value.entrepreneurshipMinorEnabled !== 'boolean') return null;
     sanitized.entrepreneurshipMinorEnabled = value.entrepreneurshipMinorEnabled;
+  }
+
+  if ('initializedTracks' in value) {
+    const initializedTracks = validateStringArray(value.initializedTracks, 20, 32);
+    if (!initializedTracks) return null;
+    sanitized.initializedTracks = initializedTracks;
   }
 
   return sanitized as StudentPlan;

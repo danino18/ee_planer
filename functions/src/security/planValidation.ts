@@ -28,6 +28,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "coreToChainOverrides",
   "roboticsMinorEnabled",
   "entrepreneurshipMinorEnabled",
+  "initializedTracks",
 ]);
 
 interface ValidationSuccess {
@@ -577,6 +578,12 @@ function validateStudentPlanRecord(
       return fail("Invalid entrepreneurshipMinorEnabled");
     }
     sanitized.entrepreneurshipMinorEnabled = value.entrepreneurshipMinorEnabled;
+  }
+
+  if ("initializedTracks" in value) {
+    const initializedTracks = validateStringArray("initializedTracks", value.initializedTracks, 20, 32);
+    if (isValidationFailure(initializedTracks)) return initializedTracks;
+    sanitized.initializedTracks = initializedTracks;
   }
 
   return success(sanitized);
