@@ -582,6 +582,34 @@ function validateStudentPlanRecord(
   return success(sanitized);
 }
 
+function validateVersionedEnvelope(value: unknown): ValidationResult {
+  if (!isPlainObject(value)) return fail("Envelope must be an object");
+  if (value.schemaVersion !== 2) return fail("Invalid schemaVersion");
+  if (!Array.isArray(value.versions) || value.versions.length === 0 || value.versions.length > 4) {
+    return fail("Invalid versions array");
+  }
+  if (!isNonEmptyString(value.activeVersionId, 128)) return fail("Invalid activeVersionId");
+
+  const sanitizedVersions: Record<string, unknown>[] = [];
+  for (const v of value.versions as unknown[]) {
+    if (!isPlainObject(v)) return fail("Invalid version entry");
+    if (!isNonEmptyString(v.id, 128)) return fail("Invalid version id");
+    if (!isNonEmptyString(v.name, 128)) return fail("Invalid version name");
+    if (!isFiniteNumber(v.createdAt) || !isFiniteNumber(v.updatedAt)) return fail("Invalid version timestamps");
+    const planResult = validateStudentPlanRecord(v.plan, { allowSavedTracks: true });
+    if (!planResult.ok) return planResult;
+    sanitizedVersions.push({ id: v.id, name: v.name, plan: planResult.value, createdAt: v.createdAt, updatedAt: v.updatedAt });
+  }
+
+  const hasActive = sanitizedVersions.some((v) => v.id === value.activeVersionId);
+  if (!hasActive) return fail("activeVersionId not found in versions");
+
+  return success({ schemaVersion: 2, versions: sanitizedVersions, activeVersionId: value.activeVersionId });
+}
+
 export function validateStudentPlanPayload(value: unknown): ValidationResult {
+  if (isPlainObject(value) && value.schemaVersion === 2) {
+    return validateVersionedEnvelope(value);
+  }
   return validateStudentPlanRecord(value, { allowSavedTracks: true });
 }

@@ -192,6 +192,20 @@ export interface TrackSpecializationSelectionSanitization
   removedDoubleSpecializations: string[];
 }
 
+export interface PlanVersion {
+  id: string;
+  name: string;
+  plan: StudentPlan;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface VersionedPlanEnvelope {
+  schemaVersion: 2;
+  versions: PlanVersion[];
+  activeVersionId: string;
+}
+
 export interface StudentPlan {
   trackId: TrackId | null;
   semesters: Record<number, string[]>;

@@ -1,4 +1,4 @@
-import type { StudentPlan, TrackId } from '../types';
+import type { StudentPlan, TrackId, PlanVersion, VersionedPlanEnvelope } from '../types';
 
 const TRACK_IDS: TrackId[] = ['ee', 'cs', 'ee_math', 'ee_physics', 'ee_combined', 'ce'];
 const TRACK_ID_SET = new Set<TrackId>(TRACK_IDS);
@@ -482,4 +482,30 @@ function sanitizeStudentPlanRecord(
 
 export function sanitizeStudentPlan(value: unknown): StudentPlan | null {
   return sanitizeStudentPlanRecord(value, { allowSavedTracks: true });
+}
+
+export function sanitizeEnvelope(value: unknown): VersionedPlanEnvelope | null {
+  if (!isPlainObject(value)) return null;
+  if (value.schemaVersion !== 2) return null;
+  if (!Array.isArray(value.versions) || value.versions.length === 0 || value.versions.length > 4) return null;
+  if (typeof value.activeVersionId !== 'string' || value.activeVersionId.length === 0) return null;
+
+  const versions: PlanVersion[] = [];
+  for (const v of value.versions as unknown[]) {
+    if (!isPlainObject(v)) return null;
+    if (typeof v.id !== 'string' || v.id.length === 0 || v.id.length > 128) return null;
+    if (typeof v.name !== 'string' || v.name.length === 0 || v.name.length > 128) return null;
+    if (!isPlainObject(v.plan)) return null;
+    if (typeof v.createdAt !== 'number' || typeof v.updatedAt !== 'number') return null;
+
+    const plan = sanitizeStudentPlan(v.plan);
+    if (!plan) return null;
+
+    versions.push({ id: v.id, name: v.name, plan, createdAt: v.createdAt, updatedAt: v.updatedAt });
+  }
+
+  const hasActive = versions.some((v) => v.id === value.activeVersionId);
+  if (!hasActive) return null;
+
+  return { schemaVersion: 2, versions, activeVersionId: value.activeVersionId as string };
 }

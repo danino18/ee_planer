@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TrackId, StudentPlan } from '../types';
+import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope } from '../types';
 import { eeTrack } from '../data/tracks/ee';
 import { csTrack } from '../data/tracks/cs';
 import { eeMathTrack } from '../data/tracks/ee_math';
@@ -20,6 +20,8 @@ interface PlanState extends StudentPlan {
   isSwitchingTrack: boolean;
   // Persisted extra
   savedTracks: Record<string, StudentPlan>;
+  versions: PlanVersion[];
+  activeVersionId: string;
 
   setTrack: (trackId: TrackId) => void;
   beginTrackSwitch: () => void;
@@ -54,10 +56,15 @@ interface PlanState extends StudentPlan {
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
   loadPlan: (plan: StudentPlan) => void;
+  loadEnvelope: (envelope: VersionedPlanEnvelope) => void;
   resetPlan: () => void;
   resetToDefault: () => void;
   markTrackInitialized: (trackId: string) => void;
   undo: () => void;
+  createVersion: () => void;
+  switchVersion: (id: string) => void;
+  renameVersion: (id: string, name: string) => void;
+  deleteVersion: (id: string) => void;
 }
 
 // Courses that can appear in multiple semesters simultaneously (pool-style)
@@ -244,6 +251,33 @@ function captureSnapshot(state: PlanState): StudentPlan {
   };
 }
 
+/** Build the state fields from a StudentPlan (used when loading/switching versions) */
+function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanState> {
+  const p = sanitizeSpecializationStateForTrack(applyPlanMigrations(plan));
+  return {
+    ...initialState,
+    ...p,
+    semesterOrder: p.semesterOrder?.length
+      ? p.semesterOrder
+      : Array.from({ length: p.maxSemester }, (_, i) => i + 1),
+    semesterTypeOverrides: p.semesterTypeOverrides ?? {},
+    semesterWarningsIgnored: p.semesterWarningsIgnored ?? [],
+    doubleSpecializations: p.doubleSpecializations ?? [],
+    hasEnglishExemption: p.hasEnglishExemption ?? false,
+    manualSapAverages: p.manualSapAverages ?? {},
+    binaryPass: p.binaryPass ?? {},
+    englishTaughtCourses: p.englishTaughtCourses ?? [],
+    facultyColorOverrides: p.facultyColorOverrides ?? {},
+    completedInstances: p.completedInstances ?? [],
+    dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
+    coreToChainOverrides: p.coreToChainOverrides ?? [],
+    savedTracks: p.savedTracks ?? current.savedTracks ?? {},
+    _history: [],
+    _initKey: current._initKey,
+    isSwitchingTrack: false,
+  };
+}
+
 function pushHistory(state: PlanState): StudentPlan[] {
   return [...(state._history ?? []).slice(-19), captureSnapshot(state)];
 }
@@ -256,6 +290,8 @@ export const usePlanStore = create<PlanState>()(
       _initKey: 0,
       isSwitchingTrack: false,
       savedTracks: {},
+      versions: [],
+      activeVersionId: '',
 
       setTrack: (newTrackId) =>
         set((state) => {
@@ -685,6 +721,9 @@ export const usePlanStore = create<PlanState>()(
           coreToChainOverrides: migratedPlan.coreToChainOverrides ?? [],
           // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
           savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
+          // Preserve versions unless loadEnvelope is used
+          versions: state.versions,
+          activeVersionId: state.activeVersionId,
           _history: [],
           _initKey: state._initKey,
           isSwitchingTrack: false,
@@ -697,6 +736,8 @@ export const usePlanStore = create<PlanState>()(
         _initKey: 0,
         isSwitchingTrack: false,
         savedTracks: {},
+        versions: [],
+        activeVersionId: '',
       })),
 
       resetToDefault: () =>
@@ -754,14 +795,111 @@ export const usePlanStore = create<PlanState>()(
           return {
             ...prev,
             savedTracks: state.savedTracks,
+            versions: state.versions,
+            activeVersionId: state.activeVersionId,
             _history: history.slice(0, -1),
             _initKey: state._initKey,
             isSwitchingTrack: false,
           };
         }),
+
+      createVersion: () =>
+        set((state) => {
+          if (state.versions.length >= 4) return state;
+          const now = Date.now();
+          const newId = crypto.randomUUID();
+          const snapshot = captureSnapshot(state);
+          const updatedVersions = state.versions.map((v) =>
+            v.id === state.activeVersionId ? { ...v, plan: snapshot, updatedAt: now } : v,
+          );
+          const nextNum = state.versions.length + 1;
+          const newVersion: PlanVersion = {
+            id: newId,
+            name: `גרסה ${nextNum}`,
+            plan: snapshot,
+            createdAt: now,
+            updatedAt: now,
+          };
+          return {
+            versions: [...updatedVersions, newVersion],
+            activeVersionId: newId,
+            _history: [],
+          };
+        }),
+
+      switchVersion: (id) =>
+        set((state) => {
+          if (id === state.activeVersionId) return state;
+          const target = state.versions.find((v) => v.id === id);
+          if (!target) return state;
+          const now = Date.now();
+          const snapshot = captureSnapshot(state);
+          const updatedVersions = state.versions.map((v) =>
+            v.id === state.activeVersionId ? { ...v, plan: snapshot, updatedAt: now } : v,
+          );
+          return {
+            ...planToStateFields(target.plan, state),
+            versions: updatedVersions,
+            activeVersionId: id,
+          };
+        }),
+
+      renameVersion: (id, name) =>
+        set((state) => ({
+          versions: state.versions.map((v) => (v.id === id ? { ...v, name } : v)),
+        })),
+
+      deleteVersion: (id) =>
+        set((state) => {
+          if (state.versions.length <= 1) return state;
+          const remaining = state.versions.filter((v) => v.id !== id);
+          if (state.activeVersionId !== id) {
+            return { versions: remaining };
+          }
+          const target = remaining[0];
+          return {
+            ...planToStateFields(target.plan, state),
+            versions: remaining,
+            activeVersionId: target.id,
+          };
+        }),
+
+      loadEnvelope: (envelope) =>
+        set((state) => {
+          const active =
+            envelope.versions.find((v) => v.id === envelope.activeVersionId) ??
+            envelope.versions[0];
+          if (!active) return state;
+          return {
+            ...planToStateFields(active.plan, state),
+            versions: envelope.versions,
+            activeVersionId: envelope.activeVersionId,
+          };
+        }),
     }),
     {
       name: 'technion-ee-planner',
+      version: 1,
+      migrate: (persistedState, fromVersion) => {
+        const s = persistedState as PlanState;
+        if (fromVersion === 0 || !s.versions || s.versions.length === 0) {
+          // Wrap existing plan as the first version
+          const vId = crypto.randomUUID();
+          const plan: StudentPlan = { ...initialState, ...s };
+          return {
+            ...s,
+            versions: [{
+              id: vId,
+              name: 'גרסה 1',
+              plan,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            }],
+            activeVersionId: vId,
+          };
+        }
+        return s;
+      },
       partialize: (state) => {
         // Exclude ephemeral fields from localStorage
         const { _history: _h, _initKey: _ik, isSwitchingTrack: _st, ...rest } = state as PlanState;

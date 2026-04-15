@@ -3,6 +3,8 @@ import { useShallow } from 'zustand/react/shallow';
 import { fetchCourses } from './services/sapApi';
 import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
+import { VersionTabs } from './components/VersionTabs';
+import { VersionCompareModal } from './components/VersionCompareModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
 import { SemesterGrid } from './components/SemesterGrid';
@@ -18,7 +20,7 @@ import { eeMathTrack } from './data/tracks/ee_math';
 import { eePhysicsTrack } from './data/tracks/ee_physics';
 import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
-import type { SapCourse, TrackDefinition, StudentPlan } from './types';
+import type { SapCourse, TrackDefinition, StudentPlan, VersionedPlanEnvelope } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
@@ -34,7 +36,7 @@ const SYNC_RETRY_DELAY_MS = 5000;
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
-function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
+function extractCurrentPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
   return {
     trackId: state.trackId,
     semesters: state.semesters,
@@ -67,8 +69,27 @@ function extractPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPl
   };
 }
 
-function getPlanSignature(plan: StudentPlan): string {
-  return JSON.stringify(plan);
+function extractEnvelope(state: ReturnType<typeof usePlanStore.getState>): VersionedPlanEnvelope {
+  const now = Date.now();
+  const currentPlan = extractCurrentPlan(state);
+  // Snapshot active version with latest plan data
+  const versions = (state.versions ?? []).map((v) =>
+    v.id === state.activeVersionId ? { ...v, plan: currentPlan, updatedAt: now } : v,
+  );
+  // If no versions yet (shouldn't happen after migration), create one
+  if (versions.length === 0) {
+    const vId = crypto.randomUUID();
+    return {
+      schemaVersion: 2,
+      versions: [{ id: vId, name: 'גרסה 1', plan: currentPlan, createdAt: now, updatedAt: now }],
+      activeVersionId: vId,
+    };
+  }
+  return { schemaVersion: 2, versions, activeVersionId: state.activeVersionId };
+}
+
+function getPlanSignature(envelope: VersionedPlanEnvelope): string {
+  return JSON.stringify(envelope);
 }
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
@@ -83,6 +104,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     addCourseToSemester,
     removeCourseFromSemester,
     loadPlan,
+    loadEnvelope,
     _history,
     _initKey,
     isSwitchingTrack,
@@ -90,6 +112,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     englishScore,
     initializedTracks,
     markTrackInitialized,
+    versions,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -101,6 +124,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     addCourseToSemester: state.addCourseToSemester,
     removeCourseFromSemester: state.removeCourseFromSemester,
     loadPlan: state.loadPlan,
+    loadEnvelope: state.loadEnvelope,
     _history: state._history,
     _initKey: state._initKey,
     isSwitchingTrack: state.isSwitchingTrack,
@@ -108,6 +132,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     englishScore: state.englishScore,
     initializedTracks: state.initializedTracks,
     markTrackInitialized: state.markTrackInitialized,
+    versions: state.versions,
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
   const specs = specializationCatalog.groups;
@@ -120,7 +145,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastLoadedUid = useRef<string | null>(null);
   const applyingCloudPlan = useRef(false);
-  const latestLocalSignature = useRef(getPlanSignature(extractPlan(usePlanStore.getState())));
+  const latestLocalSignature = useRef(getPlanSignature(extractEnvelope(usePlanStore.getState())));
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
@@ -241,11 +266,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       setSyncStatus('saving');
       setSyncErrorMessage(null);
       lastSaveTime.current = Date.now();
-      const localPlan = extractPlan(usePlanStore.getState());
-      latestLocalSignature.current = getPlanSignature(localPlan);
+      const localEnvelope = extractEnvelope(usePlanStore.getState());
+      latestLocalSignature.current = getPlanSignature(localEnvelope);
 
       try {
-        await savePlanToCloud(uid, localPlan);
+        await savePlanToCloud(uid, localEnvelope);
         setSyncStatus('saved');
         setSyncErrorMessage(null);
         onSuccess?.();
@@ -275,12 +300,12 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
     const unsubSnapshot = subscribeToCloudPlan(
       uid,
-      (cloudPlan) => {
+      (cloudEnvelope) => {
         if (Date.now() - lastSaveTime.current < SYNC_RETRY_DELAY_MS) return;
-        const cloudSignature = getPlanSignature(cloudPlan);
+        const cloudSignature = getPlanSignature(cloudEnvelope);
         if (cloudSignature === latestLocalSignature.current) return;
         applyingCloudPlan.current = true;
-        loadPlan(cloudPlan);
+        loadEnvelope(cloudEnvelope);
         latestLocalSignature.current = cloudSignature;
         applyingCloudPlan.current = false;
         setSyncStatus('saved');
@@ -324,7 +349,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       window.removeEventListener('online', handleOnline);
       clearSyncTimers();
     };
-  }, [user, trackId, loadPlan, resetPlan, finishTrackSwitch, isSwitchingTrack]);
+  }, [user, trackId, loadPlan, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack]);
+
+  const [showCompare, setShowCompare] = useState(false);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -335,36 +362,47 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   return (
     <div className="min-h-screen bg-gray-100">
       <Toast message={toast.message} visible={toast.visible} />
+      {showCompare && (
+        <VersionCompareModal
+          versions={versions ?? []}
+          courses={courses}
+          trackDefs={ALL_TRACKS}
+          onClose={() => setShowCompare(false)}
+        />
+      )}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-screen-2xl mx-auto px-5 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">מתכנן לימודים – הטכניון</h1>
-            <p className="text-sm text-gray-500">{trackDef.name}</p>
+        <div className="max-w-screen-2xl mx-auto px-5 py-3 flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">מתכנן לימודים – הטכניון</h1>
+              <p className="text-sm text-gray-500">{trackDef.name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
+              <button
+                onClick={undo}
+                disabled={_history.length === 0}
+                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
+              >
+                ↩ בטל
+              </button>
+              <button
+                onClick={handleResetToDefault}
+                className="text-sm text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 px-3 py-1.5 rounded-lg transition-colors"
+                title="החזר את המערכת לתכנית הלימודים המומלצת"
+              >
+                ⟳ מומלצת
+              </button>
+              <button
+                onClick={beginTrackSwitch}
+                className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
+              >
+                החלף מסלול
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
-            <button
-              onClick={undo}
-              disabled={_history.length === 0}
-              className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
-            >
-              ↩ בטל
-            </button>
-            <button
-              onClick={handleResetToDefault}
-              className="text-sm text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 px-3 py-1.5 rounded-lg transition-colors"
-              title="החזר את המערכת לתכנית הלימודים המומלצת"
-            >
-              ⟳ מומלצת
-            </button>
-            <button
-              onClick={beginTrackSwitch}
-              className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              החלף מסלול
-            </button>
-          </div>
+          <VersionTabs onCompare={() => setShowCompare(true)} />
         </div>
       </header>
       <main className="max-w-screen-2xl mx-auto px-4 py-5">
@@ -390,7 +428,7 @@ function AppInner() {
   const [error, setError] = useState<string | null>(null);
   const trackId = usePlanStore((s) => s.trackId);
   const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
-  const loadPlan = usePlanStore((s) => s.loadPlan);
+  const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
@@ -408,10 +446,10 @@ function AppInner() {
 
     return subscribeToCloudPlan(
       user.uid,
-      (cloudPlan) => loadPlan(cloudPlan),
+      (cloudEnvelope) => loadEnvelope(cloudEnvelope),
       () => undefined,
     );
-  }, [user, trackId, isSwitchingTrack, loadPlan]);
+  }, [user, trackId, isSwitchingTrack, loadEnvelope]);
 
   if (authLoading || loading) {
     return (
