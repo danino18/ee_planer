@@ -182,15 +182,23 @@ function CompactRequirementRow({
         </div>
       )}
 
-      {req.countedCourses.length > 0 && req.requirementId !== 'english' && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {req.countedCourses.map((course) => (
-            <span key={`${req.requirementId}-${course.courseId}`} className="text-[11px] rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
-              {course.name}
-            </span>
-          ))}
-        </div>
-      )}
+      {req.countedCourses.length > 0 && req.requirementId !== 'english' && (() => {
+        const grouped = new Map<string, { name: string; count: number }>();
+        for (const course of req.countedCourses) {
+          const entry = grouped.get(course.courseId);
+          if (entry) { entry.count++; }
+          else { grouped.set(course.courseId, { name: course.name, count: 1 }); }
+        }
+        return (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {Array.from(grouped.values()).map(({ name, count }) => (
+              <span key={`${req.requirementId}-${name}`} className="text-[11px] rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+                {count > 1 ? `${name} ×${count}` : name}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
 
       {manualEnglishCourseIds.length > 0 && (
         <div className="mt-2 space-y-1.5">
