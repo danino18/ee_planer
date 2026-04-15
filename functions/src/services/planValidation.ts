@@ -311,6 +311,11 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       "coreToChainOverrides",
       MAX_COURSES
     ),
+    roboticsMinorEnabled: cleanBoolean(source.roboticsMinorEnabled, "roboticsMinorEnabled"),
+    entrepreneurshipMinorEnabled: cleanBoolean(
+      source.entrepreneurshipMinorEnabled,
+      "entrepreneurshipMinorEnabled"
+    ),
   };
 
   if (allowSavedTracks) {
