@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { usePlanStore } from '../store/planStore';
+import { usePlanStore, REPEATABLE_COURSES } from '../store/planStore';
 import type { SapCourse, TrackDefinition } from '../types';
 import { GENERAL_REQUIREMENTS_RULES } from '../data/generalRequirements/generalRules';
 import { calculateGeneralRequirements } from '../domain/generalRequirements/rulesEngine';
@@ -25,18 +25,15 @@ export function buildGeneralRequirementsProgress({
   miluimCredits,
   englishScore,
 }: BuildParams): GeneralRequirementProgress[] {
-  const allPlacedIds = new Set<string>([
-    ...completedCourses,
-    ...Object.values(semesters).flat(),
-  ]);
-
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
   const courseRefs: CourseRef[] = [];
+  // Track seen IDs for non-repeatable courses to avoid double-counting
+  const nonRepeatableSeen = new Set<string>([...completedCourses]);
 
-  for (const id of allPlacedIds) {
+  // Add non-repeatable completedCourses
+  for (const id of nonRepeatableSeen) {
     const sap = courses.get(id);
     if (!sap) continue;
-
     courseRefs.push({
       courseId: id,
       name: sap.name,
@@ -44,6 +41,34 @@ export function buildGeneralRequirementsProgress({
       language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
       isLab: labPoolSet.has(id),
     });
+  }
+
+  // Add courses from semesters
+  for (const semCourses of Object.values(semesters)) {
+    for (const id of semCourses) {
+      const sap = courses.get(id);
+      if (!sap) continue;
+      if (REPEATABLE_COURSES.has(id)) {
+        // Each semester placement of a repeatable course counts separately
+        courseRefs.push({
+          courseId: id,
+          name: sap.name,
+          credits: sap.credits,
+          language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
+          isLab: labPoolSet.has(id),
+        });
+      } else {
+        if (nonRepeatableSeen.has(id)) continue;
+        nonRepeatableSeen.add(id);
+        courseRefs.push({
+          courseId: id,
+          name: sap.name,
+          credits: sap.credits,
+          language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
+          isLab: labPoolSet.has(id),
+        });
+      }
+    }
   }
 
   const rules: GeneralRequirementRule[] = GENERAL_REQUIREMENTS_RULES.map((rule) => {
