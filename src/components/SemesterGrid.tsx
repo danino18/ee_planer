@@ -253,6 +253,18 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     return warnings;
   }, [trackDef.semesterSchedule, semesters, courses]);
 
+  const regularIndexMap = useMemo(() => {
+    const map = new Map<number, number>();
+    let count = 0;
+    for (const s of displayOrder) {
+      if (!summerSemesters.includes(s)) {
+        count++;
+        map.set(s, count);
+      }
+    }
+    return map;
+  }, [displayOrder, summerSemesters]);
+
   const semColProps = (sem: number) => {
     return {
       semester: sem,
@@ -268,6 +280,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       isFuture: currentSemester !== null && sem > currentSemester,
       onSetCurrentSemester: setCurrentSemester,
       summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
+      regularIndex: regularIndexMap.get(sem),
       isRowMode: viewMode === 'rows',
       semesterType: getSemesterType(sem),
       onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),

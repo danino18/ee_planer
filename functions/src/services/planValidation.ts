@@ -6,7 +6,6 @@ const TRACK_IDS = new Set<TrackId>(["ee", "cs", "ee_math", "ee_physics", "ee_com
 const MAX_COURSES = 600;
 const MAX_SPECIALIZATIONS = 100;
 const MAX_SAVED_TRACKS = 6;
-const MAX_VERSIONS = 4;
 const MAX_SEMESTERS = 16;
 const COURSE_ID_MAX_LENGTH = 32;
 const STRING_VALUE_MAX_LENGTH = 128;
@@ -94,24 +93,6 @@ function cleanBoolean(value: unknown, fieldName: string, defaultValue = false): 
     throw new PlanValidationError(`${fieldName} must be a boolean`);
   }
   return value;
-}
-
-function cleanMiluimCredits(value: unknown, fieldName: string): PlanDocument | undefined {
-  if (value === undefined) return undefined;
-
-  if (typeof value === "number") {
-    const generalElectives = cleanInteger(value, fieldName, 0, 10);
-    return { generalElectives, freeElective: 0 };
-  }
-
-  const source = asRecord(value, fieldName);
-  const generalElectives = cleanInteger(source.generalElectives ?? 0, `${fieldName}.generalElectives`, 0, 10);
-  const freeElective = cleanInteger(source.freeElective ?? 0, `${fieldName}.freeElective`, 0, 10);
-  if (generalElectives + freeElective > 10) {
-    throw new PlanValidationError(`${fieldName} total must not exceed 10`);
-  }
-
-  return { generalElectives, freeElective };
 }
 
 function cleanNumberRecord(
@@ -282,46 +263,11 @@ function cleanDismissedRecommendedCourses(value: unknown): Record<string, string
   return result;
 }
 
-function cleanPlanVersion(value: unknown): PlanDocument {
-  const source = asRecord(value, "versions[]");
-  const trackId = cleanTrackId(source.trackId);
-  const result: PlanDocument = {
-    id: cleanString(source.id, "versions[].id", 64),
-    name: cleanString(source.name, "versions[].name"),
-    trackId,
-    plan: sanitizePlanPayload(source.plan, false),
-  };
-
-  const trackPlansSource = optionalRecord(source.trackPlans, "versions[].trackPlans");
-  if (trackPlansSource) {
-    const trackPlans: Record<string, PlanDocument> = {};
-    for (const [trackKey, trackPlan] of Object.entries(trackPlansSource)) {
-      if (!TRACK_IDS.has(trackKey as TrackId)) {
-        throw new PlanValidationError(`Invalid versions[].trackPlans key: ${trackKey}`);
-      }
-      trackPlans[trackKey] = sanitizePlanPayload(trackPlan, false);
-    }
-    result.trackPlans = trackPlans;
-  }
-
-  return result;
-}
-
-function cleanVersions(value: unknown): PlanDocument[] | undefined {
-  if (value === undefined) return undefined;
-  if (!Array.isArray(value) || value.length > MAX_VERSIONS) {
-    throw new PlanValidationError(`versions must be an array with at most ${MAX_VERSIONS} items`);
-  }
-
-  return value.map((item) => cleanPlanVersion(item));
-}
-
 export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): PlanDocument {
   const source = asRecord(payload, "plan");
   const maxSemester = cleanInteger(source.maxSemester ?? 8, "maxSemester", 1, MAX_SEMESTERS);
-  const miluimCredits = cleanMiluimCredits(source.miluimCredits, "miluimCredits");
+  const miluimCredits = cleanOptionalInteger(source.miluimCredits, "miluimCredits", 0, 10);
   const englishScore = cleanOptionalInteger(source.englishScore, "englishScore", 0, 150);
-  const versions = cleanVersions(source.versions);
   const sanitized: PlanDocument = {
     trackId: cleanTrackId(source.trackId),
     semesters: cleanSemesters(source.semesters),
@@ -366,19 +312,14 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       MAX_COURSES
     ),
     roboticsMinorEnabled: cleanBoolean(source.roboticsMinorEnabled, "roboticsMinorEnabled"),
-    entrepreneurshipMinorEnabled: cleanBoolean(source.entrepreneurshipMinorEnabled, "entrepreneurshipMinorEnabled"),
+    entrepreneurshipMinorEnabled: cleanBoolean(
+      source.entrepreneurshipMinorEnabled,
+      "entrepreneurshipMinorEnabled"
+    ),
   };
 
   if (allowSavedTracks) {
     sanitized.savedTracks = cleanSavedTracks(source.savedTracks);
-  }
-  if (source.activeVersionId !== undefined) {
-    sanitized.activeVersionId = source.activeVersionId === null
-      ? null
-      : cleanString(source.activeVersionId, "activeVersionId", 64);
-  }
-  if (versions !== undefined) {
-    sanitized.versions = versions;
   }
   if (miluimCredits !== undefined) {
     sanitized.miluimCredits = miluimCredits;

@@ -22,6 +22,7 @@ function loadTranspiledModule(relativePath) {
 
 const { sanitizeStudentPlan } = await loadTranspiledModule('src/services/planValidation.ts');
 const { validateStudentPlanPayload } = await loadTranspiledModule('functions/src/security/planValidation.ts');
+const { sanitizePlanPayload } = await loadTranspiledModule('functions/src/services/planValidation.ts');
 
 function createPlanPayload() {
   return {
@@ -68,6 +69,8 @@ function createPlanPayload() {
         dismissedRecommendedCourses: {},
         facultyColorOverrides: {},
         coreToChainOverrides: ['02340117'],
+        roboticsMinorEnabled: true,
+        entrepreneurshipMinorEnabled: false,
       },
     },
     miluimCredits: 2,
@@ -76,18 +79,24 @@ function createPlanPayload() {
     dismissedRecommendedCourses: {},
     facultyColorOverrides: {},
     coreToChainOverrides: ['02340117'],
+    roboticsMinorEnabled: true,
+    entrepreneurshipMinorEnabled: true,
   };
 }
 
-test('client sanitizer accepts coreToChainOverrides in plan and savedTracks payloads', () => {
+test('client sanitizer accepts current StudentPlan fields in plan and savedTracks payloads', () => {
   const sanitized = sanitizeStudentPlan(createPlanPayload());
 
   assert.ok(sanitized, 'expected payload to sanitize successfully');
   assert.deepEqual(sanitized.coreToChainOverrides, ['02340117']);
   assert.deepEqual(sanitized.savedTracks.cs.coreToChainOverrides, ['02340117']);
+  assert.equal(sanitized.roboticsMinorEnabled, true);
+  assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
+  assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
+  assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
 });
 
-test('server validator accepts coreToChainOverrides in plan and savedTracks payloads', () => {
+test('server security validator accepts current StudentPlan fields in plan and savedTracks payloads', () => {
   const validated = validateStudentPlanPayload(createPlanPayload());
 
   assert.equal(validated.ok, true);
@@ -97,4 +106,31 @@ test('server validator accepts coreToChainOverrides in plan and savedTracks payl
 
   assert.deepEqual(validated.value.coreToChainOverrides, ['02340117']);
   assert.deepEqual(validated.value.savedTracks.cs.coreToChainOverrides, ['02340117']);
+  assert.equal(validated.value.roboticsMinorEnabled, true);
+  assert.equal(validated.value.entrepreneurshipMinorEnabled, true);
+  assert.equal(validated.value.savedTracks.cs.roboticsMinorEnabled, true);
+  assert.equal(validated.value.savedTracks.cs.entrepreneurshipMinorEnabled, false);
+});
+
+test('server service sanitizer accepts minor flags in plan and savedTracks payloads', () => {
+  const sanitized = sanitizePlanPayload(createPlanPayload());
+
+  assert.equal(sanitized.roboticsMinorEnabled, true);
+  assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
+  assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
+  assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
+});
+
+test('cloud sync schema stays aligned for minor flags', () => {
+  const appSource = readFileSync(join(repoRoot, 'src/App.tsx'), 'utf8');
+  const clientValidatorSource = readFileSync(join(repoRoot, 'src/services/planValidation.ts'), 'utf8');
+  const securityValidatorSource = readFileSync(join(repoRoot, 'functions/src/security/planValidation.ts'), 'utf8');
+  const serviceValidatorSource = readFileSync(join(repoRoot, 'functions/src/services/planValidation.ts'), 'utf8');
+
+  for (const key of ['roboticsMinorEnabled', 'entrepreneurshipMinorEnabled']) {
+    assert.match(appSource, new RegExp(`${key}: state\\.${key}`), `extractPlan must include ${key}`);
+    assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
+    assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
+    assert.match(serviceValidatorSource, new RegExp(`${key}: cleanBoolean`), `service sanitizer must clean ${key}`);
+  }
 });
