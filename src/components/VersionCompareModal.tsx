@@ -147,7 +147,7 @@ function VersionColumn({
                   {visibleCourseIds.map((id, i) => (
                     <span
                       key={`${id}_${i}`}
-                      className="text-xs bg-gray-100 text-gray-700 rounded px-1.5 py-0.5 truncate max-w-32"
+                      className="max-w-full whitespace-normal break-words rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700"
                       title={courses.get(id)?.name ?? id}
                     >
                       {courses.get(id)?.name ?? id}
