@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { SapCourse, TrackDefinition, PlanVersion } from '../types';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { computeWeightedAverage, computeRequirementsProgress } from '../hooks/usePlan';
-import { getDifferingCourseIds } from '../utils/versionComparison';
+import { getComparisonSemesterLabel, getDifferingCourseIds } from '../utils/versionComparison';
 
 interface Props {
   versions: PlanVersion[];
@@ -71,8 +71,6 @@ function VersionColumn({
   const semesterOrder = plan.semesterOrder ?? [];
   const semesters = plan.semesters ?? {};
 
-  const SEM_LABELS = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'", "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז'];
-
   return (
     <div className="flex-1 min-w-0 border border-gray-200 rounded-xl overflow-hidden">
       {/* Header */}
@@ -137,11 +135,10 @@ function VersionColumn({
               ? courseIds.filter((id) => differingCourseIds.has(id))
               : courseIds;
             if (visibleCourseIds.length === 0) return null;
-            const isSummer = plan.summerSemesters?.includes(sem);
             return (
               <div key={sem}>
                 <div className="text-xs text-gray-400 mb-0.5">
-                  {isSummer ? `קיץ (${sem})` : `סמ' ${SEM_LABELS[sem - 1] ?? sem}`}
+                  {getComparisonSemesterLabel(sem, semesterOrder, plan.summerSemesters ?? [])}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {visibleCourseIds.map((id, i) => (

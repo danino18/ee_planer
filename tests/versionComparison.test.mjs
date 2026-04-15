@@ -20,7 +20,7 @@ function loadTranspiledModule(relativePath) {
   return import(`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`);
 }
 
-const { getDifferingCourseIds } = await loadTranspiledModule('src/utils/versionComparison.ts');
+const { getComparisonSemesterLabel, getDifferingCourseIds } = await loadTranspiledModule('src/utils/versionComparison.ts');
 
 function versionWithSemesters(semesters) {
   return { plan: { semesters } };
@@ -74,4 +74,28 @@ test('a single selected version has no comparable differences', () => {
   ]);
 
   assert.deepEqual(sortedIds(courseIds), []);
+});
+
+test('comparison semester labels count regular semesters normally without summers', () => {
+  assert.equal(getComparisonSemesterLabel(1, [1, 2, 3], []), "סמ' א'");
+  assert.equal(getComparisonSemesterLabel(2, [1, 2, 3], []), "סמ' ב'");
+  assert.equal(getComparisonSemesterLabel(3, [1, 2, 3], []), "סמ' ג'");
+});
+
+test('comparison semester labels skip summer semesters for regular numbering', () => {
+  const order = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const summers = [9, 10];
+
+  assert.equal(getComparisonSemesterLabel(9, order, summers), "קיץ א'");
+  assert.equal(getComparisonSemesterLabel(10, order, summers), "קיץ ב'");
+  assert.equal(getComparisonSemesterLabel(11, order, summers), "סמ' ט'");
+});
+
+test('comparison semester labels use display order for regular semester numbering', () => {
+  const order = [1, 2, 9, 3, 4];
+  const summers = [9];
+
+  assert.equal(getComparisonSemesterLabel(9, order, summers), "קיץ א'");
+  assert.equal(getComparisonSemesterLabel(3, order, summers), "סמ' ג'");
+  assert.equal(getComparisonSemesterLabel(4, order, summers), "סמ' ד'");
 });

@@ -2,6 +2,11 @@ import type { PlanVersion, StudentPlan } from '../types';
 
 type VersionWithPlan = Pick<PlanVersion, 'plan'>;
 
+const SEMESTER_LABELS = [
+  "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'", "ח'",
+  "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
+];
+
 function getScheduledCourseIds(plan: Pick<StudentPlan, 'semesters'>): Set<string> {
   const courseIds = new Set<string>();
 
@@ -34,4 +39,34 @@ export function getDifferingCourseIds(versions: VersionWithPlan[]): Set<string> 
   }
 
   return differingCourseIds;
+}
+
+function formatSemesterIndex(index: number): string {
+  return SEMESTER_LABELS[index - 1] ?? String(index);
+}
+
+export function getComparisonSemesterLabel(
+  semester: number,
+  semesterOrder: number[],
+  summerSemesters: number[],
+): string {
+  if (summerSemesters.includes(semester)) {
+    const summerIndex = summerSemesters.indexOf(semester) + 1;
+    return `קיץ ${formatSemesterIndex(summerIndex)}`;
+  }
+
+  const summerSet = new Set(summerSemesters);
+  let regularIndex = 0;
+  for (const orderedSemester of semesterOrder) {
+    if (!summerSet.has(orderedSemester)) {
+      regularIndex++;
+    }
+
+    if (orderedSemester === semester) {
+      return `סמ' ${formatSemesterIndex(regularIndex)}`;
+    }
+  }
+
+  const summersBefore = summerSemesters.filter((summerSemester) => summerSemester <= semester).length;
+  return `סמ' ${formatSemesterIndex(Math.max(1, semester - summersBefore))}`;
 }

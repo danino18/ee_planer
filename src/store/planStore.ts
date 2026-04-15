@@ -845,9 +845,16 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       renameVersion: (id, name) =>
-        set((state) => ({
-          versions: state.versions.map((v) => (v.id === id ? { ...v, name } : v)),
-        })),
+        set((state) => {
+          const trimmedName = name.trim();
+          if (!trimmedName) return state;
+          const now = Date.now();
+          return {
+            versions: state.versions.map((v) => (
+              v.id === id ? { ...v, name: trimmedName, updatedAt: now } : v
+            )),
+          };
+        }),
 
       deleteVersion: (id) =>
         set((state) => {
