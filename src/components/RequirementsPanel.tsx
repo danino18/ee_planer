@@ -315,13 +315,27 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  const regularIndexMap = useMemo(() => {
+    const map = new Map<number, number>();
+    let count = 0;
+    for (const s of semesterOrder) {
+      if (!summerSemesters.includes(s)) {
+        count++;
+        map.set(s, count);
+      }
+    }
+    return map;
+  }, [semesterOrder, summerSemesters]);
+
   const semesterOptions = useMemo(() => [
     { label: 'ללא שיבוץ', value: 0 },
     ...semesterOrder.map((sem) => ({
-      label: summerSemesters.includes(sem) ? 'סמסטר קיץ' : `סמסטר ${SEM_LABELS[sem - 1] ?? sem}`,
+      label: summerSemesters.includes(sem)
+        ? 'סמסטר קיץ'
+        : `סמסטר ${SEM_LABELS[(regularIndexMap.get(sem) ?? sem) - 1] ?? sem}`,
       value: sem,
     })),
-  ], [semesterOrder, summerSemesters]);
+  ], [semesterOrder, summerSemesters, regularIndexMap]);
 
   const allPlaced = useMemo(() => new Set([
     ...completedCourses,
@@ -479,48 +493,31 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             checked={isMiluim}
             onChange={(event) => {
               if (event.target.checked) {
-                setMiluimCredits({ generalElectives: 0, freeElective: 0 });
+                setMiluimCredits(0);
               } else {
                 setMiluimCredits(null);
               }
             }}
             className="rounded"
           />
-          {"\u05de\u05d9\u05dc\u05d5\u05d0\u05d9\u05dd"}
+          מילואים
         </label>
         {isMiluim && (
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <label className="flex items-center gap-1">
-              <span className="text-gray-500">{"\u05d1\u05d7\u05d9\u05e8\u05d4 \u05e4\u05e7\u05d5\u05dc\u05d8\u05d9\u05ea"}</span>
-              <input
-                type="number"
-                min={0}
-                max={10}
-                value={miluimCredits?.generalElectives ?? 0}
-                onChange={(event) => {
-                  const parsed = parseInt(event.target.value, 10);
-                  if (!Number.isNaN(parsed)) setMiluimCredits({ generalElectives: parsed });
-                }}
-                className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
-              />
-            </label>
-            <label className="flex items-center gap-1">
-              <span className="text-gray-500">{"\u05d1\u05d7\u05d9\u05e8\u05d4 \u05d7\u05d5\u05e4\u05e9\u05d9\u05ea"}</span>
-              <input
-                type="number"
-                min={0}
-                max={10}
-                value={miluimCredits?.freeElective ?? 0}
-                onChange={(event) => {
-                  const parsed = parseInt(event.target.value, 10);
-                  if (!Number.isNaN(parsed)) setMiluimCredits({ freeElective: parsed });
-                }}
-                className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
-              />
-            </label>
-            <span className="text-gray-500">
-              {"\u05e1\u05d4\"\u05db"} {(miluimCredits?.generalElectives ?? 0) + (miluimCredits?.freeElective ?? 0)} / 10
-            </span>
+          <div className="flex items-center gap-1">
+            <input
+              key={miluimCredits ?? 'empty'}
+              type="number"
+              min={0}
+              max={10}
+              defaultValue={miluimCredits ?? ''}
+              onChange={(event) => {
+                const parsed = parseInt(event.target.value, 10);
+                if (!Number.isNaN(parsed)) setMiluimCredits(parsed);
+              }}
+              className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
+              placeholder="0-10"
+            />
+            <span className="text-xs text-gray-400">נק"ז</span>
           </div>
         )}
       </div>

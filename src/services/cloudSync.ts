@@ -1,7 +1,7 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import type { StoredStudentPlan } from '../types';
-import { sanitizeStudentPlan } from './planValidation';
+import type { StudentPlan, VersionedPlanEnvelope } from '../types';
+import { sanitizeStudentPlan, sanitizeEnvelope } from './planValidation';
 
 type FirestoreLikeError = Error & { code?: string };
 
@@ -32,15 +32,24 @@ export function isRetryableSyncError(error: unknown): boolean {
   );
 }
 
-export async function savePlanToCloud(uid: string, plan: StoredStudentPlan): Promise<{ success: boolean }> {
+export async function savePlanToCloud(uid: string, envelope: VersionedPlanEnvelope): Promise<{ success: boolean }> {
   const planRef = doc(db, 'plans', uid);
-  await setDoc(planRef, stripUndefined(plan));
+  await setDoc(planRef, stripUndefined(envelope));
   return { success: true };
+}
+
+function wrapPlanAsEnvelope(plan: StudentPlan): VersionedPlanEnvelope {
+  const vId = crypto.randomUUID();
+  return {
+    schemaVersion: 2,
+    versions: [{ id: vId, name: 'גרסה 1', plan, createdAt: Date.now(), updatedAt: Date.now() }],
+    activeVersionId: vId,
+  };
 }
 
 export function subscribeToCloudPlan(
   uid: string,
-  onData: (plan: StoredStudentPlan) => void,
+  onData: (envelope: VersionedPlanEnvelope) => void,
   onNotFound: () => void,
   onError?: (error: Error) => void,
 ): () => void {
@@ -49,15 +58,30 @@ export function subscribeToCloudPlan(
     planRef,
     (snap) => {
       if (snap.exists()) {
-        const plan = sanitizeStudentPlan(snap.data());
-        if (!plan) {
-          const error = new Error('Cloud plan payload is invalid');
-          console.error('[cloudSync] invalid plan payload:', snap.data());
-          onError?.(error);
+        const data = snap.data();
+
+        // New envelope format
+        if (data.schemaVersion === 2 && Array.isArray(data.versions)) {
+          const envelope = sanitizeEnvelope(data);
+          if (!envelope) {
+            const error = new Error('Cloud plan envelope payload is invalid');
+            console.error('[cloudSync] invalid envelope payload:', data);
+            onError?.(error);
+            return;
+          }
+          onData(envelope);
           return;
         }
 
-        onData(plan);
+        // Legacy flat plan — wrap it
+        const plan = sanitizeStudentPlan(data);
+        if (!plan) {
+          const error = new Error('Cloud plan payload is invalid');
+          console.error('[cloudSync] invalid plan payload:', data);
+          onError?.(error);
+          return;
+        }
+        onData(wrapPlanAsEnvelope(plan));
       } else {
         onNotFound();
       }

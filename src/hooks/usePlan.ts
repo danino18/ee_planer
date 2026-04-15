@@ -138,22 +138,26 @@ export function usePrerequisiteStatus(
   }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester, semesterOrder]);
 }
 
+export function computeWeightedAverage(
+  grades: Record<string, number>,
+  courses: Map<string, SapCourse>,
+): number | null {
+  let totalWeightedSum = 0;
+  let totalCredits = 0;
+  for (const [key, grade] of Object.entries(grades)) {
+    const courseId = key.includes('_') ? key.split('_')[0] : key;
+    const credits = courses.get(courseId)?.credits ?? 0;
+    if (credits > 0) {
+      totalWeightedSum += grade * credits;
+      totalCredits += credits;
+    }
+  }
+  return totalCredits > 0 ? totalWeightedSum / totalCredits : null;
+}
+
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {
   const grades = usePlanStore((s) => s.grades);
-
-  return useMemo(() => {
-    let totalWeightedSum = 0;
-    let totalCredits = 0;
-    for (const [key, grade] of Object.entries(grades)) {
-      const courseId = key.includes('_') ? key.split('_')[0] : key;
-      const credits = courses.get(courseId)?.credits ?? 0;
-      if (credits > 0) {
-        totalWeightedSum += grade * credits;
-        totalCredits += credits;
-      }
-    }
-    return totalCredits > 0 ? totalWeightedSum / totalCredits : null;
-  }, [grades, courses]);
+  return useMemo(() => computeWeightedAverage(grades, courses), [grades, courses]);
 }
 
 export type EnglishRequirementItem = {
@@ -172,27 +176,44 @@ export interface CoreSlot {
   activeId?: string;    // which specific ID is placed (for OR pairs)
 }
 
-export function useRequirementsProgress(
+export interface RequirementsInput {
+  semesters: Record<number, string[]>;
+  completedCourses: string[];
+  selectedSpecializations: string[];
+  doubleSpecializations: string[];
+  hasEnglishExemption: boolean;
+  miluimCredits: number;
+  englishScore: number | undefined;
+  englishTaughtCourses: string[];
+  semesterOrder: number[];
+  coreToChainOverrides: string[];
+  roboticsMinorEnabled: boolean;
+  entrepreneurshipMinorEnabled: boolean;
+}
+
+export function computeRequirementsProgress(
+  input: RequirementsInput,
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null,
   specializationCatalog: TrackSpecializationCatalog,
-  weightedAverage: number | null
+  weightedAverage: number | null,
 ) {
-  const semesters = usePlanStore((s) => s.semesters);
-  const completedCourses = usePlanStore((s) => s.completedCourses);
-  const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
-  const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
-  const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
-  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? { generalElectives: 0, freeElective: 0 });
-  const englishScore = usePlanStore((s) => s.englishScore);
-  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
-  const semesterOrder = usePlanStore((s) => s.semesterOrder);
-  const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
-  const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
-  const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
+  const {
+    semesters,
+    completedCourses,
+    selectedSpecializations,
+    doubleSpecializations,
+    hasEnglishExemption,
+    miluimCredits,
+    englishScore,
+    englishTaughtCourses,
+    semesterOrder,
+    coreToChainOverrides,
+    roboticsMinorEnabled,
+    entrepreneurshipMinorEnabled,
+  } = input;
 
-  return useMemo(() => {
-    if (!trackDef) return null;
+  if (!trackDef) return null;
 
     const allPlaced = new Set<string>([
       ...completedCourses,
@@ -423,8 +444,7 @@ export function useRequirementsProgress(
       }
     }
 
-    const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits.generalElectives);
-    const freeElectiveRequired = Math.max(0, 6 - miluimCredits.freeElective);
+    const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
 
     let coreProgress: {
       completed: number;
@@ -498,10 +518,14 @@ export function useRequirementsProgress(
         }
       }
 
-      // canRelease: locked placed courses (visible for selection when we have overflow)
-      const canRelease = slotsDone > coreRequired
+      // canRelease: released courses (always shown for un-release) + locked overflow courses
+      const releasedCoreIds = coreCourseIds.filter(
+        (id) => coreToChainOverrides.includes(id) && allPlaced.has(id),
+      );
+      const lockedOverflow = slotsDone > coreRequired
         ? [...coreLockedSet].filter((id) => !orGroups.flat().some((oid) => oid !== id && coreLockedSet.has(oid) && orGroups.some((g) => g.includes(id) && g.includes(oid))))
         : [];
+      const canRelease = [...new Set([...releasedCoreIds, ...lockedOverflow])];
 
       coreProgress = {
         completed: slotsDone,
@@ -534,7 +558,7 @@ export function useRequirementsProgress(
       },
       freeElective: {
         earned: freeElectiveRequirement?.completedValue ?? 0,
-        required: freeElectiveRequirement?.targetValue ?? freeElectiveRequired,
+        required: freeElectiveRequirement?.targetValue ?? 6,
       },
       generalRequirements,
       labPoolProgress: trackDef.labPool && labsRequirement
@@ -565,7 +589,51 @@ export function useRequirementsProgress(
         totalCredits >= trackDef.totalCreditsRequired &&
         (!coreProgress || coreProgress.completed >= coreProgress.required),
     };
-  }, [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage]);
+}
+
+export function useRequirementsProgress(
+  courses: Map<string, SapCourse>,
+  trackDef: TrackDefinition | null,
+  specializationCatalog: TrackSpecializationCatalog,
+  weightedAverage: number | null,
+) {
+  const semesters = usePlanStore((s) => s.semesters);
+  const completedCourses = usePlanStore((s) => s.completedCourses);
+  const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
+  const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
+  const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
+  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
+  const englishScore = usePlanStore((s) => s.englishScore);
+  const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
+  const semesterOrder = usePlanStore((s) => s.semesterOrder);
+  const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
+  const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
+  const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
+
+  return useMemo(
+    () =>
+      computeRequirementsProgress(
+        {
+          semesters,
+          completedCourses,
+          selectedSpecializations,
+          doubleSpecializations,
+          hasEnglishExemption,
+          miluimCredits,
+          englishScore,
+          englishTaughtCourses,
+          semesterOrder,
+          coreToChainOverrides,
+          roboticsMinorEnabled,
+          entrepreneurshipMinorEnabled,
+        },
+        courses,
+        trackDef,
+        specializationCatalog,
+        weightedAverage,
+      ),
+    [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+  );
 }
 
 export function useChainRecommendations(
