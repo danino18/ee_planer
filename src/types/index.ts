@@ -221,4 +221,5 @@ export interface StudentPlan {
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
+  initializedTracks?: string[];  // trackIds that have been fully initialized at least once
 }

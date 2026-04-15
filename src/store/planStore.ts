@@ -56,6 +56,7 @@ interface PlanState extends StudentPlan {
   loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
   resetToDefault: () => void;
+  markTrackInitialized: (trackId: string) => void;
   undo: () => void;
 }
 
@@ -164,6 +165,7 @@ const initialState: StudentPlan = {
   coreToChainOverrides: [],
   roboticsMinorEnabled: false,
   entrepreneurshipMinorEnabled: false,
+  initializedTracks: [],
 };
 
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
@@ -238,6 +240,7 @@ function captureSnapshot(state: PlanState): StudentPlan {
     coreToChainOverrides: [...(state.coreToChainOverrides ?? [])],
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
+    initializedTracks: [...(state.initializedTracks ?? [])],
   };
 }
 
@@ -732,8 +735,16 @@ export const usePlanStore = create<PlanState>()(
             _history: [],
             _initKey: state._initKey + 1,
             isSwitchingTrack: false,
+            initializedTracks: (state.initializedTracks ?? []).filter((id) => id !== state.trackId),
           };
         }),
+
+      markTrackInitialized: (trackId) =>
+        set((state) => ({
+          initializedTracks: (state.initializedTracks ?? []).includes(trackId)
+            ? state.initializedTracks
+            : [...(state.initializedTracks ?? []), trackId],
+        })),
 
       undo: () =>
         set((state) => {

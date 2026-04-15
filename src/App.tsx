@@ -88,6 +88,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     isSwitchingTrack,
     dismissedRecommendedCourses,
     englishScore,
+    initializedTracks,
+    markTrackInitialized,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -104,6 +106,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     isSwitchingTrack: state.isSwitchingTrack,
     dismissedRecommendedCourses: state.dismissedRecommendedCourses,
     englishScore: state.englishScore,
+    initializedTracks: state.initializedTracks,
+    markTrackInitialized: state.markTrackInitialized,
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
   const specs = specializationCatalog.groups;
@@ -143,6 +147,13 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     if (!trackId) return;
     const key = `${trackId}_${_initKey}`;
     if (initialized.current.has(key)) return;
+
+    // Cross-reload guard: if this track was already initialized in a previous session, skip
+    if ((initializedTracks ?? []).includes(trackId)) {
+      initialized.current.add(key); // prevent further in-session re-runs
+      return;
+    }
+
     initialized.current.add(key);
 
     const allPlaced = new Set(Object.values(semesters).flat());
@@ -157,7 +168,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         }
       }
     }
-  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore]);
+    markTrackInitialized(trackId);
+  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
 
   useEffect(() => {
     const clearSyncTimers = () => {
