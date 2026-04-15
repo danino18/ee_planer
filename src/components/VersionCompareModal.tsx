@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import type { SapCourse, TrackDefinition, PlanVersion } from '../types';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { computeWeightedAverage, computeRequirementsProgress } from '../hooks/usePlan';
+import { getDifferingCourseIds } from '../utils/versionComparison';
 
 interface Props {
   versions: PlanVersion[];
@@ -18,7 +19,21 @@ function ProgressBar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
-function VersionColumn({ version, courses, trackDefs }: { version: PlanVersion; courses: Map<string, SapCourse>; trackDefs: TrackDefinition[] }) {
+interface VersionColumnProps {
+  version: PlanVersion;
+  courses: Map<string, SapCourse>;
+  trackDefs: TrackDefinition[];
+  showOnlyDifferentCourses: boolean;
+  differingCourseIds: Set<string>;
+}
+
+function VersionColumn({
+  version,
+  courses,
+  trackDefs,
+  showOnlyDifferentCourses,
+  differingCourseIds,
+}: VersionColumnProps) {
   const plan = version.plan;
   const trackDef = trackDefs.find((t) => t.id === plan.trackId) ?? null;
   const catalog = plan.trackId ? getTrackSpecializationCatalog(plan.trackId) : null;
@@ -118,7 +133,10 @@ function VersionColumn({ version, courses, trackDefs }: { version: PlanVersion; 
         <div className="space-y-1.5 max-h-64 overflow-y-auto">
           {semesterOrder.map((sem) => {
             const courseIds = semesters[sem] ?? [];
-            if (courseIds.length === 0) return null;
+            const visibleCourseIds = showOnlyDifferentCourses
+              ? courseIds.filter((id) => differingCourseIds.has(id))
+              : courseIds;
+            if (visibleCourseIds.length === 0) return null;
             const isSummer = plan.summerSemesters?.includes(sem);
             return (
               <div key={sem}>
@@ -126,7 +144,7 @@ function VersionColumn({ version, courses, trackDefs }: { version: PlanVersion; 
                   {isSummer ? `קיץ (${sem})` : `סמ' ${SEM_LABELS[sem - 1] ?? sem}`}
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {courseIds.map((id, i) => (
+                  {visibleCourseIds.map((id, i) => (
                     <span
                       key={`${id}_${i}`}
                       className="text-xs bg-gray-100 text-gray-700 rounded px-1.5 py-0.5 truncate max-w-32"
@@ -149,6 +167,7 @@ export function VersionCompareModal({ versions, courses, trackDefs, onClose }: P
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(versions.slice(0, Math.min(versions.length, 2)).map((v) => v.id)),
   );
+  const [showOnlyDifferentCourses, setShowOnlyDifferentCourses] = useState(false);
 
   function toggleVersion(id: string) {
     setSelected((prev) => {
@@ -164,7 +183,15 @@ export function VersionCompareModal({ versions, courses, trackDefs, onClose }: P
     });
   }
 
-  const selectedVersions = versions.filter((v) => selected.has(v.id));
+  const selectedVersions = useMemo(
+    () => versions.filter((v) => selected.has(v.id)),
+    [versions, selected],
+  );
+  const differingCourseIds = useMemo(
+    () => getDifferingCourseIds(selectedVersions),
+    [selectedVersions],
+  );
+  const isDifferenceFilterActive = showOnlyDifferentCourses && selectedVersions.length >= 2;
 
   return (
     <div
@@ -195,13 +222,40 @@ export function VersionCompareModal({ versions, courses, trackDefs, onClose }: P
               {v.name}
             </button>
           ))}
+          {selectedVersions.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => setShowOnlyDifferentCourses((current) => !current)}
+              aria-pressed={showOnlyDifferentCourses}
+              className={[
+                'px-3 py-1 rounded-lg text-sm border transition-colors',
+                showOnlyDifferentCourses
+                  ? 'bg-purple-600 text-white border-purple-600'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300',
+              ].join(' ')}
+            >
+              {showOnlyDifferentCourses ? 'הצג הכל' : 'רק קורסים שונים'}
+            </button>
+          )}
         </div>
 
         {/* Comparison columns */}
         <div className="flex-1 overflow-y-auto p-5">
+          {isDifferenceFilterActive && differingCourseIds.size === 0 && (
+            <div className="mb-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+              אין הבדלים בקורסים בין הגרסאות שנבחרו.
+            </div>
+          )}
           <div className="flex gap-3 items-start">
             {selectedVersions.map((v) => (
-              <VersionColumn key={v.id} version={v} courses={courses} trackDefs={trackDefs} />
+              <VersionColumn
+                key={v.id}
+                version={v}
+                courses={courses}
+                trackDefs={trackDefs}
+                showOnlyDifferentCourses={isDifferenceFilterActive}
+                differingCourseIds={differingCourseIds}
+              />
             ))}
           </div>
         </div>

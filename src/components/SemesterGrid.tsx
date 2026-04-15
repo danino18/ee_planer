@@ -200,7 +200,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
 
   // Migrate: use semesterOrder if available, else fall back to range
   const displayOrder = semesterOrder?.length
-    ? semesterOrder
+    ? [...semesterOrder]
     : Array.from({ length: maxSemester }, (_, i) => i + 1);
 
   // Compute semester type: check manual overrides first, then even/odd position
@@ -253,7 +253,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     return warnings;
   }, [trackDef.semesterSchedule, semesters, courses]);
 
-  const regularIndexMap = useMemo(() => {
+  const regularIndexMap = (() => {
     const map = new Map<number, number>();
     let count = 0;
     for (const s of displayOrder) {
@@ -263,7 +263,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       }
     }
     return map;
-  }, [displayOrder, summerSemesters]);
+  })();
 
   const semColProps = (sem: number) => {
     return {
