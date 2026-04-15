@@ -315,13 +315,27 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  const regularIndexMap = useMemo(() => {
+    const map = new Map<number, number>();
+    let count = 0;
+    for (const s of semesterOrder) {
+      if (!summerSemesters.includes(s)) {
+        count++;
+        map.set(s, count);
+      }
+    }
+    return map;
+  }, [semesterOrder, summerSemesters]);
+
   const semesterOptions = useMemo(() => [
     { label: 'ללא שיבוץ', value: 0 },
     ...semesterOrder.map((sem) => ({
-      label: summerSemesters.includes(sem) ? 'סמסטר קיץ' : `סמסטר ${SEM_LABELS[sem - 1] ?? sem}`,
+      label: summerSemesters.includes(sem)
+        ? 'סמסטר קיץ'
+        : `סמסטר ${SEM_LABELS[(regularIndexMap.get(sem) ?? sem) - 1] ?? sem}`,
       value: sem,
     })),
-  ], [semesterOrder, summerSemesters]);
+  ], [semesterOrder, summerSemesters, regularIndexMap]);
 
   const allPlaced = useMemo(() => new Set([
     ...completedCourses,

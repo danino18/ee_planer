@@ -497,10 +497,14 @@ export function useRequirementsProgress(
         }
       }
 
-      // canRelease: locked placed courses (visible for selection when we have overflow)
-      const canRelease = slotsDone > coreRequired
+      // canRelease: released courses (always shown for un-release) + locked overflow courses
+      const releasedCoreIds = coreCourseIds.filter(
+        (id) => coreToChainOverrides.includes(id) && allPlaced.has(id),
+      );
+      const lockedOverflow = slotsDone > coreRequired
         ? [...coreLockedSet].filter((id) => !orGroups.flat().some((oid) => oid !== id && coreLockedSet.has(oid) && orGroups.some((g) => g.includes(id) && g.includes(oid))))
         : [];
+      const canRelease = [...new Set([...releasedCoreIds, ...lockedOverflow])];
 
       coreProgress = {
         completed: slotsDone,
