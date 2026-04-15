@@ -192,12 +192,7 @@ export interface TrackSpecializationSelectionSanitization
   removedDoubleSpecializations: string[];
 }
 
-export interface MiluimCreditsAllocation {
-  generalElectives: number;
-  freeElective: number;
-}
-
-export interface StudentPlanSnapshot {
+export interface StudentPlan {
   trackId: TrackId | null;
   semesters: Record<number, string[]>;
   completedCourses: string[];
@@ -217,6 +212,7 @@ export interface StudentPlanSnapshot {
   manualSapAverages?: Record<string, number>;  // manual SAP average overrides per courseId
   binaryPass?: Record<string, boolean>;  // courseId → true = passed, not counted in weighted average
   completedInstances?: string[];  // instance keys for repeatable courses: "courseId__semester__idx"
+  savedTracks?: Record<string, StudentPlan>;  // per-track saved state for track switching
   miluimCredits?: number;  // 0–10: reserve duty credit reduction for כלל-טכניוני requirement
   englishScore?: number;   // 104–150: Amiram/Psychometric English score
   englishTaughtCourses?: string[];  // course IDs student marked as taught in English
@@ -226,21 +222,3 @@ export interface StudentPlanSnapshot {
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
 }
-
-export interface StudentPlanVersion {
-  id: string;
-  name: string;
-  trackId: TrackId | null;
-  plan: StudentPlan;
-  trackPlans?: Record<string, StudentPlan>;
-}
-
-export interface StoredStudentPlan extends StudentPlan {
-  activeVersionId?: string | null;
-  versions?: StudentPlanVersion[];
-  savedTracks?: Record<string, StudentPlan>;
-}
-
-export type StudentPlan = Omit<StudentPlanSnapshot, 'miluimCredits'> & {
-  miluimCredits?: MiluimCreditsAllocation;
-};

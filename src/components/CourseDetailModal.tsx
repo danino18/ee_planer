@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
-import { REPEATABLE_COURSES, usePlanStore, gradeKey } from '../store/planStore';
+import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 
 interface Props {
@@ -20,10 +20,6 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
     trackId,
     binaryPass, setBinaryPass,
     removeCourseFromSemester,
-    moveCourse,
-    addCourseToSemester,
-    semesterOrder,
-    summerSemesters,
   } = usePlanStore(useShallow((state) => ({
     grades: state.grades,
     setGrade: state.setGrade,
@@ -37,10 +33,6 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
     binaryPass: state.binaryPass,
     setBinaryPass: state.setBinaryPass,
     removeCourseFromSemester: state.removeCourseFromSemester,
-    moveCourse: state.moveCourse,
-    addCourseToSemester: state.addCourseToSemester,
-    semesterOrder: state.semesterOrder,
-    summerSemesters: state.summerSemesters,
   })));
 
   const chainMemberships = useMemo(() => {
@@ -63,16 +55,8 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
   const [subSearch, setSubSearch] = useState('');
   const [customSearch, setCustomSearch] = useState('');
-  const [showReassignOptions, setShowReassignOptions] = useState(false);
   const deferredSubSearch = useDeferredValue(subSearch);
   const deferredCustomSearch = useDeferredValue(customSearch);
-  const semesterOptions = useMemo(() => [
-    { value: 0, label: 'ללא שיבוץ' },
-    ...semesterOrder.map((sem) => ({
-      value: sem,
-      label: summerSemesters.includes(sem) ? 'סמסטר קיץ' : `סמסטר ${sem}`,
-    })),
-  ], [semesterOrder, summerSemesters]);
 
   const allInPlan = useMemo(
     () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
@@ -177,22 +161,6 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
   const numVal = parseFloat(gradeInput);
   const isValid = gradeInput === '' || (!isNaN(numVal) && numVal >= 0 && numVal <= 100);
   const subTargetCourse = currentSubTarget ? courses.get(currentSubTarget) : null;
-
-  function handleReassign(nextSemester: number) {
-    if (semester === undefined || nextSemester === semester) {
-      setShowReassignOptions(false);
-      return;
-    }
-
-    if (REPEATABLE_COURSES.has(course.id) && semester === 0 && nextSemester !== 0) {
-      addCourseToSemester(course.id, nextSemester);
-    } else {
-      moveCourse(course.id, semester, nextSemester);
-    }
-
-    setShowReassignOptions(false);
-    onClose();
-  }
 
   return (
     <div
@@ -467,14 +435,6 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
             </button>
           )}
           <div className="flex gap-2">
-            {semester !== undefined && (
-              <button
-                onClick={() => setShowReassignOptions((open) => !open)}
-                className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-2 rounded-lg transition-colors"
-              >
-                שנה שיבוץ
-              </button>
-            )}
             <button
               onClick={handleSaveGrade}
               disabled={!isBinaryMode && (!isValid || gradeInput === '')}
@@ -497,23 +457,6 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
               סגור
             </button>
           </div>
-          {showReassignOptions && semester !== undefined && (
-            <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-100 bg-blue-50 p-2">
-              {semesterOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleReassign(option.value)}
-                  className={`rounded-md border px-2 py-1.5 text-xs transition-colors ${
-                    option.value === semester
-                      ? 'border-blue-300 bg-blue-100 text-blue-700'
-                      : 'border-white bg-white text-gray-700 hover:border-blue-300 hover:text-blue-700'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

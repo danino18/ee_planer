@@ -20,6 +20,7 @@ interface Props {
   completedCourses: Set<string>;
   effectiveCompleted: Set<string>;
   isSummer: boolean;
+  regularIndex?: number;
   isCurrent: boolean;
   isPast: boolean;
   isFuture: boolean;
@@ -49,7 +50,7 @@ function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean,
 
 export const SemesterColumn = memo(function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
-  completedCourses, effectiveCompleted, isSummer, isCurrent, isPast, isFuture, onSetCurrentSemester,
+  completedCourses, effectiveCompleted, isSummer, regularIndex, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode,
   semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, isDragging: isDraggingActive,
   ruleWarnings = [],
@@ -71,7 +72,7 @@ export const SemesterColumn = memo(function SemesterColumn({
     ? 'לא משובץ'
     : isSummer
       ? `קיץ ${SEM_LABELS[summerIndex ?? semester]}`
-      : `סמסטר ${SEM_LABELS[semester]}`;
+      : `סמסטר ${SEM_LABELS[regularIndex ?? semester]}`;
 
   // Filter for search in the unassigned column
   const filteredIds = useMemo(() => {

@@ -26,6 +26,8 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "facultyColorOverrides",
   "dismissedRecommendedCourses",
   "coreToChainOverrides",
+  "roboticsMinorEnabled",
+  "entrepreneurshipMinorEnabled",
 ]);
 
 interface ValidationSuccess {
@@ -561,6 +563,20 @@ function validateStudentPlanRecord(
       return coreToChainOverrides;
     }
     sanitized.coreToChainOverrides = coreToChainOverrides;
+  }
+
+  if ("roboticsMinorEnabled" in value) {
+    if (typeof value.roboticsMinorEnabled !== "boolean") {
+      return fail("Invalid roboticsMinorEnabled");
+    }
+    sanitized.roboticsMinorEnabled = value.roboticsMinorEnabled;
+  }
+
+  if ("entrepreneurshipMinorEnabled" in value) {
+    if (typeof value.entrepreneurshipMinorEnabled !== "boolean") {
+      return fail("Invalid entrepreneurshipMinorEnabled");
+    }
+    sanitized.entrepreneurshipMinorEnabled = value.entrepreneurshipMinorEnabled;
   }
 
   return success(sanitized);

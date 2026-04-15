@@ -1,12 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type {
-  MiluimCreditsAllocation,
-  StoredStudentPlan,
-  StudentPlan,
-  StudentPlanVersion,
-  TrackId,
-} from '../types';
+import type { TrackId, StudentPlan } from '../types';
 import { eeTrack } from '../data/tracks/ee';
 import { csTrack } from '../data/tracks/cs';
 import { eeMathTrack } from '../data/tracks/ee_math';
@@ -26,8 +20,6 @@ interface PlanState extends StudentPlan {
   isSwitchingTrack: boolean;
   // Persisted extra
   savedTracks: Record<string, StudentPlan>;
-  versions: StudentPlanVersion[];
-  activeVersionId: string | null;
 
   setTrack: (trackId: TrackId) => void;
   beginTrackSwitch: () => void;
@@ -53,7 +45,7 @@ interface PlanState extends StudentPlan {
   toggleDoubleSpecialization: (groupId: string) => void;
   toggleEnglishExemption: () => void;
   setBinaryPass: (courseId: string, value: boolean | null) => void;
-  setMiluimCredits: (allocation: Partial<MiluimCreditsAllocation> | null) => void;
+  setMiluimCredits: (n: number | null) => void;
   setCoreToChainOverrides: (ids: string[]) => void;
   toggleRoboticsMinor: () => void;
   toggleEntrepreneurshipMinor: () => void;
@@ -61,11 +53,7 @@ interface PlanState extends StudentPlan {
   toggleEnglishTaughtCourse: (courseId: string) => void;
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
-  loadPlan: (plan: StoredStudentPlan) => void;
-  createVersion: (name?: string) => void;
-  renameVersion: (versionId: string, name: string) => void;
-  switchVersion: (versionId: string) => void;
-  deleteVersion: (versionId: string) => void;
+  loadPlan: (plan: StudentPlan) => void;
   resetPlan: () => void;
   resetToDefault: () => void;
   undo: () => void;
@@ -98,8 +86,6 @@ const CE_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
 };
 
 const TRACKS = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
-const TRACK_NAME_BY_ID = Object.fromEntries(TRACKS.map((track) => [track.id, track.name])) as Record<TrackId, string>;
-const VERSION_LIMIT = 4;
 
 // Sport/PE pool courses auto-placed in the unassigned column on first load.
 // Empty: sport appears in the recommended schedule (semesterSchedule); נבחרת users add it manually.
@@ -184,10 +170,8 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
   const migrated: StudentPlan = {
     ...plan,
     semesters: { ...plan.semesters },
+    savedTracks: plan.savedTracks ? { ...plan.savedTracks } : plan.savedTracks,
     dismissedRecommendedCourses: { ...(plan.dismissedRecommendedCourses ?? {}) },
-    miluimCredits: typeof plan.miluimCredits === 'number'
-      ? { generalElectives: plan.miluimCredits, freeElective: 0 }
-      : plan.miluimCredits,
   };
 
   if (migrated.trackId === 'ce') {
@@ -197,6 +181,14 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
       migrated.semesters[sem] = existing.filter((id) => !courseIds.includes(id));
     }
   }
+
+  if (migrated.savedTracks?.ce) {
+    migrated.savedTracks.ce = applyPlanMigrations({
+      ...migrated.savedTracks.ce,
+      trackId: 'ce',
+    });
+  }
+
   return migrated;
 }
 
@@ -253,61 +245,6 @@ function pushHistory(state: PlanState): StudentPlan[] {
   return [...(state._history ?? []).slice(-19), captureSnapshot(state)];
 }
 
-function clonePlan(plan: StudentPlan): StudentPlan {
-  return {
-    ...plan,
-    semesters: Object.fromEntries(Object.entries(plan.semesters).map(([k, v]) => [Number(k), [...v]])),
-    completedCourses: [...plan.completedCourses],
-    selectedSpecializations: [...plan.selectedSpecializations],
-    favorites: [...plan.favorites],
-    grades: { ...plan.grades },
-    substitutions: { ...plan.substitutions },
-    selectedPrereqGroups: { ...plan.selectedPrereqGroups },
-    summerSemesters: [...plan.summerSemesters],
-    semesterOrder: [...plan.semesterOrder],
-    semesterTypeOverrides: { ...(plan.semesterTypeOverrides ?? {}) },
-    semesterWarningsIgnored: [...(plan.semesterWarningsIgnored ?? [])],
-    doubleSpecializations: [...(plan.doubleSpecializations ?? [])],
-    manualSapAverages: { ...(plan.manualSapAverages ?? {}) },
-    binaryPass: { ...(plan.binaryPass ?? {}) },
-    miluimCredits: plan.miluimCredits ? { ...plan.miluimCredits } : undefined,
-    englishTaughtCourses: [...(plan.englishTaughtCourses ?? [])],
-    facultyColorOverrides: { ...(plan.facultyColorOverrides ?? {}) },
-    completedInstances: [...(plan.completedInstances ?? [])],
-    dismissedRecommendedCourses: { ...(plan.dismissedRecommendedCourses ?? {}) },
-    coreToChainOverrides: [...(plan.coreToChainOverrides ?? [])],
-  };
-}
-
-function cloneSavedTracks(savedTracks: Record<string, StudentPlan>): Record<string, StudentPlan> {
-  return Object.fromEntries(
-    Object.entries(savedTracks).map(([trackId, plan]) => [trackId, clonePlan(plan)]),
-  );
-}
-
-function makeVersionId(): string {
-  return `version_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function buildVersionFromState(state: Pick<PlanState, 'activeVersionId' | 'trackId' | 'savedTracks'> & StudentPlan, versionId?: string, name?: string): StudentPlanVersion {
-  return {
-    id: versionId ?? state.activeVersionId ?? makeVersionId(),
-    name: name ?? (state.trackId ? TRACK_NAME_BY_ID[state.trackId] : 'גרסה חדשה'),
-    trackId: state.trackId,
-    plan: captureSnapshot(state as PlanState),
-    trackPlans: cloneSavedTracks(state.savedTracks),
-  };
-}
-
-function upsertVersion(versions: StudentPlanVersion[], nextVersion: StudentPlanVersion): StudentPlanVersion[] {
-  const existingIndex = versions.findIndex((version) => version.id === nextVersion.id);
-  if (existingIndex === -1) {
-    return [...versions, nextVersion];
-  }
-
-  return versions.map((version) => (version.id === nextVersion.id ? nextVersion : version));
-}
-
 export const usePlanStore = create<PlanState>()(
   persist(
     (set) => ({
@@ -316,8 +253,6 @@ export const usePlanStore = create<PlanState>()(
       _initKey: 0,
       isSwitchingTrack: false,
       savedTracks: {},
-      versions: [],
-      activeVersionId: null,
 
       setTrack: (newTrackId) =>
         set((state) => {
@@ -325,22 +260,6 @@ export const usePlanStore = create<PlanState>()(
           const savedTracks = { ...state.savedTracks };
           if (state.trackId) {
             savedTracks[state.trackId] = captureSnapshot(state);
-          }
-          let versions = state.versions;
-          let activeVersionId = state.activeVersionId;
-          if (!activeVersionId) {
-            const initialVersion = buildVersionFromState({
-              ...state,
-              trackId: newTrackId,
-              savedTracks: {},
-            }, makeVersionId(), TRACK_NAME_BY_ID[newTrackId]);
-            versions = [initialVersion];
-            activeVersionId = initialVersion.id;
-          } else {
-            versions = upsertVersion(versions, buildVersionFromState({
-              ...state,
-              savedTracks,
-            }, activeVersionId));
           }
           // Restore previously saved state for this track
           if (savedTracks[newTrackId]) {
@@ -351,8 +270,6 @@ export const usePlanStore = create<PlanState>()(
               ...initialState,
               ...saved,
               savedTracks,
-              versions,
-              activeVersionId,
               _history: [],
               _initKey: state._initKey,
               isSwitchingTrack: state.isSwitchingTrack,
@@ -365,8 +282,6 @@ export const usePlanStore = create<PlanState>()(
             semesters: { ...DEFAULT_SEMESTER_MAP },
             semesterOrder: [...DEFAULT_ORDER],
             savedTracks,
-            versions,
-            activeVersionId,
             _history: [],
             _initKey: state._initKey,
             isSwitchingTrack: state.isSwitchingTrack,
@@ -379,18 +294,10 @@ export const usePlanStore = create<PlanState>()(
           if (state.trackId) {
             savedTracks[state.trackId] = captureSnapshot(state);
           }
-          const versions = state.activeVersionId
-            ? upsertVersion(state.versions, buildVersionFromState({
-              ...state,
-              savedTracks,
-            }, state.activeVersionId))
-            : state.versions;
 
           return {
             ...initialState,
             savedTracks,
-            versions,
-            activeVersionId: state.activeVersionId,
             _history: [],
             _initKey: 0,
             isSwitchingTrack: true,
@@ -398,116 +305,6 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       finishTrackSwitch: () => set(() => ({ isSwitchingTrack: false })),
-
-      createVersion: (name) =>
-        set((state) => {
-          if (state.versions.length >= VERSION_LIMIT) {
-            return state;
-          }
-
-          const savedTracks = {
-            ...state.savedTracks,
-            ...(state.trackId ? { [state.trackId]: captureSnapshot(state) } : {}),
-          };
-          const syncedVersions = state.activeVersionId
-            ? upsertVersion(state.versions, buildVersionFromState({
-              ...state,
-              savedTracks,
-            }, state.activeVersionId))
-            : state.versions;
-          const nextVersionId = makeVersionId();
-          const nextVersion: StudentPlanVersion = {
-            id: nextVersionId,
-            name: name?.trim() || (state.trackId ? TRACK_NAME_BY_ID[state.trackId] : 'גרסה חדשה'),
-            trackId: state.trackId,
-            plan: captureSnapshot(state),
-            trackPlans: cloneSavedTracks(savedTracks),
-          };
-
-          return {
-            versions: [...syncedVersions, nextVersion],
-            activeVersionId: nextVersionId,
-            savedTracks: cloneSavedTracks(savedTracks),
-            _history: [],
-          };
-        }),
-
-      renameVersion: (versionId, name) =>
-        set((state) => ({
-          versions: state.versions.map((version) => (
-            version.id === versionId
-              ? { ...version, name: name.trim() || version.name }
-              : version
-          )),
-        })),
-
-      switchVersion: (versionId) =>
-        set((state) => {
-          const targetVersion = state.versions.find((version) => version.id === versionId);
-          if (!targetVersion || versionId === state.activeVersionId) {
-            return state;
-          }
-
-          const savedTracks = {
-            ...state.savedTracks,
-            ...(state.trackId ? { [state.trackId]: captureSnapshot(state) } : {}),
-          };
-          const syncedVersions = state.activeVersionId
-            ? upsertVersion(state.versions, buildVersionFromState({
-              ...state,
-              savedTracks,
-            }, state.activeVersionId))
-            : state.versions;
-          const migratedPlan = sanitizeSpecializationStateForTrack(applyPlanMigrations(targetVersion.plan));
-
-          return {
-            ...initialState,
-            ...migratedPlan,
-            savedTracks: cloneSavedTracks(targetVersion.trackPlans ?? {}),
-            versions: syncedVersions,
-            activeVersionId: versionId,
-            _history: [],
-            _initKey: state._initKey,
-            isSwitchingTrack: false,
-          };
-        }),
-
-      deleteVersion: (versionId) =>
-        set((state) => {
-          const remainingVersions = state.versions.filter((version) => version.id !== versionId);
-          if (remainingVersions.length === state.versions.length) {
-            return state;
-          }
-
-          if (versionId !== state.activeVersionId) {
-            return { versions: remainingVersions };
-          }
-
-          const fallbackVersion = remainingVersions[0];
-          if (!fallbackVersion) {
-            return {
-              ...initialState,
-              savedTracks: {},
-              versions: [],
-              activeVersionId: null,
-              _history: [],
-              _initKey: state._initKey,
-              isSwitchingTrack: false,
-            };
-          }
-
-          const migratedPlan = sanitizeSpecializationStateForTrack(applyPlanMigrations(fallbackVersion.plan));
-          return {
-            ...initialState,
-            ...migratedPlan,
-            savedTracks: cloneSavedTracks(fallbackVersion.trackPlans ?? {}),
-            versions: remainingVersions,
-            activeVersionId: fallbackVersion.id,
-            _history: [],
-            _initKey: state._initKey,
-            isSwitchingTrack: false,
-          };
-        }),
 
       addCourseToSemester: (courseId, semester) =>
         set((state) => {
@@ -804,26 +601,8 @@ export const usePlanStore = create<PlanState>()(
       toggleEnglishExemption: () =>
         set((state) => ({ hasEnglishExemption: !state.hasEnglishExemption })),
 
-      setMiluimCredits: (allocation) =>
-        set((state) => {
-          if (allocation === null) {
-            return { miluimCredits: undefined };
-          }
-
-          const current = state.miluimCredits ?? { generalElectives: 0, freeElective: 0 };
-          const nextGeneral = Math.max(0, Math.min(10, allocation.generalElectives ?? current.generalElectives));
-          const nextFree = Math.max(0, Math.min(10, allocation.freeElective ?? current.freeElective));
-          if (nextGeneral + nextFree > 10) {
-            return state;
-          }
-
-          return {
-            miluimCredits: {
-              generalElectives: nextGeneral,
-              freeElective: nextFree,
-            },
-          };
-        }),
+      setMiluimCredits: (n) =>
+        set(() => ({ miluimCredits: n === null ? undefined : Math.max(0, Math.min(10, n)) })),
 
       setEnglishScore: (score) =>
         set(() => ({ englishScore: score === null ? undefined : score })),
@@ -882,62 +661,27 @@ export const usePlanStore = create<PlanState>()(
 
       loadPlan: (plan) => set((state) => {
         const migratedPlan = sanitizeSpecializationStateForTrack(applyPlanMigrations(plan));
-        const migratedVersions = (plan.versions ?? []).map((version) => ({
-          ...version,
-          plan: sanitizeSpecializationStateForTrack(applyPlanMigrations(version.plan)),
-          trackPlans: cloneSavedTracks(
-            Object.fromEntries(
-              Object.entries(version.trackPlans ?? {}).map(([trackId, trackPlan]) => [
-                trackId,
-                sanitizeSpecializationStateForTrack(applyPlanMigrations(trackPlan)),
-              ]),
-            ),
-          ),
-        }));
-        const legacySavedTracks = cloneSavedTracks((plan.savedTracks as Record<string, StudentPlan> | undefined) ?? state.savedTracks ?? {});
-        let versions = migratedVersions;
-        let activeVersionId = plan.activeVersionId ?? migratedVersions[0]?.id ?? null;
-
-        if (versions.length === 0 && migratedPlan.trackId) {
-          const fallbackVersion = {
-            id: makeVersionId(),
-            name: TRACK_NAME_BY_ID[migratedPlan.trackId],
-            trackId: migratedPlan.trackId,
-            plan: clonePlan(migratedPlan),
-            trackPlans: cloneSavedTracks(legacySavedTracks),
-          };
-          versions = [fallbackVersion];
-          activeVersionId = fallbackVersion.id;
-        }
-
-        const activeVersion = versions.find((version) => version.id === activeVersionId) ?? versions[0];
-        const activePlan = activeVersion?.plan ?? migratedPlan;
-        const activeSavedTracks = activeVersion?.trackPlans ?? legacySavedTracks;
-
         return {
           ...initialState,
-          ...activePlan,
-          semesterOrder: activePlan.semesterOrder?.length
-            ? activePlan.semesterOrder
-            : Array.from({ length: activePlan.maxSemester }, (_, i) => i + 1),
-          semesterTypeOverrides: activePlan.semesterTypeOverrides ?? {},
-          semesterWarningsIgnored: activePlan.semesterWarningsIgnored ?? [],
-          doubleSpecializations: activePlan.doubleSpecializations ?? [],
-          hasEnglishExemption: activePlan.hasEnglishExemption ?? false,
-          manualSapAverages: activePlan.manualSapAverages ?? {},
-          binaryPass: activePlan.binaryPass ?? {},
-          miluimCredits: activePlan.miluimCredits,
-          englishScore: activePlan.englishScore,
-          englishTaughtCourses: activePlan.englishTaughtCourses ?? [],
-          facultyColorOverrides: activePlan.facultyColorOverrides ?? {},
-          completedInstances: activePlan.completedInstances ?? [],
-          dismissedRecommendedCourses: activePlan.dismissedRecommendedCourses ?? {},
-          coreToChainOverrides: activePlan.coreToChainOverrides ?? [],
-          roboticsMinorEnabled: activePlan.roboticsMinorEnabled ?? false,
-          entrepreneurshipMinorEnabled: activePlan.entrepreneurshipMinorEnabled ?? false,
-          savedTracks: activeSavedTracks,
-          versions,
-          activeVersionId: activeVersionId ?? null,
+          ...migratedPlan,
+          semesterOrder: migratedPlan.semesterOrder?.length
+            ? migratedPlan.semesterOrder
+            : Array.from({ length: migratedPlan.maxSemester }, (_, i) => i + 1),
+          semesterTypeOverrides: migratedPlan.semesterTypeOverrides ?? {},
+          semesterWarningsIgnored: migratedPlan.semesterWarningsIgnored ?? [],
+          doubleSpecializations: migratedPlan.doubleSpecializations ?? [],
+          hasEnglishExemption: migratedPlan.hasEnglishExemption ?? false,
+          manualSapAverages: migratedPlan.manualSapAverages ?? {},
+          binaryPass: migratedPlan.binaryPass ?? {},
+          miluimCredits: migratedPlan.miluimCredits,
+          englishScore: migratedPlan.englishScore,
+          englishTaughtCourses: migratedPlan.englishTaughtCourses ?? [],
+          facultyColorOverrides: migratedPlan.facultyColorOverrides ?? {},
+          completedInstances: migratedPlan.completedInstances ?? [],
+          dismissedRecommendedCourses: migratedPlan.dismissedRecommendedCourses ?? {},
+          coreToChainOverrides: migratedPlan.coreToChainOverrides ?? [],
+          // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
+          savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
           _history: [],
           _initKey: state._initKey,
           isSwitchingTrack: false,
@@ -950,8 +694,6 @@ export const usePlanStore = create<PlanState>()(
         _initKey: 0,
         isSwitchingTrack: false,
         savedTracks: {},
-        versions: [],
-        activeVersionId: null,
       })),
 
       resetToDefault: () =>
@@ -987,20 +729,6 @@ export const usePlanStore = create<PlanState>()(
             completedInstances: [],
             dismissedRecommendedCourses,
             savedTracks,
-            versions: state.versions.map((version) => (
-              version.id === state.activeVersionId
-                ? {
-                  ...version,
-                  plan: {
-                    ...clonePlan(initialState),
-                    trackId: state.trackId,
-                    dismissedRecommendedCourses,
-                  },
-                  trackPlans: cloneSavedTracks(savedTracks),
-                }
-                : version
-            )),
-            activeVersionId: state.activeVersionId,
             _history: [],
             _initKey: state._initKey + 1,
             isSwitchingTrack: false,
@@ -1015,8 +743,6 @@ export const usePlanStore = create<PlanState>()(
           return {
             ...prev,
             savedTracks: state.savedTracks,
-            versions: state.versions,
-            activeVersionId: state.activeVersionId,
             _history: history.slice(0, -1),
             _initKey: state._initKey,
             isSwitchingTrack: false,

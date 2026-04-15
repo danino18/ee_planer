@@ -183,7 +183,7 @@ export function useRequirementsProgress(
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
   const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
   const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
-  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? { generalElectives: 0, freeElective: 0 });
+  const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
   const englishScore = usePlanStore((s) => s.englishScore);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
@@ -423,8 +423,7 @@ export function useRequirementsProgress(
       }
     }
 
-    const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits.generalElectives);
-    const freeElectiveRequired = Math.max(0, 6 - miluimCredits.freeElective);
+    const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
 
     let coreProgress: {
       completed: number;
@@ -498,10 +497,14 @@ export function useRequirementsProgress(
         }
       }
 
-      // canRelease: locked placed courses (visible for selection when we have overflow)
-      const canRelease = slotsDone > coreRequired
+      // canRelease: released courses (always shown for un-release) + locked overflow courses
+      const releasedCoreIds = coreCourseIds.filter(
+        (id) => coreToChainOverrides.includes(id) && allPlaced.has(id),
+      );
+      const lockedOverflow = slotsDone > coreRequired
         ? [...coreLockedSet].filter((id) => !orGroups.flat().some((oid) => oid !== id && coreLockedSet.has(oid) && orGroups.some((g) => g.includes(id) && g.includes(oid))))
         : [];
+      const canRelease = [...new Set([...releasedCoreIds, ...lockedOverflow])];
 
       coreProgress = {
         completed: slotsDone,
@@ -534,7 +537,7 @@ export function useRequirementsProgress(
       },
       freeElective: {
         earned: freeElectiveRequirement?.completedValue ?? 0,
-        required: freeElectiveRequirement?.targetValue ?? freeElectiveRequired,
+        required: freeElectiveRequirement?.targetValue ?? 6,
       },
       generalRequirements,
       labPoolProgress: trackDef.labPool && labsRequirement
