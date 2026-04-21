@@ -25,6 +25,7 @@ import {
   getSatisfiedAlternativeCourseId,
   getVisibleMandatoryCourseIds,
 } from '../data/tracks/semesterSchedule';
+import { computeWeightedAverage } from '../utils/courseGrades';
 
 const PREREQ_EQUIVALENCES: string[][] = [
   ['01040064', '01040065', '01040016'],
@@ -138,26 +139,15 @@ export function usePrerequisiteStatus(
   }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester, semesterOrder]);
 }
 
-export function computeWeightedAverage(
-  grades: Record<string, number>,
-  courses: Map<string, SapCourse>,
-): number | null {
-  let totalWeightedSum = 0;
-  let totalCredits = 0;
-  for (const [key, grade] of Object.entries(grades)) {
-    const courseId = key.includes('_') ? key.split('_')[0] : key;
-    const credits = courses.get(courseId)?.credits ?? 0;
-    if (credits > 0) {
-      totalWeightedSum += grade * credits;
-      totalCredits += credits;
-    }
-  }
-  return totalCredits > 0 ? totalWeightedSum / totalCredits : null;
-}
-
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {
+  const semesters = usePlanStore((s) => s.semesters);
   const grades = usePlanStore((s) => s.grades);
-  return useMemo(() => computeWeightedAverage(grades, courses), [grades, courses]);
+  const binaryPass = usePlanStore((s) => s.binaryPass);
+
+  return useMemo(
+    () => computeWeightedAverage({ semesters, grades, binaryPass }, courses),
+    [semesters, grades, binaryPass, courses],
+  );
 }
 
 export type EnglishRequirementItem = {

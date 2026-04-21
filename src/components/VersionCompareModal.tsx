@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import type { SapCourse, TrackDefinition, PlanVersion } from '../types';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
-import { computeWeightedAverage, computeRequirementsProgress } from '../hooks/usePlan';
+import { computeRequirementsProgress } from '../hooks/usePlan';
+import { computeWeightedAverage } from '../utils/courseGrades';
 import { getComparisonSemesterLabel, getDifferingCourseIds } from '../utils/versionComparison';
 
 interface Props {
@@ -39,8 +40,12 @@ function VersionColumn({
   const catalog = plan.trackId ? getTrackSpecializationCatalog(plan.trackId) : null;
 
   const weightedAverage = useMemo(
-    () => computeWeightedAverage(plan.grades ?? {}, courses),
-    [plan.grades, courses],
+    () => computeWeightedAverage({
+      semesters: plan.semesters ?? {},
+      grades: plan.grades ?? {},
+      binaryPass: plan.binaryPass ?? {},
+    }, courses),
+    [plan.semesters, plan.grades, plan.binaryPass, courses],
   );
 
   const progress = useMemo(() => {

@@ -9,9 +9,18 @@ import { eeCombinedTrack } from '../data/tracks/ee_combined';
 import { ceTrack } from '../data/tracks/ce';
 import { getAllScheduledCourseIds } from '../data/tracks/semesterSchedule';
 import {
+  clearRepeatableCourseSemesterGrade,
+  gradeKey,
+  moveRepeatableCourseGrade,
+  REPEATABLE_COURSES,
+  sanitizeRepeatableCourseGrades,
+} from '../utils/courseGrades';
+import {
   getTrackSpecializationCatalog,
   sanitizeTrackSpecializationSelections,
 } from '../domain/specializations';
+
+export { gradeKey, REPEATABLE_COURSES } from '../utils/courseGrades';
 
 interface PlanState extends StudentPlan {
   // Ephemeral — NOT persisted
@@ -67,22 +76,8 @@ interface PlanState extends StudentPlan {
   deleteVersion: (id: string) => void;
 }
 
-// Courses that can appear in multiple semesters simultaneously (pool-style)
-export const REPEATABLE_COURSES = new Set([
-  '03940900', '03940901', '03940902', '03940800',
-]);
-
 // Maximum number of semesters a student can have (including summer semesters)
 export const MAX_SEMESTERS = 16;
-
-// Returns the grade storage key for a course.
-// For repeatable courses placed in a specific semester, uses courseId_semester
-// so each instance can have its own grade.
-export function gradeKey(courseId: string, semester?: number): string {
-  return REPEATABLE_COURSES.has(courseId) && semester !== undefined && semester > 0
-    ? `${courseId}_${semester}`
-    : courseId;
-}
 
 const DEFAULT_SEMESTERS = 8;
 const DEFAULT_ORDER = Array.from({ length: DEFAULT_SEMESTERS }, (_, i) => i + 1);
@@ -257,6 +252,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
   return {
     ...initialState,
     ...p,
+    grades: sanitizeRepeatableCourseGrades(p.semesters, p.grades ?? {}),
     semesterOrder: p.semesterOrder?.length
       ? p.semesterOrder
       : Array.from({ length: p.maxSemester }, (_, i) => i + 1),
@@ -302,12 +298,8 @@ export const usePlanStore = create<PlanState>()(
           }
           // Restore previously saved state for this track
           if (savedTracks[newTrackId]) {
-            const saved = sanitizeSpecializationStateForTrack(
-              applyPlanMigrations(savedTracks[newTrackId]),
-            );
             return {
-              ...initialState,
-              ...saved,
+              ...planToStateFields(savedTracks[newTrackId], state),
               savedTracks,
               _history: [],
               _initKey: state._initKey,
@@ -382,8 +374,13 @@ export const usePlanStore = create<PlanState>()(
           }
           const nextSemesters = { ...state.semesters, [semester]: newList };
           const stillPlaced = Object.values(nextSemesters).some((ids) => ids.includes(courseId));
+          const nextGrades = sanitizeRepeatableCourseGrades(
+            nextSemesters,
+            clearRepeatableCourseSemesterGrade(state.grades, courseId, semester),
+          );
           return {
             semesters: nextSemesters,
+            grades: nextGrades,
             completedCourses: state.completedCourses.filter((id) => id !== courseId),
             dismissedRecommendedCourses: stillPlaced
               ? state.dismissedRecommendedCourses ?? {}
@@ -412,8 +409,16 @@ export const usePlanStore = create<PlanState>()(
             }
             newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           }
+          let nextGrades = state.grades;
+          if (REPEATABLE_COURSES.has(courseId)) {
+            nextGrades = from > 0 && toSemester > 0
+              ? moveRepeatableCourseGrade(state.grades, courseId, from, toSemester)
+              : clearRepeatableCourseSemesterGrade(state.grades, courseId, from);
+          }
+          nextGrades = sanitizeRepeatableCourseGrades(newSemesters, nextGrades);
           return {
             semesters: newSemesters,
+            grades: nextGrades,
             dismissedRecommendedCourses: clearDismissedCourse(
               state.dismissedRecommendedCourses,
               state.trackId,
@@ -564,9 +569,11 @@ export const usePlanStore = create<PlanState>()(
           newSemesters[0] = [...(newSemesters[0] ?? []), ...coursesInLast];
           delete newSemesters[lastRegular];
           const newMax = lastRegular === state.maxSemester ? state.maxSemester - 1 : state.maxSemester;
+          const nextGrades = sanitizeRepeatableCourseGrades(newSemesters, state.grades);
           return {
             maxSemester: newMax,
             semesters: newSemesters,
+            grades: nextGrades,
             semesterOrder: state.semesterOrder.filter((s) => s !== lastRegular),
             summerSemesters: state.summerSemesters.filter((s) => s !== lastRegular),
             currentSemester: state.currentSemester === lastRegular ? null : state.currentSemester,
@@ -584,9 +591,11 @@ export const usePlanStore = create<PlanState>()(
           newSemesters[0] = [...(newSemesters[0] ?? []), ...coursesInLast];
           delete newSemesters[lastSummer];
           const newMax = lastSummer === state.maxSemester ? state.maxSemester - 1 : state.maxSemester;
+          const nextGrades = sanitizeRepeatableCourseGrades(newSemesters, state.grades);
           return {
             maxSemester: newMax,
             semesters: newSemesters,
+            grades: nextGrades,
             semesterOrder: state.semesterOrder.filter((s) => s !== lastSummer),
             summerSemesters: state.summerSemesters.filter((s) => s !== lastSummer),
             currentSemester: state.currentSemester === lastSummer ? null : state.currentSemester,
@@ -698,37 +707,11 @@ export const usePlanStore = create<PlanState>()(
 
       reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
 
-      loadPlan: (plan) => set((state) => {
-        const migratedPlan = sanitizeSpecializationStateForTrack(applyPlanMigrations(plan));
-        return {
-          ...initialState,
-          ...migratedPlan,
-          semesterOrder: migratedPlan.semesterOrder?.length
-            ? migratedPlan.semesterOrder
-            : Array.from({ length: migratedPlan.maxSemester }, (_, i) => i + 1),
-          semesterTypeOverrides: migratedPlan.semesterTypeOverrides ?? {},
-          semesterWarningsIgnored: migratedPlan.semesterWarningsIgnored ?? [],
-          doubleSpecializations: migratedPlan.doubleSpecializations ?? [],
-          hasEnglishExemption: migratedPlan.hasEnglishExemption ?? false,
-          manualSapAverages: migratedPlan.manualSapAverages ?? {},
-          binaryPass: migratedPlan.binaryPass ?? {},
-          miluimCredits: migratedPlan.miluimCredits,
-          englishScore: migratedPlan.englishScore,
-          englishTaughtCourses: migratedPlan.englishTaughtCourses ?? [],
-          facultyColorOverrides: migratedPlan.facultyColorOverrides ?? {},
-          completedInstances: migratedPlan.completedInstances ?? [],
-          dismissedRecommendedCourses: migratedPlan.dismissedRecommendedCourses ?? {},
-          coreToChainOverrides: migratedPlan.coreToChainOverrides ?? [],
-          // Cloud plan's savedTracks takes priority; fall back to local if cloud has none
-          savedTracks: migratedPlan.savedTracks ?? state.savedTracks ?? {},
-          // Preserve versions unless loadEnvelope is used
-          versions: state.versions,
-          activeVersionId: state.activeVersionId,
-          _history: [],
-          _initKey: state._initKey,
-          isSwitchingTrack: false,
-        };
-      }),
+      loadPlan: (plan) => set((state) => ({
+        ...planToStateFields(plan, state),
+        versions: state.versions,
+        activeVersionId: state.activeVersionId,
+      })),
 
       resetPlan: () => set(() => ({
         ...initialState,

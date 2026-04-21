@@ -9,33 +9,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
 import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
-import { usePlanStore, REPEATABLE_COURSES, gradeKey, MAX_SEMESTERS } from '../store/planStore';
+import { usePlanStore, MAX_SEMESTERS } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
+import { computeWeightedAverage, REPEATABLE_COURSES } from '../utils/courseGrades';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
-
-function computeSemesterAverage(
-  courseIds: string[],
-  grades: Record<string, number>,
-  courses: Map<string, SapCourse>,
-  binaryPass: Record<string, boolean>,
-  semester?: number
-): number | null {
-  let weightedSum = 0;
-  let totalCredits = 0;
-  for (const id of courseIds) {
-    if (binaryPass[id]) continue; // binary pass courses excluded from weighted average
-    const key = gradeKey(id, semester);
-    const grade = grades[key];
-    const credits = courses.get(id)?.credits ?? 0;
-    if (grade !== undefined && credits > 0) {
-      weightedSum += grade * credits;
-      totalCredits += credits;
-    }
-  }
-  return totalCredits > 0 ? weightedSum / totalCredits : null;
-}
 
 interface Props {
   courses: Map<string, SapCourse>;
@@ -286,7 +265,9 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
       onToggleWarnings: () => toggleSemesterWarnings(sem),
-      semesterAverage: sem > 0 ? computeSemesterAverage(semesters[sem] ?? [], grades, courses, binaryPass ?? {}, sem) : null,
+      semesterAverage: sem > 0
+        ? computeWeightedAverage({ semesters, grades, binaryPass }, courses, sem)
+        : null,
       courseChainMap,
       isDragging: !!activeCourseId,
       ruleWarnings: semesterRuleWarnings[sem] ?? [],
