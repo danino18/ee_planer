@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
+import { CheeseForkInfo } from './CheeseForkInfo';
 
 interface Props {
   course: SapCourse;
@@ -186,6 +187,8 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none mr-2">✕</button>
         </div>
+
+        <CheeseForkInfo courseId={course.id} />
 
         {/* Prerequisites section */}
         <div className="mb-4 border border-gray-200 rounded-lg p-3">
