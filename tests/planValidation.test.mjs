@@ -122,13 +122,13 @@ test('server service sanitizer accepts minor flags in plan and savedTracks paylo
 });
 
 test('cloud sync schema stays aligned for minor flags', () => {
-  const appSource = readFileSync(join(repoRoot, 'src/App.tsx'), 'utf8');
+  const serializerSource = readFileSync(join(repoRoot, 'src/services/planStateSerialization.ts'), 'utf8');
   const clientValidatorSource = readFileSync(join(repoRoot, 'src/services/planValidation.ts'), 'utf8');
   const securityValidatorSource = readFileSync(join(repoRoot, 'functions/src/security/planValidation.ts'), 'utf8');
   const serviceValidatorSource = readFileSync(join(repoRoot, 'functions/src/services/planValidation.ts'), 'utf8');
 
   for (const key of ['roboticsMinorEnabled', 'entrepreneurshipMinorEnabled']) {
-    assert.match(appSource, new RegExp(`${key}: state\\.${key}`), `extractPlan must include ${key}`);
+    assert.match(serializerSource, new RegExp(`${key}: state\\.${key}`), `serializePlanState must include ${key}`);
     assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
     assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
     assert.match(serviceValidatorSource, new RegExp(`${key}: cleanBoolean`), `service sanitizer must clean ${key}`);

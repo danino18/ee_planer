@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { fetchCourses } from './services/sapApi';
 import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
 import { usePlanStore } from './store/planStore';
+import { buildEnvelopeFromState, getPlanSignature, shouldApplyCloudEnvelope } from './services/planSync';
 import { VersionTabs } from './components/VersionTabs';
 import { VersionCompareModal } from './components/VersionCompareModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -20,7 +21,7 @@ import { eeMathTrack } from './data/tracks/ee_math';
 import { eePhysicsTrack } from './data/tracks/ee_physics';
 import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
-import type { SapCourse, TrackDefinition, StudentPlan, VersionedPlanEnvelope } from './types';
+import type { SapCourse, TrackDefinition, VersionedPlanEnvelope } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
@@ -36,60 +37,11 @@ const SYNC_RETRY_DELAY_MS = 5000;
 
 const ALL_TRACKS: TrackDefinition[] = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
-function extractCurrentPlan(state: ReturnType<typeof usePlanStore.getState>): StudentPlan {
-  return {
-    trackId: state.trackId,
-    semesters: state.semesters,
-    completedCourses: state.completedCourses,
-    selectedSpecializations: state.selectedSpecializations,
-    favorites: state.favorites,
-    grades: state.grades,
-    substitutions: state.substitutions,
-    maxSemester: state.maxSemester,
-    selectedPrereqGroups: state.selectedPrereqGroups,
-    summerSemesters: state.summerSemesters,
-    currentSemester: state.currentSemester,
-    semesterOrder: state.semesterOrder,
-    semesterTypeOverrides: state.semesterTypeOverrides,
-    semesterWarningsIgnored: state.semesterWarningsIgnored,
-    doubleSpecializations: state.doubleSpecializations,
-    hasEnglishExemption: state.hasEnglishExemption,
-    manualSapAverages: state.manualSapAverages,
-    binaryPass: state.binaryPass,
-    completedInstances: state.completedInstances,
-    savedTracks: state.savedTracks,
-    dismissedRecommendedCourses: state.dismissedRecommendedCourses,
-    miluimCredits: state.miluimCredits,
-    englishScore: state.englishScore,
-    englishTaughtCourses: state.englishTaughtCourses,
-    facultyColorOverrides: state.facultyColorOverrides ?? {},
-    coreToChainOverrides: state.coreToChainOverrides,
-    roboticsMinorEnabled: state.roboticsMinorEnabled,
-    entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled,
-  };
-}
-
-function extractEnvelope(state: ReturnType<typeof usePlanStore.getState>): VersionedPlanEnvelope {
-  const now = Date.now();
-  const currentPlan = extractCurrentPlan(state);
-  // Snapshot active version with latest plan data
-  const versions = (state.versions ?? []).map((v) =>
-    v.id === state.activeVersionId ? { ...v, plan: currentPlan, updatedAt: now } : v,
-  );
-  // If no versions yet (shouldn't happen after migration), create one
-  if (versions.length === 0) {
-    const vId = crypto.randomUUID();
-    return {
-      schemaVersion: 2,
-      versions: [{ id: vId, name: 'גרסה 1', plan: currentPlan, createdAt: now, updatedAt: now }],
-      activeVersionId: vId,
-    };
-  }
-  return { schemaVersion: 2, versions, activeVersionId: state.activeVersionId };
-}
-
-function getPlanSignature(envelope: VersionedPlanEnvelope): string {
-  return JSON.stringify(envelope);
+function extractEnvelope(
+  state: ReturnType<typeof usePlanStore.getState>,
+  activeVersionUpdatedAt?: number,
+): VersionedPlanEnvelope {
+  return buildEnvelopeFromState(state, { activeVersionUpdatedAt });
 }
 
 function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; trackDef: TrackDefinition }) {
@@ -103,7 +55,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     semesters,
     addCourseToSemester,
     removeCourseFromSemester,
-    loadPlan,
     loadEnvelope,
     _history,
     _initKey,
@@ -113,6 +64,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     initializedTracks,
     markTrackInitialized,
     versions,
+    hasPendingCloudSync,
+    markCloudSyncPending,
+    markCloudSyncSettled,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -123,7 +77,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     semesters: state.semesters,
     addCourseToSemester: state.addCourseToSemester,
     removeCourseFromSemester: state.removeCourseFromSemester,
-    loadPlan: state.loadPlan,
     loadEnvelope: state.loadEnvelope,
     _history: state._history,
     _initKey: state._initKey,
@@ -133,6 +86,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     initializedTracks: state.initializedTracks,
     markTrackInitialized: state.markTrackInitialized,
     versions: state.versions,
+    hasPendingCloudSync: state.hasPendingCloudSync,
+    markCloudSyncPending: state.markCloudSyncPending,
+    markCloudSyncSettled: state.markCloudSyncSettled,
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
   const specs = specializationCatalog.groups;
@@ -143,11 +99,12 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSavingRef = useRef(false);
   const lastLoadedUid = useRef<string | null>(null);
   const applyingCloudPlan = useRef(false);
   const latestLocalSignature = useRef(getPlanSignature(extractEnvelope(usePlanStore.getState())));
   const lastSaveTime = useRef(0);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -161,6 +118,18 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   useEffect(() => {
     reportTrackSpecializationDiagnostics(trackDef.id);
   }, [trackDef.id]);
+
+  useEffect(() => {
+    if (!user) {
+      setSyncStatus('idle');
+      return;
+    }
+
+    setSyncStatus((currentStatus) => {
+      if (currentStatus === 'saving' || currentStatus === 'error') return currentStatus;
+      return hasPendingCloudSync ? 'pending' : 'saved';
+    });
+  }, [user, hasPendingCloudSync]);
 
   useEffect(() => {
     if (trackId === 'ce' && (semesters[4] ?? []).includes('01140073')) {
@@ -195,6 +164,25 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     }
     markTrackInitialized(trackId);
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
+
+  useEffect(() => {
+    const unsubscribe = usePlanStore.subscribe((state, previousState) => {
+      if (applyingCloudPlan.current) return;
+
+      const currentSignature = getPlanSignature(extractEnvelope(state));
+      const previousSignature = getPlanSignature(extractEnvelope(previousState));
+      if (currentSignature === previousSignature) return;
+
+      latestLocalSignature.current = currentSignature;
+      markCloudSyncPending(Date.now());
+      if (user) {
+        setSyncStatus('pending');
+        setSyncErrorMessage(null);
+      }
+    });
+
+    return unsubscribe;
+  }, [markCloudSyncPending, user]);
 
   useEffect(() => {
     const clearSyncTimers = () => {
@@ -258,59 +246,83 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     };
 
     const doSave = async (onSuccess?: () => void) => {
+      if (isSavingRef.current) return;
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
         saveTimer.current = null;
       }
 
+      const localState = usePlanStore.getState();
+      const saveTimestamp = Math.max(localState.lastLocalEditAt ?? 0, Date.now());
+      const localEnvelope = extractEnvelope(localState, saveTimestamp);
+
+      isSavingRef.current = true;
       setSyncStatus('saving');
       setSyncErrorMessage(null);
       lastSaveTime.current = Date.now();
-      const localEnvelope = extractEnvelope(usePlanStore.getState());
       latestLocalSignature.current = getPlanSignature(localEnvelope);
 
       try {
         await savePlanToCloud(uid, localEnvelope);
-        setSyncStatus('saved');
         setSyncErrorMessage(null);
-        onSuccess?.();
+        const currentState = usePlanStore.getState();
+        if ((currentState.lastLocalEditAt ?? 0) <= saveTimestamp) {
+          applyingCloudPlan.current = true;
+          currentState.markCloudSyncSettled(saveTimestamp);
+          latestLocalSignature.current = getPlanSignature(extractEnvelope(usePlanStore.getState()));
+          applyingCloudPlan.current = false;
+          setSyncStatus('saved');
+          onSuccess?.();
+        } else {
+          setSyncStatus('pending');
+          scheduleRetrySave(SAVE_DEBOUNCE_MS, onSuccess);
+        }
       } catch (error: unknown) {
         handleSaveError(error, onSuccess);
+      } finally {
+        isSavingRef.current = false;
       }
     };
 
-    if (isSwitchingTrack) {
-      const unsubStore = usePlanStore.subscribe(() => {
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-          void doSave(finishTrackSwitch);
-        }, TRACK_SWITCH_DEBOUNCE_MS);
-      });
+    const handleCloudEnvelope = (cloudEnvelope: VersionedPlanEnvelope) => {
+      const localState = usePlanStore.getState();
+      const localEnvelope = extractEnvelope(localState);
+      const localSignature = getPlanSignature(localEnvelope);
+      const cloudSignature = getPlanSignature(cloudEnvelope);
 
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        void doSave(finishTrackSwitch);
-      }, TRACK_SWITCH_DEBOUNCE_MS);
+      if (cloudSignature === localSignature) {
+        latestLocalSignature.current = localSignature;
+        if (localState.hasPendingCloudSync) {
+          applyingCloudPlan.current = true;
+          localState.markCloudSyncSettled();
+          applyingCloudPlan.current = false;
+        }
+        setSyncStatus('saved');
+        setSyncErrorMessage(null);
+        return;
+      }
 
-      return () => {
-        unsubStore();
-        clearSyncTimers();
-      };
-    }
-
-    const unsubSnapshot = subscribeToCloudPlan(
-      uid,
-      (cloudEnvelope) => {
-        if (Date.now() - lastSaveTime.current < SYNC_RETRY_DELAY_MS) return;
-        const cloudSignature = getPlanSignature(cloudEnvelope);
-        if (cloudSignature === latestLocalSignature.current) return;
+      if (shouldApplyCloudEnvelope(localEnvelope, cloudEnvelope, localState.hasPendingCloudSync)) {
         applyingCloudPlan.current = true;
         loadEnvelope(cloudEnvelope);
         latestLocalSignature.current = cloudSignature;
         applyingCloudPlan.current = false;
         setSyncStatus('saved');
         setSyncErrorMessage(null);
-      },
+        return;
+      }
+
+      latestLocalSignature.current = localSignature;
+      if (localState.hasPendingCloudSync) {
+        setSyncStatus('pending');
+        setSyncErrorMessage(null);
+        void doSave();
+      }
+    };
+
+    const unsubSnapshot = subscribeToCloudPlan(
+      uid,
+      handleCloudEnvelope,
       () => {
         void doSave();
       },
@@ -321,13 +333,23 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       },
     );
 
-    const unsubStore = usePlanStore.subscribe(() => {
+    const unsubStore = usePlanStore.subscribe((state, previousState) => {
       if (applyingCloudPlan.current) return;
+      const currentSignature = getPlanSignature(extractEnvelope(state));
+      const previousSignature = getPlanSignature(extractEnvelope(previousState));
+      if (currentSignature === previousSignature) return;
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        void doSave();
-      }, SAVE_DEBOUNCE_MS);
+        void doSave(isSwitchingTrack ? finishTrackSwitch : undefined);
+      }, isSwitchingTrack ? TRACK_SWITCH_DEBOUNCE_MS : SAVE_DEBOUNCE_MS);
     });
+
+    if (isSwitchingTrack) {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        void doSave(finishTrackSwitch);
+      }, TRACK_SWITCH_DEBOUNCE_MS);
+    }
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden' && saveTimer.current) {
@@ -349,7 +371,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       window.removeEventListener('online', handleOnline);
       clearSyncTimers();
     };
-  }, [user, trackId, loadPlan, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack]);
+  }, [user, trackId, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack, markCloudSyncSettled]);
 
   const [showCompare, setShowCompare] = useState(false);
 
@@ -428,6 +450,7 @@ function AppInner() {
   const [error, setError] = useState<string | null>(null);
   const trackId = usePlanStore((s) => s.trackId);
   const isSwitchingTrack = usePlanStore((s) => s.isSwitchingTrack);
+  const hasPendingCloudSync = usePlanStore((s) => s.hasPendingCloudSync);
   const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
   const { user, loading: authLoading } = useAuth();
 
@@ -446,10 +469,20 @@ function AppInner() {
 
     return subscribeToCloudPlan(
       user.uid,
-      (cloudEnvelope) => loadEnvelope(cloudEnvelope),
+      (cloudEnvelope) => {
+        const localState = usePlanStore.getState();
+        const localEnvelope = extractEnvelope(localState);
+        if (getPlanSignature(localEnvelope) === getPlanSignature(cloudEnvelope)) {
+          return;
+        }
+
+        if (shouldApplyCloudEnvelope(localEnvelope, cloudEnvelope, hasPendingCloudSync)) {
+          loadEnvelope(cloudEnvelope);
+        }
+      },
       () => undefined,
     );
-  }, [user, trackId, isSwitchingTrack, loadEnvelope]);
+  }, [user, trackId, isSwitchingTrack, loadEnvelope, hasPendingCloudSync]);
 
   if (authLoading || loading) {
     return (

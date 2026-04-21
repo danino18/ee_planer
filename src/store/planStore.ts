@@ -19,6 +19,7 @@ import {
   getTrackSpecializationCatalog,
   sanitizeTrackSpecializationSelections,
 } from '../domain/specializations';
+import { serializePlanState } from '../services/planStateSerialization';
 
 export { gradeKey, REPEATABLE_COURSES } from '../utils/courseGrades';
 
@@ -31,6 +32,8 @@ interface PlanState extends StudentPlan {
   savedTracks: Record<string, StudentPlan>;
   versions: PlanVersion[];
   activeVersionId: string;
+  hasPendingCloudSync: boolean;
+  lastLocalEditAt: number;
 
   setTrack: (trackId: TrackId) => void;
   beginTrackSwitch: () => void;
@@ -74,6 +77,8 @@ interface PlanState extends StudentPlan {
   switchVersion: (id: string) => void;
   renameVersion: (id: string, name: string) => void;
   deleteVersion: (id: string) => void;
+  markCloudSyncPending: (editedAt?: number) => void;
+  markCloudSyncSettled: (syncedAt?: number) => void;
 }
 
 // Maximum number of semesters a student can have (including summer semesters)
@@ -214,36 +219,7 @@ function sanitizeSpecializationStateForTrack(plan: StudentPlan): StudentPlan {
 
 /** Shallow snapshot of all plan fields for undo history */
 function captureSnapshot(state: PlanState): StudentPlan {
-  return {
-    trackId: state.trackId,
-    semesters: Object.fromEntries(Object.entries(state.semesters).map(([k, v]) => [k, [...v]])),
-    completedCourses: [...state.completedCourses],
-    selectedSpecializations: [...state.selectedSpecializations],
-    favorites: [...state.favorites],
-    grades: { ...state.grades },
-    substitutions: { ...state.substitutions },
-    maxSemester: state.maxSemester,
-    selectedPrereqGroups: { ...state.selectedPrereqGroups },
-    summerSemesters: [...state.summerSemesters],
-    currentSemester: state.currentSemester,
-    semesterOrder: [...state.semesterOrder],
-    semesterTypeOverrides: { ...(state.semesterTypeOverrides ?? {}) },
-    semesterWarningsIgnored: [...(state.semesterWarningsIgnored ?? [])],
-    doubleSpecializations: [...(state.doubleSpecializations ?? [])],
-    hasEnglishExemption: state.hasEnglishExemption ?? false,
-    manualSapAverages: { ...(state.manualSapAverages ?? {}) },
-    binaryPass: { ...(state.binaryPass ?? {}) },
-    miluimCredits: state.miluimCredits,
-    englishScore: state.englishScore,
-    englishTaughtCourses: [...(state.englishTaughtCourses ?? [])],
-    facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}) },
-    completedInstances: [...(state.completedInstances ?? [])],
-    dismissedRecommendedCourses: { ...(state.dismissedRecommendedCourses ?? {}) },
-    coreToChainOverrides: [...(state.coreToChainOverrides ?? [])],
-    roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
-    entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
-    initializedTracks: [...(state.initializedTracks ?? [])],
-  };
+  return serializePlanState(state);
 }
 
 /** Build the state fields from a StudentPlan (used when loading/switching versions) */
@@ -288,6 +264,8 @@ export const usePlanStore = create<PlanState>()(
       savedTracks: {},
       versions: [],
       activeVersionId: '',
+      hasPendingCloudSync: false,
+      lastLocalEditAt: 0,
 
       setTrack: (newTrackId) =>
         set((state) => {
@@ -304,6 +282,8 @@ export const usePlanStore = create<PlanState>()(
               _history: [],
               _initKey: state._initKey,
               isSwitchingTrack: state.isSwitchingTrack,
+              hasPendingCloudSync: state.hasPendingCloudSync,
+              lastLocalEditAt: state.lastLocalEditAt,
             };
           }
           // New track — reset plan fields
@@ -316,6 +296,8 @@ export const usePlanStore = create<PlanState>()(
             _history: [],
             _initKey: state._initKey,
             isSwitchingTrack: state.isSwitchingTrack,
+            hasPendingCloudSync: state.hasPendingCloudSync,
+            lastLocalEditAt: state.lastLocalEditAt,
           };
         }),
 
@@ -332,6 +314,8 @@ export const usePlanStore = create<PlanState>()(
             _history: [],
             _initKey: 0,
             isSwitchingTrack: true,
+            hasPendingCloudSync: state.hasPendingCloudSync,
+            lastLocalEditAt: state.lastLocalEditAt,
           };
         }),
 
@@ -711,6 +695,7 @@ export const usePlanStore = create<PlanState>()(
         ...planToStateFields(plan, state),
         versions: state.versions,
         activeVersionId: state.activeVersionId,
+        hasPendingCloudSync: false,
       })),
 
       resetPlan: () => set(() => ({
@@ -721,6 +706,8 @@ export const usePlanStore = create<PlanState>()(
         savedTracks: {},
         versions: [],
         activeVersionId: '',
+        hasPendingCloudSync: false,
+        lastLocalEditAt: 0,
       })),
 
       resetToDefault: () =>
@@ -760,6 +747,8 @@ export const usePlanStore = create<PlanState>()(
             _initKey: state._initKey + 1,
             isSwitchingTrack: false,
             initializedTracks: (state.initializedTracks ?? []).filter((id) => id !== state.trackId),
+            hasPendingCloudSync: false,
+            lastLocalEditAt: 0,
           };
         }),
 
@@ -783,6 +772,8 @@ export const usePlanStore = create<PlanState>()(
             _history: history.slice(0, -1),
             _initKey: state._initKey,
             isSwitchingTrack: false,
+            hasPendingCloudSync: state.hasPendingCloudSync,
+            lastLocalEditAt: state.lastLocalEditAt,
           };
         }),
 
@@ -824,6 +815,8 @@ export const usePlanStore = create<PlanState>()(
             ...planToStateFields(target.plan, state),
             versions: updatedVersions,
             activeVersionId: id,
+            hasPendingCloudSync: state.hasPendingCloudSync,
+            lastLocalEditAt: state.lastLocalEditAt,
           };
         }),
 
@@ -851,6 +844,8 @@ export const usePlanStore = create<PlanState>()(
             ...planToStateFields(target.plan, state),
             versions: remaining,
             activeVersionId: target.id,
+            hasPendingCloudSync: state.hasPendingCloudSync,
+            lastLocalEditAt: state.lastLocalEditAt,
           };
         }),
 
@@ -864,20 +859,54 @@ export const usePlanStore = create<PlanState>()(
             ...planToStateFields(active.plan, state),
             versions: envelope.versions,
             activeVersionId: envelope.activeVersionId,
+            hasPendingCloudSync: false,
+          };
+        }),
+
+      markCloudSyncPending: (editedAt) =>
+        set((state) => {
+          const nextEditedAt = editedAt ?? Date.now();
+          if (state.hasPendingCloudSync && state.lastLocalEditAt === nextEditedAt) return state;
+          return {
+            hasPendingCloudSync: true,
+            lastLocalEditAt: Math.max(state.lastLocalEditAt ?? 0, nextEditedAt),
+          };
+        }),
+
+      markCloudSyncSettled: (syncedAt) =>
+        set((state) => {
+          const activeVersion = state.versions.find((version) => version.id === state.activeVersionId);
+          if (!activeVersion) {
+            return state.hasPendingCloudSync ? { hasPendingCloudSync: false } : state;
+          }
+
+          const finalizedAt = syncedAt ?? Math.max(state.lastLocalEditAt ?? 0, activeVersion.updatedAt);
+          return {
+            versions: state.versions.map((version) => (
+              version.id === state.activeVersionId
+                ? { ...version, plan: serializePlanState(state), updatedAt: Math.max(version.updatedAt, finalizedAt) }
+                : version
+            )),
+            hasPendingCloudSync: false,
           };
         }),
     }),
     {
       name: 'technion-ee-planner',
-      version: 1,
+      version: 2,
       migrate: (persistedState, fromVersion) => {
         const s = persistedState as PlanState;
+        const migratedBase = {
+          ...s,
+          hasPendingCloudSync: s.hasPendingCloudSync ?? false,
+          lastLocalEditAt: s.lastLocalEditAt ?? 0,
+        };
         if (fromVersion === 0 || !s.versions || s.versions.length === 0) {
           // Wrap existing plan as the first version
           const vId = crypto.randomUUID();
           const plan: StudentPlan = { ...initialState, ...s };
           return {
-            ...s,
+            ...migratedBase,
             versions: [{
               id: vId,
               name: 'גרסה 1',
@@ -888,7 +917,7 @@ export const usePlanStore = create<PlanState>()(
             activeVersionId: vId,
           };
         }
-        return s;
+        return migratedBase;
       },
       partialize: (state) => {
         // Exclude ephemeral fields from localStorage
