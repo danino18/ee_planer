@@ -132,6 +132,68 @@ test('track-specific specialization catalogs load and validate correctly', () =>
     'Additional-course block should complete when one extra course from the wide list is taken',
   );
 
+  const eeControlRobotics = findGroup(catalogs.ee, 'בקרה ורובוטיקה');
+  const controlRoboticsMissingAdditionalFromControl2 = evaluateSpecializationGroup(
+    eeControlRobotics,
+    ['00440191', '00460192'],
+    'single',
+  );
+  assert.equal(
+    controlRoboticsMissingAdditionalFromControl2.mandatoryChoicesSatisfied,
+    true,
+    'mandatory_choice_groups should satisfy the OR requirement when Control 2 is taken',
+  );
+  assert.equal(
+    controlRoboticsMissingAdditionalFromControl2.additionalRuleSatisfied,
+    false,
+    'Taking only Control 1 and Control 2 should still miss the additional course requirement',
+  );
+  const controlRoboticsMissingAdditionalFromIntro = evaluateSpecializationGroup(
+    eeControlRobotics,
+    ['00440191', '00460212'],
+    'single',
+  );
+  assert.equal(
+    controlRoboticsMissingAdditionalFromIntro.mandatoryChoicesSatisfied,
+    true,
+    'mandatory_choice_groups should satisfy the OR requirement when Intro to Robotics is taken',
+  );
+  assert.equal(
+    controlRoboticsMissingAdditionalFromIntro.additionalRuleSatisfied,
+    false,
+    'Taking only Control 1 and Intro to Robotics should still miss the additional course requirement',
+  );
+  const controlRoboticsCompleteWithElectiveFromControl2 = evaluateSpecializationGroup(
+    eeControlRobotics,
+    ['00440191', '00460192', '00440139'],
+    'single',
+  );
+  assert.equal(
+    controlRoboticsCompleteWithElectiveFromControl2.complete,
+    true,
+    'Control and Robotics should complete with Control 1, one mandatory-choice course, and one elective',
+  );
+  const controlRoboticsCompleteWithElectiveFromIntro = evaluateSpecializationGroup(
+    eeControlRobotics,
+    ['00440191', '00460212', '00440139'],
+    'single',
+  );
+  assert.equal(
+    controlRoboticsCompleteWithElectiveFromIntro.complete,
+    true,
+    'Control and Robotics should also complete with the robotics intro path plus one elective',
+  );
+  const controlRoboticsCompleteUsingBothChoiceCourses = evaluateSpecializationGroup(
+    eeControlRobotics,
+    ['00440191', '00460192', '00460212'],
+    'single',
+  );
+  assert.equal(
+    controlRoboticsCompleteUsingBothChoiceCourses.complete,
+    true,
+    'The unconsumed course from the mandatory choice pair should remain available as the third course',
+  );
+
   const eeBio = findGroup(catalogs.ee, 'ביולוג');
   const bioMissingMandatory = evaluateSpecializationGroup(
     eeBio,

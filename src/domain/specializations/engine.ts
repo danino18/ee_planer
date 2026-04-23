@@ -229,8 +229,12 @@ function parseMandatoryChoiceRules(
 ): SpecializationChoiceRule[] {
   const singleRule = requirements.mandatory_choice_rule;
   const multipleRules = requirements.mandatory_choice_rules;
+  const groupedRules = requirements.mandatory_choice_groups;
 
-  if (singleRule !== undefined && multipleRules !== undefined) {
+  const definedRuleFormats = [singleRule, multipleRules, groupedRules]
+    .filter((value) => value !== undefined).length;
+
+  if (definedRuleFormats > 1) {
     diagnostics.push(makeDiagnostic(
       'error',
       'conflicting-mandatory-choice-rules',
@@ -248,8 +252,11 @@ function parseMandatoryChoiceRules(
     return parsed ? [parsed] : [];
   }
 
-  if (multipleRules === undefined) return [];
-  if (!Array.isArray(multipleRules)) {
+  const ruleList = multipleRules ?? groupedRules;
+  const fieldName = multipleRules !== undefined ? 'mandatory_choice_rules' : 'mandatory_choice_groups';
+
+  if (ruleList === undefined) return [];
+  if (!Array.isArray(ruleList)) {
     diagnostics.push(makeDiagnostic(
       'error',
       'invalid-mandatory-choice-rules-array',
@@ -259,10 +266,10 @@ function parseMandatoryChoiceRules(
     return [];
   }
 
-  return multipleRules
+  return ruleList
     .map((rule, index) => parseChoiceRule(rule, diagnostics, {
       ...context,
-      field: `mandatory_choice_rules[${index}]`,
+      field: `${fieldName}[${index}]`,
     }))
     .filter((rule): rule is SpecializationChoiceRule => rule !== null);
 }
