@@ -93,6 +93,14 @@ const CE_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
   4: ['01140073'],
 };
 
+const CS_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
+  1: ['01140032'],
+};
+
+const CS_ADDED_RECOMMENDED_COURSES: Record<number, string[]> = {
+  4: ['00440101'],
+};
+
 const TRACKS = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
 
 // Sport/PE pool courses auto-placed in the unassigned column on first load.
@@ -175,6 +183,45 @@ const initialState: StudentPlan = {
   initializedTracks: [],
 };
 
+function removeRecommendedCourses(
+  semesters: Record<number, string[]>,
+  coursesBySemester: Record<number, string[]>,
+): void {
+  for (const [semester, courseIds] of Object.entries(coursesBySemester)) {
+    const sem = Number(semester);
+    const existing = semesters[sem] ?? [];
+    semesters[sem] = existing.filter((id) => !courseIds.includes(id));
+  }
+}
+
+function addRecommendedCourses(
+  plan: StudentPlan,
+  trackId: TrackId,
+  coursesBySemester: Record<number, string[]>,
+): void {
+  const dismissedForTrack = new Set(plan.dismissedRecommendedCourses?.[trackId] ?? []);
+  const allPlaced = new Set<string>([
+    ...(plan.completedCourses ?? []),
+    ...Object.values(plan.semesters).flat(),
+  ]);
+
+  for (const [semester, courseIds] of Object.entries(coursesBySemester)) {
+    const sem = Number(semester);
+    const existing = plan.semesters[sem] ?? [];
+
+    for (const courseId of courseIds) {
+      if (dismissedForTrack.has(courseId) || allPlaced.has(courseId)) {
+        continue;
+      }
+
+      existing.push(courseId);
+      allPlaced.add(courseId);
+    }
+
+    plan.semesters[sem] = existing;
+  }
+}
+
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
   const migrated: StudentPlan = {
     ...plan,
@@ -184,17 +231,25 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
   };
 
   if (migrated.trackId === 'ce') {
-    for (const [semester, courseIds] of Object.entries(CE_REMOVED_RECOMMENDED_COURSES)) {
-      const sem = Number(semester);
-      const existing = migrated.semesters[sem] ?? [];
-      migrated.semesters[sem] = existing.filter((id) => !courseIds.includes(id));
-    }
+    removeRecommendedCourses(migrated.semesters, CE_REMOVED_RECOMMENDED_COURSES);
+  }
+
+  if (migrated.trackId === 'cs') {
+    removeRecommendedCourses(migrated.semesters, CS_REMOVED_RECOMMENDED_COURSES);
+    addRecommendedCourses(migrated, 'cs', CS_ADDED_RECOMMENDED_COURSES);
   }
 
   if (migrated.savedTracks?.ce) {
     migrated.savedTracks.ce = applyPlanMigrations({
       ...migrated.savedTracks.ce,
       trackId: 'ce',
+    });
+  }
+
+  if (migrated.savedTracks?.cs) {
+    migrated.savedTracks.cs = applyPlanMigrations({
+      ...migrated.savedTracks.cs,
+      trackId: 'cs',
     });
   }
 
