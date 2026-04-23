@@ -177,6 +177,7 @@ export interface RequirementsInput {
   englishTaughtCourses: string[];
   semesterOrder: number[];
   coreToChainOverrides: string[];
+  courseChainAssignments?: Record<string, string>;
   roboticsMinorEnabled: boolean;
   entrepreneurshipMinorEnabled: boolean;
 }
@@ -199,6 +200,7 @@ export function computeRequirementsProgress(
     englishTaughtCourses,
     semesterOrder,
     coreToChainOverrides,
+    courseChainAssignments,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
   } = input;
@@ -322,7 +324,7 @@ export function computeRequirementsProgress(
       const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
         ? 'double'
         : 'single';
-      const evaluation = evaluateSpecializationGroup(group, specializationPlaced, mode);
+      const evaluation = evaluateSpecializationGroup(group, specializationPlaced, mode, courseChainAssignments);
       return {
         group,
         mode,
@@ -597,6 +599,7 @@ export function useRequirementsProgress(
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
   const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
+  const courseChainAssignments = usePlanStore((s) => s.courseChainAssignments);
   const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
   const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
 
@@ -614,6 +617,7 @@ export function useRequirementsProgress(
           englishTaughtCourses,
           semesterOrder,
           coreToChainOverrides,
+          courseChainAssignments,
           roboticsMinorEnabled,
           entrepreneurshipMinorEnabled,
         },
@@ -622,7 +626,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
   );
 }
 
@@ -633,6 +637,7 @@ export function useChainRecommendations(
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
+  const courseChainAssignments = usePlanStore((s) => s.courseChainAssignments);
 
   return useMemo(() => {
     const allPlaced = new Set<string>([
@@ -645,7 +650,7 @@ export function useChainRecommendations(
     const scored = specializationCatalog.groups
       .filter((group) => !selectedSpecializations.includes(group.id))
       .map((group) => {
-        const evaluation = evaluateSpecializationGroup(group, allPlaced, 'single');
+        const evaluation = evaluateSpecializationGroup(group, allPlaced, 'single', courseChainAssignments);
         const mandatory = group.mandatoryCourses.filter((id) => allPlaced.has(id));
         const score = evaluation.doneCount * 2 + mandatory.length * 3;
         return { group, score, matchingCourses: evaluation.matchedCourseNumbers };
@@ -657,5 +662,5 @@ export function useChainRecommendations(
       ...result,
       matchingCourses: result.matchingCourses.map((id) => courses.get(id)?.name ?? id),
     }));
-  }, [semesters, completedCourses, specializationCatalog, selectedSpecializations, courses]);
+  }, [semesters, completedCourses, specializationCatalog, selectedSpecializations, courseChainAssignments, courses]);
 }

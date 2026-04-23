@@ -774,17 +774,20 @@ function courseIsSatisfied(
   };
 }
 
+type ChoiceRuleEvaluation = SpecializationRuleEvaluation & { minConsumedCourseNumbers: string[] };
+
 function evaluateChoiceRule(
   rule: SpecializationChoiceRule | null,
   takenCourses: Set<string>,
   replacementMap: Map<string, string[]>,
-): SpecializationRuleEvaluation {
+): ChoiceRuleEvaluation {
   if (!rule) {
     return {
       satisfied: true,
       satisfiedOptionCount: 0,
       requiredOptionCount: 0,
       matchedCourseNumbers: [],
+      minConsumedCourseNumbers: [],
     };
   }
 
@@ -805,11 +808,16 @@ function evaluateChoiceRule(
     ? satisfiedOptions.length <= rule.count
     : satisfiedOptions.length >= rule.count;
 
+  // For consumption tracking: at-most rules consume all matched options; at-least rules
+  // consume only the minimum required count so extras remain available for later slots.
+  const consumedOptions = isAtMostRule ? satisfiedOptions : satisfiedOptions.slice(0, rule.count);
+
   return {
     satisfied,
     satisfiedOptionCount: satisfiedOptions.length,
     requiredOptionCount: rule.count,
     matchedCourseNumbers: dedupeCourseNumbers(satisfiedOptions.flat()),
+    minConsumedCourseNumbers: dedupeCourseNumbers(consumedOptions.flat()),
   };
 }
 
@@ -878,8 +886,14 @@ export function evaluateSpecializationGroup(
   group: SpecializationGroup,
   takenCourseNumbers: Iterable<string>,
   mode: SpecializationMode = 'single',
+  courseChainAssignments?: Record<string, string>,
 ): SpecializationGroupEvaluation {
-  const takenCourses = new Set(takenCourseNumbers);
+  const takenCourses = new Set(
+    [...takenCourseNumbers].filter((id) => {
+      const assignment = courseChainAssignments?.[id];
+      return !assignment || assignment === group.id;
+    }),
+  );
   const requirements = group.requirementsByMode[mode] ?? group.requirementsByMode.single;
 
   if (!requirements) {
@@ -907,7 +921,6 @@ export function evaluateSpecializationGroup(
     evaluateChoiceRule(rule, takenCourses, replacementMap),
   );
   const selectionRule = evaluateChoiceRule(requirements.selectionRule, takenCourses, replacementMap);
-  const additionalRule = evaluateChoiceRule(requirements.additionalCourseSelectionRule, takenCourses, replacementMap);
   const mutualExclusion = evaluateMutualExclusionRules(group.mutualExclusionRules, takenCourses);
   const allKnownCourseNumbers = collectTrackGroupCourseNumbers(group);
   const doneCount = allKnownCourseNumbers.filter((courseNumber) => takenCourses.has(courseNumber)).length;
@@ -960,29 +973,31 @@ export function evaluateSpecializationGroup(
     });
   }
 
+  // Evaluate the additional rule against courses not already consumed by prior blocks.
+  // Only the minimum required options are consumed per rule (minConsumedCourseNumbers), so
+  // extra courses taken from a mandatory_choice list remain available for the additional slot.
+  const consumedByPriorBlocks = new Set<string>([
+    ...mandatoryCourses.matchedCourseNumbers,
+    ...mandatoryChoices.flatMap((ev) => ev.minConsumedCourseNumbers),
+    ...selectionRule.minConsumedCourseNumbers,
+  ]);
+  const remainingForAdditional = new Set([...takenCourses].filter((c) => !consumedByPriorBlocks.has(c)));
+  const additionalRule = evaluateChoiceRule(
+    requirements.additionalCourseSelectionRule,
+    remainingForAdditional,
+    replacementMap,
+  );
+
   if (requirements.additionalCoursesRequired > 0 && requirements.additionalCourseSelectionRule) {
-    // Re-evaluate against courses not already consumed by prior blocks so that
-    // a course used for mandatory or mandatory_choice doesn't also count here.
-    const consumedByPriorBlocks = new Set<string>([
-      ...mandatoryCourses.matchedCourseNumbers,
-      ...mandatoryChoices.flatMap((ev) => ev.matchedCourseNumbers),
-      ...selectionRule.matchedCourseNumbers,
-    ]);
-    const remainingForAdditional = new Set([...takenCourses].filter((c) => !consumedByPriorBlocks.has(c)));
-    const additionalRuleConsumed = evaluateChoiceRule(
-      requirements.additionalCourseSelectionRule,
-      remainingForAdditional,
-      replacementMap,
-    );
     ruleBlocks.push({
       id: 'additional_courses',
       kind: 'additional_courses',
       title: `יש להשלים עוד ${requirements.additionalCoursesRequired} קורסים מתוך הרשימה הבאה`,
       requiredCount: requirements.additionalCoursesRequired,
-      satisfiedCount: additionalRuleConsumed.satisfiedOptionCount,
-      isSatisfied: additionalRuleConsumed.satisfied,
+      satisfiedCount: additionalRule.satisfiedOptionCount,
+      isSatisfied: additionalRule.satisfied,
       options: collectRuleOptions(requirements.additionalCourseSelectionRule),
-      matchedCourseNumbers: additionalRuleConsumed.matchedCourseNumbers,
+      matchedCourseNumbers: additionalRule.matchedCourseNumbers,
       note: requirements.additionalCourseSelectionRule.note,
     });
   }

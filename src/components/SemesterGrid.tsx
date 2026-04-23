@@ -38,7 +38,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
-    grades, binaryPass, selectedSpecializations, facultyColorOverrides, setFacultyColorOverride,
+    grades, binaryPass, selectedSpecializations, courseChainAssignments, facultyColorOverrides, setFacultyColorOverride,
     englishScore,
   } = usePlanStore(useShallow((state) => ({
     semesters: state.semesters,
@@ -62,6 +62,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     grades: state.grades,
     binaryPass: state.binaryPass,
     selectedSpecializations: state.selectedSpecializations,
+    courseChainAssignments: state.courseChainAssignments,
     facultyColorOverrides: state.facultyColorOverrides,
     setFacultyColorOverride: state.setFacultyColorOverride,
     englishScore: state.englishScore,
@@ -95,6 +96,15 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   const courseChainMap = useMemo(() => {
     const map = new Map<string, string>();
     if (!specializations) return map;
+    // First pass: explicitly assigned courses use their assigned chain name
+    for (const [courseId, groupId] of Object.entries(courseChainAssignments ?? {})) {
+      const group = specializations.find((g) => g.id === groupId && selectedSpecializations.includes(g.id));
+      if (group) {
+        const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
+        map.set(courseId, shortName);
+      }
+    }
+    // Second pass: unassigned courses use the first selected chain they appear in
     for (const group of specializations) {
       if (!selectedSpecializations.includes(group.id)) continue;
       const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
@@ -103,7 +113,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       }
     }
     return map;
-  }, [specializations, selectedSpecializations]);
+  }, [specializations, selectedSpecializations, courseChainAssignments]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showLegend, setShowLegend] = useState(false);

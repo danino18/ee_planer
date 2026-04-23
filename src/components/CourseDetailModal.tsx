@@ -9,10 +9,11 @@ interface Props {
   course: SapCourse;
   courses: Map<string, SapCourse>;
   semester?: number;
+  elevated?: boolean;
   onClose: () => void;
 }
 
-export function CourseDetailModal({ course, courses, semester, onClose }: Props) {
+export function CourseDetailModal({ course, courses, semester, elevated, onClose }: Props) {
   const {
     grades, setGrade,
     substitutions, setSubstitution,
@@ -21,6 +22,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
     trackId,
     binaryPass, setBinaryPass,
     removeCourseFromSemester,
+    courseChainAssignments, setCourseChainAssignment,
   } = usePlanStore(useShallow((state) => ({
     grades: state.grades,
     setGrade: state.setGrade,
@@ -34,6 +36,8 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
     binaryPass: state.binaryPass,
     setBinaryPass: state.setBinaryPass,
     removeCourseFromSemester: state.removeCourseFromSemester,
+    courseChainAssignments: state.courseChainAssignments,
+    setCourseChainAssignment: state.setCourseChainAssignment,
   })));
 
   const chainMemberships = useMemo(() => {
@@ -43,6 +47,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
         g.mandatoryCourses.includes(course.id) || g.electiveCourses.includes(course.id)
       )
       .map((g) => ({
+        id: g.id,
         name: g.name,
         role: g.mandatoryCourses.includes(course.id) ? 'mandatory' as const : 'elective' as const,
       }));
@@ -165,7 +170,7 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      className={`fixed inset-0 bg-black/40 ${elevated ? 'z-[250]' : 'z-50'} flex items-center justify-center p-4`}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" dir="rtl">
@@ -370,18 +375,47 @@ export function CourseDetailModal({ course, courses, semester, onClose }: Props)
         {chainMemberships.length > 0 && (
           <div className="mb-4 border border-gray-200 rounded-lg p-3">
             <p className="text-xs font-semibold text-gray-700 mb-2">נספר לשרשראות:</p>
-            <ul className="space-y-1">
-              {chainMemberships.map(({ name, role }) => (
-                <li key={name} className="flex items-center justify-between gap-2">
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${
-                    role === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {role === 'mandatory' ? 'חובה' : 'בחירה'}
-                  </span>
-                  <span className="text-xs text-gray-700 text-right">{name}</span>
-                </li>
-              ))}
+            <ul className="space-y-1.5">
+              {chainMemberships.map(({ id, name, role }) => {
+                const assignedChain = courseChainAssignments?.[course.id];
+                const isAssignedHere = assignedChain === id;
+                const isAssignedElsewhere = !!assignedChain && assignedChain !== id;
+                return (
+                  <li key={id} className={`flex items-center justify-between gap-2 ${isAssignedElsewhere ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                        role === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {role === 'mandatory' ? 'חובה' : 'בחירה'}
+                      </span>
+                      {chainMemberships.length > 1 && (
+                        isAssignedHere ? (
+                          <button
+                            onClick={() => setCourseChainAssignment(course.id, null)}
+                            className="text-xs px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 transition-colors"
+                            title="בטל הקצאה — יחזור לספור בכל השרשראות"
+                          >
+                            ✓ מוקצה
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setCourseChainAssignment(course.id, id)}
+                            className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                            title="הקצה קורס זה לשרשרת זו בלבד"
+                          >
+                            הקצה
+                          </button>
+                        )
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-700 text-right">{name}</span>
+                  </li>
+                );
+              })}
             </ul>
+            {courseChainAssignments?.[course.id] && (
+              <p className="text-xs text-gray-400 mt-1.5 border-t pt-1.5">הקורס נספר רק בשרשרת המוקצית</p>
+            )}
           </div>
         )}
 
