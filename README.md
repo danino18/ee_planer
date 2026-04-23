@@ -1,103 +1,125 @@
 # Technion Planner EE
 
-A production-style study planner for Technion students that turns degree planning into a visual, interactive workflow.
+![React 19](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-8-646cff?logo=vite&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-ffca28?logo=firebase&logoColor=black)
+![License](https://img.shields.io/badge/License-Private-lightgrey)
 
-The project is built for Electrical Engineering and related tracks at the Technion, with a semester board, live requirement tracking, specialization guidance, and cloud-synced plans. The interface itself is primarily in Hebrew, while the codebase and project documentation are ready for GitHub and collaboration.
+An interactive degree-planning app for Technion students, focused on Electrical Engineering and related tracks.
 
-## Overview
+Technion Planner EE turns a static curriculum sheet into a working planning environment: students can build semester plans with drag and drop, track degree progress in real time, compare multiple plan versions, and keep everything synced across devices with Firebase. The product UI is primarily in Hebrew, while the codebase and documentation are maintained in English.
 
-Technion Planner EE helps students answer practical planning questions:
+## Features
 
-- What should I place in each semester?
-- Am I meeting mandatory, elective, English, sport, and general requirements?
-- Which specialization chains already fit the courses in my plan?
-- What happens if I move a course or add a summer semester?
-- Can I keep the same plan synced across devices?
+- Drag-and-drop semester planning with an unassigned pool, summer semesters, undo, and reset-to-recommended-plan flows.
+- Multiple supported tracks with track-specific defaults and saved state when switching between tracks.
+- Fast course search by name or course number, favorites, and quick add-to-semester actions.
+- Search filters for English-taught courses, MELAG, free electives, and teaching semester availability.
+- Course detail modal with prerequisites, manual prerequisite-path selection, course substitutions, grades, binary pass/fail, SAP deep links, and CheeseFork review summaries.
+- Real-time degree tracking for mandatory credits, faculty electives, total credits, labs, sport/PE, general electives, free electives, and English requirements.
+- Weighted average calculation from entered grades, including support for binary courses that should not affect the GPA.
+- Track-specific specialization catalogs, completion progress, double specialization support, and recommendation hints based on the current plan.
+- Support for the robotics minor and the entrepreneurship minor, including eligibility and progress feedback.
+- Up to 4 named plan versions with side-by-side comparison and an option to show only the differences.
+- Google and Microsoft sign-in with Firebase Auth.
+- Real-time cloud sync with Firestore, including payload sanitization, migration handling, and conflict-safe hydration.
 
-Instead of treating the degree sheet as a static document, the app turns it into a working planning environment.
+## Supported Tracks
 
-## Core Features
-
-- Drag-and-drop semester planning
-- Multiple supported tracks:
-  - Electrical Engineering
-  - Computer Science
-  - Electrical Engineering + Mathematics
-  - Electrical Engineering + Physics
-  - Combined Electrical Engineering
-  - Computer Engineering
-- Search by course name or course number
-- Favorite courses and quick add flow
-- Automatic prerequisite parsing and warnings
-- Credit progress tracking across core degree requirement categories
-- Weighted average calculation from entered grades
-- English requirement tracking based on score and selected courses
-- Specialization selection plus recommendation hints from the current plan
-- Real-time cloud save and sync with Firebase
-- Google and Microsoft authentication
-- Firestore rules and backend-side validation for safer persistence
-
-## Why This Project Feels Serious
-
-- It includes both the frontend planner and the Firebase backend, not just a UI shell
-- It uses live course data aggregation from Technion SAP-derived public datasets
-- It handles legacy-course edge cases and local overrides for real academic planning
-- It includes authentication, persistence, security rules, API routing, and deployment config
-- It is structured as an actual maintainable app, with separated state, domain logic, hooks, services, and backend routes
+- Electrical Engineering
+- Computer Science
+- Electrical Engineering + Mathematics
+- Electrical Engineering + Physics
+- Combined Electrical Engineering
+- Computer Engineering
 
 ## Stack
 
-| Layer | Main Tools |
+| Layer | Tools |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite |
-| State | Zustand |
-| Interaction | dnd-kit |
-| Auth + Data | Firebase Auth, Firestore |
+| Frontend | React 19, TypeScript, Vite 8 |
+| Styling | Tailwind CSS v4 via `@tailwindcss/vite` |
+| State | Zustand 5 with localStorage persistence |
+| Interaction | `@dnd-kit` |
+| Auth + Cloud Data | Firebase Auth, Firestore |
 | Backend | Firebase Functions, Express |
 | Hosting | Firebase Hosting |
 
-## How The App Works
+## What The App Does
 
-1. The frontend fetches course information from a Technion SAP-based public data source.
-2. The user selects a track and organizes courses into semester columns.
-3. Planner logic computes prerequisites, progress, averages, specializations, and other degree signals locally.
-4. When signed in, the plan is stored in Firestore and synchronized in real time.
-5. Firebase Hosting serves the frontend, while `/api/**` requests are routed to the backend function.
+### Planning workspace
 
-## Project Structure
+- Lets students organize courses into semester columns with drag and drop.
+- Supports regular and summer semesters, semester reordering, and per-semester warnings.
+- Keeps an unassigned pool for courses that are relevant but not yet scheduled.
+
+### Degree intelligence
+
+- Computes requirement coverage across core degree categories.
+- Handles English requirements using score-based rules and course-level tracking.
+- Supports lab pools, core-release overrides to specialization chains, and repeatable-course handling.
+- Surfaces specialization and minor progress directly in the main planning flow.
+
+### Versioning and sync
+
+- Stores the plan as a versioned envelope instead of a single flat plan.
+- Lets users branch their plan into multiple named variants and compare them side by side.
+- Syncs signed-in users through Firestore snapshots for cross-device updates.
+
+### Backend and security
+
+- Uses Firestore rules and client-side sanitization for direct planner persistence.
+- Includes Firebase Functions routes for protected `/api/plans`, `/api/admin`, `/api/ai`, and `/api/health` endpoints.
+- Applies rate limiting, auth checks, admin checks, request validation, and security headers in the Functions layer.
+
+Note: the main planner sync path currently writes directly to Firestore from the client. The Functions API is used for protected backend routes and extensibility, not as the primary save path for the planner UI.
+
+## Repository Layout
 
 ```text
 .
-|-- src/                 Frontend application
-|   |-- components/      Planner UI, semester grid, search, requirement panels
+|-- src/
+|   |-- components/      Planner UI, semester board, search, requirements, versions
 |   |-- context/         Authentication context
-|   |-- data/            Track definitions, specialization data, rule tables
-|   |-- domain/          Planning/domain-specific helpers
-|   |-- hooks/           Progress, averages, recommendations
-|   |-- services/        SAP fetcher, Firebase setup, cloud sync
-|   `-- store/           Zustand planner state
-|-- functions/           Firebase Functions backend
-|   |-- src/routes/      plans, admin, ai endpoints
-|   |-- src/security/    HTTP hardening and plan validation
-|   `-- src/services/    Backend helpers
-|-- public/              Static assets
+|   |-- data/            Tracks, requirement lists, minors, teaching-semester overrides
+|   |-- domain/          Requirement and specialization engines
+|   |-- hooks/           Progress, averages, minors, recommendations
+|   |-- services/        SAP fetcher, Firebase setup, sync, validation, external data
+|   |-- store/           Zustand planner state
+|   |-- types/           Shared app types
+|   `-- utils/           Comparison, grades, faculty colors, helper logic
+|-- functions/
+|   `-- src/
+|       |-- middleware/  Auth and admin checks
+|       |-- routes/      plans, admin, ai
+|       |-- security/    HTTP hardening and payload validation
+|       `-- services/    Firestore and AI helpers
+|-- scripts/             Validation, bundle checks, generated-data sync
+|-- tests/               Automated test coverage
 |-- firestore.rules      Firestore access rules
-`-- firebase.json        Hosting, Functions, and rewrite configuration
+`-- firebase.json        Hosting, headers, rewrites, and Functions config
 ```
 
-## Running Locally
+## Data Sources
+
+- Course catalog data is fetched client-side from the public [technion-sap-info-fetcher](https://github.com/michael-maltsev/technion-sap-info-fetcher) dataset.
+- The app adds local overrides for legacy courses, semester availability, course-credit fixes, and requirement-specific edge cases so older or irregular plans remain usable.
+- Course detail cards can also show CheeseFork review aggregates when that public data is available.
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+ for the frontend
+- Node.js 20+ for the frontend toolchain
 - Node.js 24 for Firebase Functions, matching `functions/package.json`
-- Firebase CLI for emulators and deployment work
+- Firebase CLI for emulators and deployment
 
 ### Install dependencies
 
 ```bash
-npm install
-npm --prefix functions install
+npm ci
+npm --prefix functions ci
 ```
 
 ### Configure environment variables
@@ -111,12 +133,23 @@ VITE_FIREBASE_PROJECT_ID=...
 VITE_FIREBASE_STORAGE_BUCKET=...
 VITE_FIREBASE_MESSAGING_SENDER_ID=...
 VITE_FIREBASE_APP_ID=...
+# Optional: override the Functions base URL for custom deployments or local setups
 VITE_FUNCTIONS_BASE_URL=...
 ```
 
-For the backend, copy `functions/.env.example` to `functions/.env` and fill in the relevant values for local development.
+For Firebase Functions:
 
-### Start development servers
+1. Copy `functions/.env.example` to `functions/.env`
+2. Fill in the values you need for local development
+
+The Functions env template includes:
+
+- `ADMIN_UIDS`
+- `ALLOWED_ORIGINS`
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+
+### Run locally
 
 Frontend:
 
@@ -130,23 +163,36 @@ Functions emulator:
 npm --prefix functions run serve
 ```
 
-Production build:
+### Production build
 
 ```bash
 npm run build
 ```
 
+## Scripts
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite dev server |
+| `npm run typecheck` | Type-check the frontend |
+| `npm run build` | Sync generated requirement data, type-check, and build the app |
+| `npm run lint` | Lint the frontend |
+| `npm run test` | Run tests |
+| `npm run perf:bundle` | Build and enforce the bundle budget |
+| `npm run build:functions` | Build Firebase Functions |
+| `npm run lint:functions` | Lint Firebase Functions |
+| `npm run check` | Run the repo's full local validation workflow |
+| `npm run sync:general-requirements` | Regenerate `generatedCourseLists.ts` from the source rules |
+
 ## Deployment
 
-- Frontend output is generated into `dist/`
-- Firebase Hosting serves the single-page app
-- Requests to `/api/**` are rewritten to the `api` Cloud Function
-- Firestore access control is defined in `firestore.rules`
-- Provider secrets should be stored via Firebase Secret Manager, not committed into the repository
+- Firebase Hosting serves the frontend from `dist/`.
+- `/api/**` requests are rewritten to the `api` Firebase Function.
+- Global security headers are configured in `firebase.json`.
+- Firestore rules and indexes are defined in `firestore.rules` and `firestore.indexes.json`.
 
 ## Notes
 
-- The UI is primarily Hebrew because the target audience is Technion students
-- Course metadata is assembled from a public Technion SAP mirror
-- Some legacy courses and special academic cases are patched locally so older plans stay usable
-- The repository currently includes frontend, backend, hosting, and security configuration in one place
+- The UI is primarily Hebrew because the app is built for Technion students.
+- The planner includes frontend, backend, data-processing logic, and deployment configuration in one repo.
+- The README is intentionally aligned with the current codebase rather than a wishlist of planned features.
