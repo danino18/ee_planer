@@ -920,9 +920,21 @@ export const usePlanStore = create<PlanState>()(
         return migratedBase;
       },
       partialize: (state) => {
-        // Exclude ephemeral fields from localStorage
-        const { _history: _h, _initKey: _ik, isSwitchingTrack: _st, ...rest } = state as PlanState;
-        void _h; void _ik; void _st;
+        // Exclude ephemeral fields from localStorage.
+        // hasPendingCloudSync and lastLocalEditAt are intentionally NOT persisted:
+        // they track in-session cloud-sync state. If a previous session left them
+        // as true/non-zero, persisting would cause the next session to reject
+        // incoming cloud data from another device (believing it has "unsaved
+        // local changes") and then overwrite the cloud with stale local state.
+        const {
+          _history: _h,
+          _initKey: _ik,
+          isSwitchingTrack: _st,
+          hasPendingCloudSync: _hp,
+          lastLocalEditAt: _le,
+          ...rest
+        } = state as PlanState;
+        void _h; void _ik; void _st; void _hp; void _le;
         return rest;
       },
     }
