@@ -33,6 +33,17 @@ function parsePrerequisites(prereqStr?: string): string[][] {
     .filter(group => group.length > 0);
 }
 
+export function addPrerequisiteOption(course: SapCourse | undefined, prerequisiteGroup: string[]): void {
+  if (!course) return;
+  const alreadyExists = course.prerequisites.some(
+    (group) => group.length === prerequisiteGroup.length
+      && group.every((id, index) => id === prerequisiteGroup[index]),
+  );
+  if (!alreadyExists) {
+    course.prerequisites.push(prerequisiteGroup);
+  }
+}
+
 export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   if (courseCache) return courseCache;
   if (courseCachePromise) return courseCachePromise;
@@ -178,6 +189,9 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   if (physics2p) {
     physics2p.prerequisites = [['01140074']];
   }
+
+  // Fix: 00460267 (מבנה מחשבים) also accepts this two-course prerequisite path.
+  addPrerequisiteOption(merged.get('00460267'), ['02340124', '00440252']);
 
   // Force correct credits for sport courses (SAP data may have wrong values)
   const SPORT_OVERRIDES: Record<string, number> = {
