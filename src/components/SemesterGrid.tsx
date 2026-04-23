@@ -1,6 +1,6 @@
 import { memo, useMemo, useState } from 'react';
 import {
-  DndContext, DragOverlay, closestCenter,
+  DndContext, DragOverlay, closestCenter, closestCorners, pointerWithin, rectIntersection,
   PointerSensor, TouchSensor, KeyboardSensor,
   useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -16,12 +16,20 @@ import { computeWeightedAverage, REPEATABLE_COURSES } from '../utils/courseGrade
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
+import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
 
 interface Props {
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition;
   specializations?: SpecializationGroup[];
 }
+
+const semesterGridCollisionDetection = createSemesterGridCollisionDetection({
+  closestCenter,
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
+});
 
 export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, specializations }: Props) {
   const {
@@ -312,7 +320,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={semesterGridCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >

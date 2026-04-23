@@ -67,6 +67,12 @@ export const SemesterColumn = memo(function SemesterColumn({
 
   const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
   const columnStyle = getColumnStyle(isOver, !!(isDraggingActive && semester > 0), isSummer, isCurrent, isPast, isFuture);
+  const setColumnRef = (node: HTMLDivElement | null) => {
+    setNodeRef(node);
+    if (semester > 0) {
+      setSortableRef(node);
+    }
+  };
 
   const semesterLabel = semester === 0
     ? 'לא משובץ'
@@ -96,7 +102,7 @@ export const SemesterColumn = memo(function SemesterColumn({
 
   return (
     <div
-      ref={semester > 0 ? setSortableRef : undefined}
+      ref={setColumnRef}
       style={sortableStyle}
       className={`flex flex-col rounded-xl border-2 min-h-40 transition-colors ${columnStyle}`}
     >
@@ -208,7 +214,7 @@ export const SemesterColumn = memo(function SemesterColumn({
         </div>
       )}
 
-      <div ref={setNodeRef} className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-2 sm:grid-cols-3' : 'flex flex-col'}`}>
+      <div className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-2 sm:grid-cols-3' : 'flex flex-col'}`}>
         {filteredIds.map((id, idx) => {
           const course = courses.get(id);
           if (!course) return null;
