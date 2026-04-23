@@ -766,15 +766,6 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                     </span>
                   </div>
                 </div>
-                {group.summaries && group.summaries.length > 0 && (
-                  <div className="flex flex-wrap justify-end gap-1 mt-1">
-                    {group.summaries.map((summary) => (
-                      <span key={summary.id} className="text-[11px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
-                        {summary.done}/{summary.required} {summary.label}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </div>
