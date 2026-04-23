@@ -96,6 +96,53 @@ test('client sanitizer accepts current StudentPlan fields in plan and savedTrack
   assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
 });
 
+test('client sanitizer accepts nested savedTracks (real-world multi-track-switch data)', () => {
+  // When a user switches tracks A→B→A, serializePlanState produces savedTracks where
+  // each sub-plan itself has a savedTracks field (captured at switch time). Validation
+  // must silently drop the nested savedTracks rather than rejecting the whole envelope.
+  const planWithNestedSavedTracks = {
+    ...createPlanPayload(),
+    savedTracks: {
+      cs: {
+        ...createPlanPayload().savedTracks.cs,
+        savedTracks: {
+          ce: {
+            trackId: 'ce',
+            semesters: { 0: [], 1: [] },
+            completedCourses: [],
+            selectedSpecializations: [],
+            favorites: [],
+            grades: {},
+            substitutions: {},
+            maxSemester: 8,
+            selectedPrereqGroups: {},
+            summerSemesters: [],
+            currentSemester: null,
+            semesterOrder: [1, 2, 3, 4, 5, 6, 7, 8],
+            semesterTypeOverrides: {},
+            semesterWarningsIgnored: [],
+            doubleSpecializations: [],
+            hasEnglishExemption: false,
+            manualSapAverages: {},
+            binaryPass: {},
+            completedInstances: [],
+            dismissedRecommendedCourses: {},
+            facultyColorOverrides: {},
+            coreToChainOverrides: [],
+            roboticsMinorEnabled: false,
+            entrepreneurshipMinorEnabled: false,
+          },
+        },
+      },
+    },
+  };
+
+  const sanitized = sanitizeStudentPlan(planWithNestedSavedTracks);
+  assert.ok(sanitized, 'expected nested savedTracks payload to sanitize successfully');
+  assert.ok(sanitized.savedTracks?.cs, 'cs savedTrack should be present');
+  assert.equal(sanitized.savedTracks.cs.savedTracks, undefined, 'nested savedTracks should be stripped');
+});
+
 test('server security validator accepts current StudentPlan fields in plan and savedTracks payloads', () => {
   const validated = validateStudentPlanPayload(createPlanPayload());
 

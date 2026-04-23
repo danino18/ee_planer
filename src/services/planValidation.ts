@@ -283,10 +283,6 @@ function sanitizeStudentPlanRecord(
     return null;
   }
 
-  if (!options.allowSavedTracks && 'savedTracks' in value) {
-    return null;
-  }
-
   const sanitized: Partial<StudentPlan> = {};
 
   if ('trackId' in value) {
@@ -410,8 +406,8 @@ function sanitizeStudentPlanRecord(
     sanitized.completedInstances = completedInstances;
   }
 
-  if ('savedTracks' in value) {
-    if (!options.allowSavedTracks || !isPlainObject(value.savedTracks)) {
+  if ('savedTracks' in value && options.allowSavedTracks) {
+    if (!isPlainObject(value.savedTracks)) {
       return null;
     }
 
