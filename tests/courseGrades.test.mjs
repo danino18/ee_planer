@@ -1,23 +1,64 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const transpiledModuleUrls = new Map();
 
-function loadTranspiledModule(relativePath) {
-  const absolutePath = join(repoRoot, ...relativePath.split('/'));
+function resolveTypeScriptModule(fromDir, specifier) {
+  const basePath = resolve(fromDir, specifier);
+  const candidates = [
+    basePath,
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    join(basePath, 'index.ts'),
+    join(basePath, 'index.tsx'),
+  ];
+
+  const resolvedPath = candidates.find((candidate) => existsSync(candidate));
+  if (!resolvedPath) {
+    throw new Error(`Unable to resolve module "${specifier}" from ${fromDir}`);
+  }
+
+  return resolvedPath;
+}
+
+function transpileToDataUrl(absolutePath) {
+  const cached = transpiledModuleUrls.get(absolutePath);
+  if (cached) return cached;
+
   const source = readFileSync(absolutePath, 'utf8');
-  const transpiled = ts.transpileModule(source, {
+  let transpiled = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.ES2022,
       target: ts.ScriptTarget.ES2022,
+      jsx: ts.JsxEmit.ReactJSX,
     },
   }).outputText;
 
-  return import(`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`);
+  const specifiers = [...transpiled.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)]
+    .map((match) => match[1])
+    .filter((specifier) => specifier.startsWith('.'));
+
+  for (const specifier of new Set(specifiers)) {
+    const dependencyPath = resolveTypeScriptModule(dirname(absolutePath), specifier);
+    const dependencyUrl = transpileToDataUrl(dependencyPath);
+    transpiled = transpiled
+      .replaceAll(`'${specifier}'`, `'${dependencyUrl}'`)
+      .replaceAll(`"${specifier}"`, `"${dependencyUrl}"`);
+  }
+
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`;
+  transpiledModuleUrls.set(absolutePath, moduleUrl);
+  return moduleUrl;
+}
+
+function loadTranspiledModule(relativePath) {
+  const absolutePath = join(repoRoot, ...relativePath.split('/'));
+  return import(transpileToDataUrl(absolutePath));
 }
 
 const {
@@ -129,6 +170,19 @@ test('moving a repeatable course between semesters carries its grade to the new 
   const movedGrades = moveRepeatableCourseGrade({ '03940902_1': 95 }, '03940902', 1, 2);
 
   assert.deepEqual(movedGrades, { '03940902_2': 95 });
+});
+
+test('sport courses in the 03940800-03940820 range use semester-scoped repeatable grade keys', () => {
+  const movedGrades = moveRepeatableCourseGrade({ '03940810_1': 91 }, '03940810', 1, 2);
+
+  assert.deepEqual(movedGrades, { '03940810_2': 91 });
+
+  const sanitized = sanitizeRepeatableCourseGrades(
+    { 0: ['03940810'], 1: ['03940810'], 2: [] },
+    { '03940810_1': 91, '03940810_2': 88, REGULAR: 77 },
+  );
+
+  assert.deepEqual(sanitized, { '03940810_1': 91, REGULAR: 77 });
 });
 
 test('clearing or sanitizing repeatable-course semester grades removes orphaned grade keys', () => {

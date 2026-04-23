@@ -6,18 +6,28 @@ import {
   sometimesEnglishMelagCourseIds,
 } from './generatedCourseLists';
 
+const SPORT_RANGE_START = '03940800';
+const SPORT_RANGE_END = '03940820';
+const TECHNICAL_ENGLISH_NAME = '\u05d0\u05e0\u05d2\u05dc\u05d9\u05ea \u05d8\u05db\u05e0\u05d9\u05ea';
+const ADVANCED_A_NAME = '\u05de\u05ea\u05e7\u05d3\u05de\u05d9\u05dd \u05d0';
+const ADVANCED_B_NAME = '\u05de\u05ea\u05e7\u05d3\u05de\u05d9\u05dd \u05d1';
+
 function normalizeCourseName(name: string): string {
-  return name.replace(/['׳"]/g, '');
+  return name.replace(/['\u05F3"]/g, '');
+}
+
+function isCourseIdInInclusiveRange(courseId: string, start: string, end: string): boolean {
+  return courseId >= start && courseId <= end;
 }
 
 export function isTechnicalEnglishAdvancedAName(name: string): boolean {
   const normalized = normalizeCourseName(name);
-  return normalized.includes('אנגלית טכנית') && normalized.includes('מתקדמים א');
+  return normalized.includes(TECHNICAL_ENGLISH_NAME) && normalized.includes(ADVANCED_A_NAME);
 }
 
 export function isTechnicalEnglishAdvancedBName(name: string): boolean {
   const normalized = normalizeCourseName(name);
-  return normalized.includes('אנגלית טכנית') && normalized.includes('מתקדמים ב');
+  return normalized.includes(TECHNICAL_ENGLISH_NAME) && normalized.includes(ADVANCED_B_NAME);
 }
 
 export function isTechnicalEnglishCourseName(name: string): boolean {
@@ -34,8 +44,8 @@ export function isCourseTaughtInEnglish(
 ): boolean {
   return !!course.isEnglish ||
     isTechnicalEnglishCourseName(course.name) || (
-    isManualEnglishEligible(course.id) && englishTaughtCourses.includes(course.id)
-  );
+      isManualEnglishEligible(course.id) && englishTaughtCourses.includes(course.id)
+    );
 }
 
 export function isEnglishCourseId(courseId: string): boolean {
@@ -55,7 +65,8 @@ export function isFreeElectiveCourseId(courseId: string): boolean {
 }
 
 export function isSportCourseId(courseId: string): boolean {
-  return /^(039408|039409)/.test(courseId) && !isHumanitiesFreeElectiveCourseId(courseId);
+  const isSportRangeCourse = isCourseIdInInclusiveRange(courseId, SPORT_RANGE_START, SPORT_RANGE_END);
+  return (isSportRangeCourse || /^039409/.test(courseId)) && !isHumanitiesFreeElectiveCourseId(courseId);
 }
 
 export { humanitiesFreeElectiveCourses };

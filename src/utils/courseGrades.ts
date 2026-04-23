@@ -1,8 +1,9 @@
 import type { SapCourse, StudentPlan } from '../types';
+import { isSportCourseId } from '../data/generalRequirements/courseClassification';
 
-export const REPEATABLE_COURSES = new Set([
-  '03940900', '03940901', '03940902', '03940800',
-]);
+export const REPEATABLE_COURSES: Pick<Set<string>, 'has'> = {
+  has: (courseId) => isSportCourseId(courseId),
+};
 
 export function gradeKey(courseId: string, semester?: number): string {
   return REPEATABLE_COURSES.has(courseId) && semester !== undefined && semester > 0
