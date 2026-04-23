@@ -34,6 +34,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
   const {
     selectedSpecializations, semesters, completedCourses,
     toggleSpecialization, doubleSpecializations, toggleDoubleSpecialization,
+    courseChainAssignments,
   } = usePlanStore(useShallow((state) => ({
     selectedSpecializations: state.selectedSpecializations,
     semesters: state.semesters,
@@ -41,6 +42,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
     toggleSpecialization: state.toggleSpecialization,
     doubleSpecializations: state.doubleSpecializations,
     toggleDoubleSpecialization: state.toggleDoubleSpecialization,
+    courseChainAssignments: state.courseChainAssignments,
   })));
   const groups = catalog.groups;
   const allPlaced = useMemo(
@@ -92,6 +94,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               group,
               allPlaced,
               isDouble && group.canBeDouble ? 'double' : 'single',
+              courseChainAssignments,
             );
             const progress = getRuleProgress(evaluation.ruleBlocks);
             const pct = Math.min(

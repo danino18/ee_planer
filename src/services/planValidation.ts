@@ -29,6 +29,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'dismissedRecommendedCourses',
   'facultyColorOverrides',
   'coreToChainOverrides',
+  'courseChainAssignments',
   'roboticsMinorEnabled',
   'entrepreneurshipMinorEnabled',
   'initializedTracks',
@@ -466,6 +467,13 @@ function sanitizeStudentPlanRecord(
     const coreToChainOverrides = validateStringArray(value.coreToChainOverrides, 600, 32);
     if (!coreToChainOverrides) return null;
     sanitized.coreToChainOverrides = coreToChainOverrides;
+  }
+
+  if ('courseChainAssignments' in value) {
+    // keys = courseIds (≤32 chars), values = chainGroupIds (≤64 chars), max 200 entries
+    const courseChainAssignments = validateStringMap(value.courseChainAssignments, 200, 64);
+    if (!courseChainAssignments) return null;
+    sanitized.courseChainAssignments = courseChainAssignments;
   }
 
   if ('roboticsMinorEnabled' in value) {

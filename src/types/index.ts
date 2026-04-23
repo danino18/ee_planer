@@ -233,6 +233,7 @@ export interface StudentPlan {
   dismissedRecommendedCourses?: Record<string, string[]>;
   facultyColorOverrides?: Record<string, string>;  // faculty name → color key override
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
+  courseChainAssignments?: Record<string, string>;  // courseId → chainGroupId: explicit single-chain assignment
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
   initializedTracks?: string[];  // trackIds that have been fully initialized at least once

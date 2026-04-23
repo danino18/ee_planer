@@ -61,6 +61,7 @@ interface PlanState extends StudentPlan {
   setBinaryPass: (courseId: string, value: boolean | null) => void;
   setMiluimCredits: (n: number | null) => void;
   setCoreToChainOverrides: (ids: string[]) => void;
+  setCourseChainAssignment: (courseId: string, chainGroupId: string | null) => void;
   toggleRoboticsMinor: () => void;
   toggleEntrepreneurshipMinor: () => void;
   setEnglishScore: (score: number | null) => void;
@@ -706,6 +707,16 @@ export const usePlanStore = create<PlanState>()(
 
       setCoreToChainOverrides: (ids) =>
         set(() => ({ coreToChainOverrides: ids })),
+
+      setCourseChainAssignment: (courseId, chainGroupId) =>
+        set((state) => {
+          const current = state.courseChainAssignments ?? {};
+          if (chainGroupId === null) {
+            const { [courseId]: _removed, ...rest } = current;
+            return { courseChainAssignments: rest };
+          }
+          return { courseChainAssignments: { ...current, [courseId]: chainGroupId } };
+        }),
 
       toggleRoboticsMinor: () =>
         set((state) => ({ roboticsMinorEnabled: !state.roboticsMinorEnabled })),

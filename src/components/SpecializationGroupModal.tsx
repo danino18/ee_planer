@@ -1,4 +1,4 @@
-﻿import { useMemo } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import type { SpecializationCourseReference, SpecializationGroup, SpecializationRuleBlock, SapCourse } from '../types';
@@ -6,6 +6,7 @@ import { evaluateSpecializationGroup } from '../domain/specializations';
 import { usePlanStore } from '../store/planStore';
 import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
+import { CourseDetailModal } from './CourseDetailModal';
 
 interface Props {
   group: SpecializationGroup;
@@ -32,6 +33,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     addCourseToSemester,
     englishTaughtCourses,
     doubleSpecializations,
+    courseChainAssignments,
   } = usePlanStore(useShallow((state) => ({
     favorites: state.favorites,
     toggleFavorite: state.toggleFavorite,
@@ -40,7 +42,9 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     addCourseToSemester: state.addCourseToSemester,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     doubleSpecializations: state.doubleSpecializations ?? [],
+    courseChainAssignments: state.courseChainAssignments,
   })));
+  const [detailCourse, setDetailCourse] = useState<SapCourse | null>(null);
   const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
   const allPlaced = useMemo(
     () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
@@ -48,8 +52,8 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
   );
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(
-    () => evaluateSpecializationGroup(group, allPlaced, mode),
-    [allPlaced, group, mode],
+    () => evaluateSpecializationGroup(group, allPlaced, mode, courseChainAssignments),
+    [allPlaced, group, mode, courseChainAssignments],
   );
   const displayedCourseNumbers = useMemo(
     () => new Set(evaluation.ruleBlocks.flatMap((block) => block.options.map((option) => option.courseNumber))),
@@ -70,7 +74,12 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     return (
       <div key={id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
         <div className="flex-1 min-w-0 ml-2">
-          <p className="text-sm text-gray-800 truncate">{course?.name ?? courseRef.courseName ?? id}</p>
+          <p
+            className={`text-sm truncate ${course ? 'text-blue-600 cursor-pointer hover:underline' : 'text-gray-800'}`}
+            onClick={() => { if (course) setDetailCourse(course); }}
+          >
+            {course?.name ?? courseRef.courseName ?? id}
+          </p>
           <div className="flex items-center gap-1 flex-wrap mt-0.5">
             {seasonBadge && (
               <span className="text-[11px] leading-none" title={seasonBadge.title}>{seasonBadge.emoji}</span>
@@ -230,6 +239,14 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
           )}
         </div>
       </div>
+      {detailCourse && (
+        <CourseDetailModal
+          course={detailCourse}
+          courses={courses}
+          elevated
+          onClose={() => setDetailCourse(null)}
+        />
+      )}
     </div>,
     document.body,
   );
