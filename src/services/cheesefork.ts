@@ -1,6 +1,5 @@
 const FIRESTORE_BASE =
   'https://firestore.googleapis.com/v1/projects/cheesefork-de9af/databases/(default)/documents/courseFeedback';
-const CHEESEFORK_SITE = 'https://cheesefork.cf/';
 
 export interface CheeseForkPost {
   timestamp: number;
@@ -127,35 +126,30 @@ export async function fetchCheeseForkFeedback(
 }
 
 /**
- * Pick a semester value for the CheeseFork deep-link `?semester=` param.
- * Preference order (per plan):
- *   1. The most recent post's semester, among the 6 most-recent distinct semesters in posts.
- *   2. A caller-provided fallback (e.g. the planner's current/teaching semester).
- *   3. null → caller should omit the param.
+ * Format a CheeseFork semester code (Technion convention "YYYY01" / "YYYY02" / "YYYY03"
+ * where 01=חורף, 02=אביב, 03=קיץ and YYYY is the academic-year start) into Hebrew.
+ * Falls back to the raw value if the pattern doesn't match.
  */
-export function pickCheeseForkSemester(
-  posts: CheeseForkPost[],
-  fallbackSemester?: string | null,
-): string | null {
-  if (posts.length > 0) {
-    const latestBySemester = new Map<string, number>();
-    for (const p of posts) {
-      if (!p.semester) continue;
-      const prev = latestBySemester.get(p.semester) ?? -Infinity;
-      if (p.timestamp > prev) latestBySemester.set(p.semester, p.timestamp);
-    }
-    const candidates = [...latestBySemester.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([sem]) => sem);
-    if (candidates.length > 0) return candidates[0];
+export function formatCheeseForkSemester(semester: string): string {
+  const match = /^(\d{4})(0[123])$/.exec(semester);
+  if (!match) return semester;
+  const start = Number(match[1]);
+  const end = start + 1;
+  switch (match[2]) {
+    case '01': return `סמסטר חורף ${start}-${end}`;
+    case '02': return `סמסטר אביב ${end}`;
+    case '03': return `סמסטר קיץ ${end}`;
+    default: return semester;
   }
-  return fallbackSemester ?? null;
 }
 
-export function buildCheeseForkUrl(courseId8: string, semester: string | null): string {
-  const params = new URLSearchParams();
-  if (semester) params.set('semester', semester);
-  params.set('course', courseId8);
-  return `${CHEESEFORK_SITE}?${params.toString()}`;
+const dateFormatter = new Intl.DateTimeFormat('he-IL', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+export function formatCheeseForkDate(timestampMs: number): string {
+  if (!timestampMs || isNaN(timestampMs)) return '';
+  return dateFormatter.format(new Date(timestampMs));
 }
