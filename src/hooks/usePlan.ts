@@ -164,6 +164,7 @@ export interface CoreSlot {
   done: boolean;        // locked in core AND placed
   released: boolean;    // placed but released to chain by user
   activeId?: string;    // which specific ID is placed (for OR pairs)
+  availableIds: string[]; // courses in the slot that are not yet placed/completed
 }
 
 export interface RequirementsInput {
@@ -496,6 +497,7 @@ export function computeRequirementsProgress(
             done: !!activeId,
             released: !activeId && !!releasedId,
             activeId,
+            availableIds: group.filter((gid) => !allPlaced.has(gid)),
           });
         } else {
           const isLocked = coreLockedSet.has(id);
@@ -506,6 +508,7 @@ export function computeRequirementsProgress(
             done: isLocked,
             released: isReleased,
             activeId: isLocked ? id : undefined,
+            availableIds: allPlaced.has(id) ? [] : [id],
           });
         }
       }

@@ -275,6 +275,7 @@ interface Props {
 
 export const RequirementsPanel = memo(function RequirementsPanel({ progress, weightedAverage }: Props) {
   const {
+    trackId,
     setMiluimCredits,
     setEnglishScore,
     toggleEnglishTaughtCourse,
@@ -292,6 +293,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     semesters,
     completedCourses,
   } = usePlanStore(useShallow((state) => ({
+    trackId: state.trackId,
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
     toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
@@ -417,6 +419,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   }
 
   const isMiluim = miluimCredits !== undefined;
+  const shouldShowCoreAddButton = trackId === 'ce';
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -450,12 +453,37 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   <span className={`font-bold mt-0.5 shrink-0 ${slot.done ? 'text-green-600' : slot.released ? 'text-purple-500' : 'text-gray-400'}`}>
                     {slot.done ? '✓' : slot.released ? '↗' : '○'}
                   </span>
-                  <div className="min-w-0">
-                    <span className={slot.done ? 'text-green-700' : slot.released ? 'text-purple-600' : 'text-gray-500'}>
-                      {slot.ids.length > 1
-                        ? `${slot.names.join(' / ')} (אחד מהשניים)`
-                        : slot.names[0]}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    {shouldShowCoreAddButton ? (
+                      <div className="space-y-1">
+                        {slot.ids.map((id, index) => {
+                          const canAdd = slot.availableIds.includes(id);
+                          const rowTextColor = slot.done
+                            ? 'text-green-700'
+                            : slot.released
+                              ? 'text-purple-600'
+                              : canAdd
+                                ? 'text-gray-500'
+                                : 'text-gray-600';
+
+                          return (
+                            <div key={id} className="flex items-center gap-1.5">
+                              <span className={rowTextColor}>
+                                {slot.names[index]}
+                                {slot.ids.length > 1 && index === slot.ids.length - 1 && ' (אחד מהשניים)'}
+                              </span>
+                              {canAdd && renderMinorAddButton(id)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <span className={slot.done ? 'text-green-700' : slot.released ? 'text-purple-600' : 'text-gray-500'}>
+                        {slot.ids.length > 1
+                          ? `${slot.names.join(' / ')} (אחד מהשניים)`
+                          : slot.names[0]}
+                      </span>
+                    )}
                   </div>
                 </div>
               ))}
