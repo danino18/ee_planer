@@ -1,7 +1,7 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
@@ -66,7 +66,10 @@ test('track-specific specialization catalogs load and validate correctly', () =>
     'Different tracks should load different specialization sets',
   );
   for (const trackSources of Object.values(sources)) {
-    assert.ok(trackSources.every((entry) => entry.path.split('קבוצות התמחות').at(-1).split('\\').length > 2));
+    assert.ok(
+      trackSources.every((entry) => relative(filesRoot, entry.path).split(sep).filter(Boolean).length >= 2),
+      'Track specialization sources should stay grouped under a track-specific folder',
+    );
   }
 
   const eeComm = findGroup(catalogs.ee, 'תקשורת');

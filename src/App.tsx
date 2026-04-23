@@ -104,6 +104,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const lastLoadedUid = useRef<string | null>(null);
   const applyingCloudPlan = useRef(false);
   const cloudSyncReady = useRef(false);
+  const suppressAutoInitCloudPending = useRef(false);
   const latestLocalSignature = useRef(getPlanSignature(extractEnvelope(usePlanStore.getState())));
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
@@ -152,29 +153,30 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
     initialized.current.add(key);
 
-    const allPlaced = new Set(Object.values(semesters).flat());
-    const alreadyInitialized = new Set<string>();
-    const dismissedForTrack = new Set(dismissedRecommendedCourses?.[trackId] ?? []);
-    for (const entry of trackDef.semesterSchedule) {
-      const ids = getRecommendedCourseIdsForEntry(entry, courses, englishScore);
-      for (const id of ids) {
-        if (!allPlaced.has(id) && !alreadyInitialized.has(id) && courses.has(id) && !dismissedForTrack.has(id)) {
-          addCourseToSemester(id, entry.semester);
-          alreadyInitialized.add(id);
+    suppressAutoInitCloudPending.current = true;
+    try {
+      const allPlaced = new Set(Object.values(semesters).flat());
+      const alreadyInitialized = new Set<string>();
+      const dismissedForTrack = new Set(dismissedRecommendedCourses?.[trackId] ?? []);
+      for (const entry of trackDef.semesterSchedule) {
+        const ids = getRecommendedCourseIdsForEntry(entry, courses, englishScore);
+        for (const id of ids) {
+          if (!allPlaced.has(id) && !alreadyInitialized.has(id) && courses.has(id) && !dismissedForTrack.has(id)) {
+            addCourseToSemester(id, entry.semester);
+            alreadyInitialized.add(id);
+          }
         }
       }
+      markTrackInitialized(trackId);
+    } finally {
+      suppressAutoInitCloudPending.current = false;
     }
-    markTrackInitialized(trackId);
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
 
   useEffect(() => {
     const unsubscribe = usePlanStore.subscribe((state, previousState) => {
       if (applyingCloudPlan.current) return;
-      // Ignore store changes until the first cloud snapshot has been received.
-      // Otherwise auto-initialization (adding recommended courses on fresh load)
-      // incorrectly sets hasPendingCloudSync=true, causing the empty local plan
-      // to win over real cloud data.
-      if (!cloudSyncReady.current) return;
+      if (suppressAutoInitCloudPending.current) return;
 
       const currentSignature = getPlanSignature(extractEnvelope(state));
       const previousSignature = getPlanSignature(extractEnvelope(previousState));
@@ -335,6 +337,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       uid,
       handleCloudEnvelope,
       () => {
+        cloudSyncReady.current = true;
         void doSave();
       },
       (error) => {

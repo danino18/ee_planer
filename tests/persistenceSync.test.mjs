@@ -184,6 +184,26 @@ test('App sync logic uses the shared envelope helpers instead of ad-hoc serializ
   assert.match(appSource, /markCloudSyncPending/, 'App should persist explicit pending-sync metadata for local edits');
   assert.match(appSource, /markCloudSyncSettled/, 'App should clear pending-sync metadata after confirmed sync');
   assert.match(appSource, /initializedTracks/, 'App serialization path should include initializedTracks via the shared serializer');
+  assert.match(
+    appSource,
+    /const suppressAutoInitCloudPending = useRef\(false\);/,
+    'App should track auto-initialization separately from real user edits',
+  );
+  assert.match(
+    appSource,
+    /if \(suppressAutoInitCloudPending\.current\) return;/,
+    'App should suppress pending-sync marking only while auto-seeding recommended courses',
+  );
+  assert.match(
+    appSource,
+    /suppressAutoInitCloudPending\.current = true;[\s\S]*markTrackInitialized\(trackId\);[\s\S]*suppressAutoInitCloudPending\.current = false;/,
+    'App should bracket track auto-initialization so recommended seeding does not look like a user edit',
+  );
+  assert.match(
+    appSource,
+    /\(\) => {\s*cloudSyncReady\.current = true;\s*void doSave\(\);\s*}/,
+    'App should permit the first cloud save when the remote plan document is absent',
+  );
   assert.notEqual(getPlanSignature(localEnvelopeForSignatureCheck()), '', 'plan signatures should be non-empty for sync comparisons');
 });
 
