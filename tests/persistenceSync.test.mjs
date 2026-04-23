@@ -154,15 +154,16 @@ test('buildEnvelopeFromState writes current active-plan fields into the envelope
   assert.ok(envelope.versions[0].plan.savedTracks?.cs, 'savedTracks should be included in active version snapshots');
 });
 
-test('shouldApplyCloudEnvelope only prefers cloud when it is fresher and local is not pending', () => {
+test('shouldApplyCloudEnvelope prefers cloud whenever local has no pending changes', () => {
   const localEnvelope = createEnvelope(100);
   const newerCloudEnvelope = createEnvelope(200, { versionId: 'version-2' });
   const olderCloudEnvelope = createEnvelope(50, { versionId: 'version-3' });
 
   assert.equal(shouldApplyCloudEnvelope(localEnvelope, localEnvelope, false), false, 'equal envelopes should not reapply cloud');
-  assert.equal(shouldApplyCloudEnvelope(localEnvelope, newerCloudEnvelope, false), true, 'newer cloud data should win when local is not pending');
-  assert.equal(shouldApplyCloudEnvelope(localEnvelope, olderCloudEnvelope, false), false, 'older cloud data should not overwrite local');
+  assert.equal(shouldApplyCloudEnvelope(localEnvelope, newerCloudEnvelope, false), true, 'cloud wins when local is not pending');
+  assert.equal(shouldApplyCloudEnvelope(localEnvelope, olderCloudEnvelope, false), true, 'cloud wins regardless of freshness when local is not pending — Date.now() on fresh devices makes local falsely look newer');
   assert.equal(shouldApplyCloudEnvelope(localEnvelope, olderCloudEnvelope, true), false, 'pending local data should never be overwritten by cloud');
+  assert.equal(shouldApplyCloudEnvelope(localEnvelope, newerCloudEnvelope, true), false, 'pending local data should never be overwritten by cloud even if cloud is newer');
 });
 
 test('plan store snapshots stay aligned with the shared serializer', () => {

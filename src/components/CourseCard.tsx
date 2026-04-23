@@ -75,9 +75,10 @@ export const CourseCard = memo(function CourseCard({
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
   const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id);
 
-  const style = transform
-    ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 }
-    : undefined;
+  const style: React.CSSProperties = {
+    touchAction: 'none',
+    ...(transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
+  };
 
   let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
   if (wrongSemesterType) colorClass = 'bg-red-50 border-red-200 hover:border-red-300';

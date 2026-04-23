@@ -103,6 +103,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const isSavingRef = useRef(false);
   const lastLoadedUid = useRef<string | null>(null);
   const applyingCloudPlan = useRef(false);
+  const cloudSyncReady = useRef(false);
   const latestLocalSignature = useRef(getPlanSignature(extractEnvelope(usePlanStore.getState())));
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
@@ -169,6 +170,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   useEffect(() => {
     const unsubscribe = usePlanStore.subscribe((state, previousState) => {
       if (applyingCloudPlan.current) return;
+      // Ignore store changes until the first cloud snapshot has been received.
+      // Otherwise auto-initialization (adding recommended courses on fresh load)
+      // incorrectly sets hasPendingCloudSync=true, causing the empty local plan
+      // to win over real cloud data.
+      if (!cloudSyncReady.current) return;
 
       const currentSignature = getPlanSignature(extractEnvelope(state));
       const previousSignature = getPlanSignature(extractEnvelope(previousState));
@@ -248,6 +254,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
     const doSave = async (onSuccess?: () => void) => {
       if (isSavingRef.current) return;
+      // Never write to Firestore before we've received the first cloud snapshot.
+      // Prevents overwriting cloud data with auto-initialized local state.
+      if (!cloudSyncReady.current) return;
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
         saveTimer.current = null;
@@ -286,6 +295,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     };
 
     const handleCloudEnvelope = (cloudEnvelope: VersionedPlanEnvelope) => {
+      cloudSyncReady.current = true;
       const localState = usePlanStore.getState();
       const localEnvelope = extractEnvelope(localState);
       const localSignature = getPlanSignature(localEnvelope);
@@ -366,6 +376,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     window.addEventListener('online', handleOnline);
 
     return () => {
+      cloudSyncReady.current = false;
       unsubSnapshot();
       unsubStore();
       document.removeEventListener('visibilitychange', handleVisibilityChange);

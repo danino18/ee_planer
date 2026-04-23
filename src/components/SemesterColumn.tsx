@@ -108,6 +108,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               <div
                 {...attributes}
                 {...listeners}
+                style={{ touchAction: 'none' }}
                 className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 text-base select-none leading-none"
                 title="גרור לשינוי סדר"
               >⠿</div>

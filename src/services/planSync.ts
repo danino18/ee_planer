@@ -6,12 +6,6 @@ export interface EnvelopeStateLike extends StudentPlan {
   activeVersionId?: string;
 }
 
-export interface EnvelopeFreshnessKey {
-  latestUpdatedAt: number;
-  activeUpdatedAt: number;
-  versionCount: number;
-}
-
 interface BuildEnvelopeOptions {
   activeVersionUpdatedAt?: number;
 }
@@ -59,37 +53,6 @@ export function getPlanSignature(envelope: VersionedPlanEnvelope): string {
   return JSON.stringify(envelope);
 }
 
-export function getEnvelopeFreshnessKey(envelope: VersionedPlanEnvelope): EnvelopeFreshnessKey {
-  const activeVersion =
-    envelope.versions.find((version) => version.id === envelope.activeVersionId) ??
-    envelope.versions[0];
-
-  return {
-    latestUpdatedAt: envelope.versions.reduce((latest, version) => Math.max(latest, version.updatedAt), 0),
-    activeUpdatedAt: activeVersion?.updatedAt ?? 0,
-    versionCount: envelope.versions.length,
-  };
-}
-
-export function compareEnvelopeFreshness(localEnvelope: VersionedPlanEnvelope, cloudEnvelope: VersionedPlanEnvelope): number {
-  const localKey = getEnvelopeFreshnessKey(localEnvelope);
-  const cloudKey = getEnvelopeFreshnessKey(cloudEnvelope);
-
-  if (localKey.latestUpdatedAt !== cloudKey.latestUpdatedAt) {
-    return Math.sign(cloudKey.latestUpdatedAt - localKey.latestUpdatedAt);
-  }
-
-  if (localKey.activeUpdatedAt !== cloudKey.activeUpdatedAt) {
-    return Math.sign(cloudKey.activeUpdatedAt - localKey.activeUpdatedAt);
-  }
-
-  if (localKey.versionCount !== cloudKey.versionCount) {
-    return Math.sign(cloudKey.versionCount - localKey.versionCount);
-  }
-
-  return 0;
-}
-
 export function shouldApplyCloudEnvelope(
   localEnvelope: VersionedPlanEnvelope,
   cloudEnvelope: VersionedPlanEnvelope,
@@ -103,5 +66,8 @@ export function shouldApplyCloudEnvelope(
     return false;
   }
 
-  return compareEnvelopeFreshness(localEnvelope, cloudEnvelope) > 0;
+  // No pending local edits → cloud always wins. Freshness comparison is unsafe
+  // because a fresh device builds a fallback envelope with updatedAt: Date.now(),
+  // which falsely appears newer than real cloud data.
+  return true;
 }
