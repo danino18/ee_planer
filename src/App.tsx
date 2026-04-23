@@ -15,6 +15,7 @@ import { CourseSearch } from './components/CourseSearch';
 import { ChainRecommendations } from './components/ChainRecommendations';
 import { LoginButton } from './components/LoginButton';
 import { Toast } from './components/Toast';
+import { MobileSidebarDrawer } from './components/MobileSidebarDrawer';
 import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
@@ -374,6 +375,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   }, [user, trackId, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack, markCloudSyncSettled]);
 
   const [showCompare, setShowCompare] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -399,7 +401,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               <h1 className="text-lg font-bold text-gray-900">מתכנן לימודים – הטכניון</h1>
               <p className="text-sm text-gray-500">{trackDef.name}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 justify-end">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden text-sm text-gray-600 border border-gray-200 px-2 py-1.5 rounded-lg"
+                aria-label="פתח תפריט"
+                aria-expanded={sidebarOpen}
+                aria-controls="sidebar-drawer"
+              >☰</button>
               <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
               <button
                 onClick={undo}
@@ -407,33 +416,42 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                 className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
               >
-                ↩ בטל
+                <span>↩</span><span className="hidden sm:inline"> בטל</span>
               </button>
               <button
                 onClick={handleResetToDefault}
                 className="text-sm text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 px-3 py-1.5 rounded-lg transition-colors"
                 title="החזר את המערכת לתכנית הלימודים המומלצת"
               >
-                ⟳ מומלצת
+                <span>⟳</span><span className="hidden sm:inline"> מומלצת</span>
               </button>
               <button
                 onClick={beginTrackSwitch}
                 className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
               >
-                החלף מסלול
+                <span className="hidden sm:inline">החלף מסלול</span><span className="sm:hidden">מסלול</span>
               </button>
             </div>
           </div>
           <VersionTabs onCompare={() => setShowCompare(true)} />
         </div>
       </header>
-      <main className="max-w-screen-2xl mx-auto px-4 py-5">
-        <div className="flex gap-4">
-          <div className="w-64 shrink-0 flex flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
+      <main className="max-w-screen-2xl mx-auto px-3 sm:px-4 py-4 md:py-5">
+        <div className="flex flex-col md:flex-row md:gap-4">
+          {/* Desktop sidebar — hidden on mobile */}
+          <aside className="hidden md:flex md:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
             <ChainRecommendations catalog={specializationCatalog} courses={courses} />
-          </div>
+          </aside>
+
+          {/* Mobile drawer — md:hidden enforced inside component */}
+          <MobileSidebarDrawer open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
+            <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
+            <SpecializationPanel catalog={specializationCatalog} courses={courses} />
+            <ChainRecommendations catalog={specializationCatalog} courses={courses} />
+          </MobileSidebarDrawer>
+
           <div className="flex-1 min-w-0">
             <CourseSearch courses={courses} onCourseAdded={handleCourseAdded} />
             <SemesterGrid courses={courses} trackDef={trackDef} specializations={specs} />

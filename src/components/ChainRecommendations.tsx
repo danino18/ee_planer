@@ -23,7 +23,7 @@ export function ChainRecommendations({ catalog, courses }: Props) {
   })));
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
   const recommendations = useChainRecommendations(courses, catalog);
-  const [hoveredGroup, setHoveredGroup] = useState<string | null>(null);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   if (catalog.interactionDisabled) {
     return (
@@ -68,12 +68,11 @@ export function ChainRecommendations({ catalog, courses }: Props) {
                 {/* Chain name with hover tooltip */}
                 <div
                   className="relative flex-1 text-right"
-                  onMouseEnter={() => setHoveredGroup(group.id)}
-                  onMouseLeave={() => setHoveredGroup(null)}
+                  onClick={() => setExpandedGroup(expandedGroup === group.id ? null : group.id)}
                 >
-                  <span className="text-xs font-semibold text-gray-800 cursor-default">{group.name}</span>
-                  {hoveredGroup === group.id && (
-                    <div className="absolute z-50 top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64 text-right">
+                  <span className="text-xs font-semibold text-gray-800 cursor-pointer">{group.name}</span>
+                  {expandedGroup === group.id && (
+                    <div className="absolute z-50 top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl p-3 w-64 max-w-[calc(100vw-2rem)] text-right">
                       <p className="text-xs font-bold text-gray-700 mb-1.5">{group.name}</p>
                       {group.mandatoryCourses.length > 0 && (
                         <div className="mb-2">

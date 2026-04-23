@@ -77,7 +77,7 @@ function VersionColumn({
   const semesters = plan.semesters ?? {};
 
   return (
-    <div className="flex-1 min-w-0 border border-gray-200 rounded-xl overflow-hidden">
+    <div className="flex-1 min-w-0 w-full border border-gray-200 rounded-xl overflow-hidden">
       {/* Header */}
       <div className="bg-gray-50 px-3 py-2 border-b border-gray-200">
         <div className="font-semibold text-gray-800 text-sm truncate">{version.name}</div>
@@ -200,7 +200,7 @@ export function VersionCompareModal({ versions, courses, trackDefs, onClose }: P
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col mx-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col mx-2 sm:mx-4">
         {/* Modal header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900">השוואת גרסאות</h2>
@@ -248,7 +248,7 @@ export function VersionCompareModal({ versions, courses, trackDefs, onClose }: P
               אין הבדלים בקורסים בין הגרסאות שנבחרו.
             </div>
           )}
-          <div className="flex gap-3 items-start">
+          <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-start">
             {selectedVersions.map((v) => (
               <VersionColumn
                 key={v.id}

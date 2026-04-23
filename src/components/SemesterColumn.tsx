@@ -207,7 +207,7 @@ export const SemesterColumn = memo(function SemesterColumn({
         </div>
       )}
 
-      <div ref={setNodeRef} className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-3' : 'flex flex-col'}`}>
+      <div ref={setNodeRef} className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-2 sm:grid-cols-3' : 'flex flex-col'}`}>
         {filteredIds.map((id, idx) => {
           const course = courses.get(id);
           if (!course) return null;

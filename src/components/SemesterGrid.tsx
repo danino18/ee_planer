@@ -1,10 +1,11 @@
 import { memo, useMemo, useState } from 'react';
 import {
   DndContext, DragOverlay, closestCenter,
-  PointerSensor, useSensor, useSensors,
+  PointerSensor, TouchSensor, KeyboardSensor,
+  useSensor, useSensors,
 } from '@dnd-kit/core';
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, arrayMove, rectSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useShallow } from 'zustand/react/shallow';
 import { SemesterColumn } from './SemesterColumn';
 import { CourseCard } from './CourseCard';
@@ -116,7 +117,11 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     }));
   }, [semesters, courses, facultyColorOverrides]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 3 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   // Effective completed: explicit completedCourses + all courses in semesters before currentSemester
   const effectiveCompleted = useMemo(() => {
@@ -293,6 +298,17 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   const activeCourse = activeCourseId ? courses.get(activeCourseId) : null;
   const hasSummers = summerSemesters.length > 0;
 
+  const GRID_COLS_RESPONSIVE: Record<1|2|3|4|5|6|7|8, string> = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-1 sm:grid-cols-2',
+    3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+    4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4',
+    5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5',
+    6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6',
+    7: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7',
+    8: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8',
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -312,7 +328,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
         </button>
 
         {viewMode === 'grid' && (
-          <div className="flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
+          <div className="hidden md:flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
             <button
               onClick={() => setGridCols(gridCols > 1 ? (gridCols - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 : 1)}
               disabled={gridCols <= 1}
@@ -387,7 +403,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
           <div
             key={rowIdx}
             className={viewMode === 'grid'
-              ? `grid gap-3 mb-3 ${{1:'grid-cols-1',2:'grid-cols-2',3:'grid-cols-3',4:'grid-cols-4',5:'grid-cols-5',6:'grid-cols-6',7:'grid-cols-7',8:'grid-cols-8'}[gridCols] ?? 'grid-cols-4'}`
+              ? `grid gap-3 mb-3 ${GRID_COLS_RESPONSIVE[gridCols]}`
               : 'flex flex-col gap-3 mb-3'}
           >
             {row.map((s) => <SemesterColumn key={s} {...semColProps(s)} />)}
@@ -395,15 +411,15 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
         ))}
       </SortableContext>
 
-      <div className="flex gap-3 items-stretch mb-3">
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch mb-3">
         <div className="flex-1">
           <SemesterColumn {...semColProps(0)} />
         </div>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-row sm:flex-col flex-wrap gap-2">
           {maxSemester < MAX_SEMESTERS && (
             <button
               onClick={addSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors min-h-14 text-sm font-medium"
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors min-h-14 text-sm font-medium"
             >
               <span className="text-xl leading-none">+</span>
               <span>הוסף סמסטר</span>
@@ -412,7 +428,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
           {maxSemester > 1 && (
             <button
               onClick={removeSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-red-200 rounded-xl text-red-300 hover:border-red-400 hover:text-red-500 transition-colors min-h-14 text-sm font-medium"
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-red-200 rounded-xl text-red-300 hover:border-red-400 hover:text-red-500 transition-colors min-h-14 text-sm font-medium"
             >
               <span className="text-xl leading-none">−</span>
               <span>הסר סמסטר</span>
@@ -421,7 +437,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
           {maxSemester < MAX_SEMESTERS && (
             <button
               onClick={addSummerSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-14 text-sm font-medium"
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-14 text-sm font-medium"
             >
               <span className="text-lg leading-none">☀️</span>
               <span>הוסף קיץ</span>
@@ -430,7 +446,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
           {hasSummers && (
             <button
               onClick={removeSummerSemester}
-              className="flex flex-col items-center justify-center gap-1 px-5 border-2 border-dashed border-orange-200 rounded-xl text-orange-300 hover:border-orange-400 hover:text-orange-500 transition-colors min-h-14 text-sm font-medium"
+              className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-orange-200 rounded-xl text-orange-300 hover:border-orange-400 hover:text-orange-500 transition-colors min-h-14 text-sm font-medium"
             >
               <span className="text-lg leading-none">🌤️</span>
               <span>הסר קיץ</span>
