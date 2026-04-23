@@ -1,4 +1,5 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
@@ -50,11 +51,25 @@ interface Props {
   onCourseAdded?: (courseName: string, semesterLabel: string) => void;
 }
 
+const PICKER_OPTION_HEIGHT = 34;
+const PICKER_VERTICAL_PADDING = 8;
+const PICKER_GAP = 6;
+const PICKER_VIEWPORT_MARGIN = 16;
+const MIN_VISIBLE_PICKER_OPTIONS = 9;
+const PICKER_MIN_WIDTH = 208;
+
+type PickerPosition = {
+  top: number;
+  right: number;
+  maxHeight: number;
+};
+
 export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded }: Props) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'search' | 'favorites'>('search');
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [pickerPosition, setPickerPosition] = useState<PickerPosition | null>(null);
   const [filters, setFilters] = useState({
     english: false,
     melag: false,
@@ -63,6 +78,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     spring: false,
   });
   const containerRef = useRef<HTMLDivElement>(null);
+  const pickerMenuRef = useRef<HTMLDivElement>(null);
   const {
     favorites,
     addCourseToSemester,
@@ -90,13 +106,20 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
       if (event.key === 'Escape') {
         setOpen(false);
         setPickerFor(null);
+        setPickerPosition(null);
       }
     }
 
     function onClickOutside(event: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current
+        && !containerRef.current.contains(target)
+        && !pickerMenuRef.current?.contains(target)
+      ) {
         setOpen(false);
         setPickerFor(null);
+        setPickerPosition(null);
       }
     }
 
@@ -169,9 +192,15 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     })),
   ], [semesterOrder, summerSemesters]);
 
+  const pickerDesiredHeight = useMemo(
+    () => (Math.min(semesterOptions.length, MIN_VISIBLE_PICKER_OPTIONS) * PICKER_OPTION_HEIGHT) + PICKER_VERTICAL_PADDING,
+    [semesterOptions.length],
+  );
+
   function addToSemester(courseId: string, semValue: number) {
     addCourseToSemester(courseId, semValue);
     setPickerFor(null);
+    setPickerPosition(null);
     if (onCourseAdded) {
       const course = courses.get(courseId);
       const semLabel = semValue === 0
@@ -183,6 +212,41 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     }
   }
 
+  function openSemesterPicker(button: HTMLButtonElement, courseId: string) {
+    const rect = button.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - PICKER_GAP - PICKER_VIEWPORT_MARGIN;
+    const spaceAbove = rect.top - PICKER_GAP - PICKER_VIEWPORT_MARGIN;
+    const showAbove = spaceBelow < pickerDesiredHeight && spaceAbove > spaceBelow;
+    const availableHeight = Math.max(showAbove ? spaceAbove : spaceBelow, PICKER_OPTION_HEIGHT + PICKER_VERTICAL_PADDING);
+    const pickerHeight = Math.min(pickerDesiredHeight, availableHeight);
+    const top = showAbove
+      ? Math.max(PICKER_VIEWPORT_MARGIN, rect.top - PICKER_GAP - pickerHeight)
+      : Math.min(rect.bottom + PICKER_GAP, window.innerHeight - PICKER_VIEWPORT_MARGIN - pickerHeight);
+
+    setPickerPosition({
+      top,
+      right: Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - rect.right),
+      maxHeight: availableHeight,
+    });
+    setPickerFor(courseId);
+  }
+
+  useEffect(() => {
+    if (!pickerFor) return undefined;
+
+    function closePicker() {
+      setPickerFor(null);
+      setPickerPosition(null);
+    }
+
+    window.addEventListener('resize', closePicker);
+    window.addEventListener('scroll', closePicker, true);
+    return () => {
+      window.removeEventListener('resize', closePicker);
+      window.removeEventListener('scroll', closePicker, true);
+    };
+  }, [pickerFor]);
+
   function renderAddButton(courseId: string) {
     const isPickerOpen = pickerFor === courseId;
     return (
@@ -190,7 +254,14 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
         <button
           onClick={(event) => {
             event.stopPropagation();
-            setPickerFor(isPickerOpen ? null : courseId);
+            const button = event.currentTarget;
+            if (isPickerOpen) {
+              setPickerFor(null);
+              setPickerPosition(null);
+              return;
+            }
+
+            openSemesterPicker(button, courseId);
           }}
           className={`text-xs border px-2 py-1 rounded-lg transition-colors ${
             isPickerOpen
@@ -201,22 +272,6 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
         >
           +
         </button>
-        {isPickerOpen && (
-          <div className="absolute left-0 top-full mt-1 z-[60] bg-white border border-gray-200 rounded-xl shadow-xl py-1 min-w-[140px]">
-            {semesterOptions.map(({ label, value }) => (
-              <button
-                key={value}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  addToSemester(courseId, value);
-                }}
-                className="w-full text-right text-xs px-3 py-1.5 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors"
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
     );
   }
@@ -229,6 +284,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     setOpen(true);
     setTab('search');
     setPickerFor(null);
+    setPickerPosition(null);
   }
 
   return (
@@ -243,6 +299,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             setOpen(true);
             setTab('search');
             setPickerFor(null);
+            setPickerPosition(null);
           }}
           onFocus={() => setOpen(true)}
           placeholder="חפש קורס לפי שם או מספר..."
@@ -254,6 +311,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             setTab('favorites');
             setOpen(true);
             setPickerFor(null);
+            setPickerPosition(null);
           }}
           className={`text-sm px-2 py-0.5 rounded-lg transition-colors ${
             tab === 'favorites' && open ? 'bg-yellow-100 text-yellow-700' : 'text-gray-400 hover:text-yellow-500'
@@ -358,6 +416,32 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             </div>
           )}
         </div>
+      )}
+      {pickerFor && pickerPosition && createPortal(
+        <div
+          ref={pickerMenuRef}
+          className="fixed z-[120] overflow-y-auto bg-white border border-gray-200 rounded-xl shadow-2xl py-1"
+          style={{
+            top: `${pickerPosition.top}px`,
+            right: `${pickerPosition.right}px`,
+            minWidth: `${PICKER_MIN_WIDTH}px`,
+            maxHeight: `${pickerPosition.maxHeight}px`,
+          }}
+        >
+          {semesterOptions.map(({ label, value }) => (
+            <button
+              key={value}
+              onClick={(event) => {
+                event.stopPropagation();
+                addToSemester(pickerFor, value);
+              }}
+              className="w-full text-right text-xs px-3 py-2 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors whitespace-nowrap"
+            >
+              {label}
+            </button>
+          ))}
+        </div>,
+        document.body,
       )}
     </div>
   );
