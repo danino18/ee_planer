@@ -257,6 +257,10 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
     {
       semesters: plan.semesters,
       completedCourses: plan.completedCourses,
+      explicitSportCompletions: plan.explicitSportCompletions ?? [],
+      completedInstances: plan.completedInstances ?? [],
+      grades: plan.grades ?? {},
+      binaryPass: plan.binaryPass ?? {},
       selectedSpecializations: plan.selectedSpecializations,
       doubleSpecializations: plan.doubleSpecializations ?? [],
       hasEnglishExemption: plan.hasEnglishExemption ?? false,
@@ -365,6 +369,10 @@ function buildSpecializationRows(ctx: CsvBuildContext): string[] {
     {
       semesters: plan.semesters,
       completedCourses: plan.completedCourses,
+      explicitSportCompletions: plan.explicitSportCompletions ?? [],
+      completedInstances: plan.completedInstances ?? [],
+      grades: plan.grades ?? {},
+      binaryPass: plan.binaryPass ?? {},
       selectedSpecializations: plan.selectedSpecializations,
       doubleSpecializations: plan.doubleSpecializations ?? [],
       hasEnglishExemption: plan.hasEnglishExemption ?? false,
