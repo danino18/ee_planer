@@ -23,8 +23,8 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: LoginButtonProps) {
-  const { user, loading, error, clearError, signInWithGoogle, signInWithMicrosoft, signOut } = useAuth();
-  const [signingIn, setSigningIn] = useState<'google' | 'microsoft' | null>(null);
+  const { user, loading, error, clearError, signInWithGoogle, signOut } = useAuth();
+  const [signingIn, setSigningIn] = useState<'google' | null>(null);
 
   if (loading) return null;
 
@@ -62,13 +62,6 @@ export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: Lo
     setSigningIn(null);
   }
 
-  async function handleMicrosoft() {
-    setSigningIn('microsoft');
-    clearError();
-    await signInWithMicrosoft();
-    setSigningIn(null);
-  }
-
   return (
     <div className="flex flex-col items-end gap-1">
       <div className="flex items-center gap-2">
@@ -88,24 +81,6 @@ export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: Lo
             </svg>
           )}
           Google
-        </button>
-
-        <button
-          onClick={handleMicrosoft}
-          disabled={signingIn !== null}
-          className="flex items-center gap-1.5 text-sm border border-gray-300 hover:border-blue-400 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {signingIn === 'microsoft' ? (
-            <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <svg className="w-4 h-4" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="1" width="9" height="9" fill="#f25022" />
-              <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
-              <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
-              <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
-            </svg>
-          )}
-          Outlook
         </button>
       </div>
 

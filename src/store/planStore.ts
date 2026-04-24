@@ -712,7 +712,8 @@ export const usePlanStore = create<PlanState>()(
         set((state) => {
           const current = state.courseChainAssignments ?? {};
           if (chainGroupId === null) {
-            const { [courseId]: _removed, ...rest } = current;
+            const rest = { ...current };
+            delete rest[courseId];
             return { courseChainAssignments: rest };
           }
           return { courseChainAssignments: { ...current, [courseId]: chainGroupId } };
