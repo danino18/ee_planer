@@ -393,6 +393,15 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const [showCompare, setShowCompare] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [printOptions, setPrintOptions] = useState<{
+    includeGrades: boolean;
+    versionIds: string[];
+  } | null>(null);
+
+  function handlePrint(opts: { includeGrades: boolean; versionIds: string[] }) {
+    setPrintOptions(opts);
+    setTimeout(() => window.print(), 100);
+  }
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -415,6 +424,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       {showExport && (
         <ExportShareModal
           onClose={() => setShowExport(false)}
+          onPrint={handlePrint}
           courses={courses}
           trackDef={trackDef}
           catalog={specializationCatalog}
@@ -492,7 +502,13 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         </div>
       </main>
     </div>
-    <PrintView courses={courses} trackDef={trackDef} catalog={specializationCatalog} />
+    <PrintView
+      courses={courses}
+      trackDef={trackDef}
+      catalog={specializationCatalog}
+      includeGrades={printOptions?.includeGrades ?? true}
+      versionIds={printOptions?.versionIds}
+    />
     </>
   );
 }

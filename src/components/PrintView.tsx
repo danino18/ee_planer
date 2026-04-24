@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { usePlanStore } from '../store/planStore';
-import type { SapCourse, TrackDefinition, TrackSpecializationCatalog } from '../types';
+import type { SapCourse, StudentPlan, TrackDefinition, TrackSpecializationCatalog } from '../types';
 import { getFacultyStyle } from '../utils/faculty';
 import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
 
@@ -8,6 +8,8 @@ interface Props {
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition | null;
   catalog: TrackSpecializationCatalog | null;
+  includeGrades?: boolean;
+  versionIds?: string[];
 }
 
 function seasonLabel(
@@ -34,9 +36,10 @@ interface CourseRowProps {
   isBinary: boolean;
   isCompleted: boolean;
   facultyOverrides: Record<string, string> | undefined;
+  includeGrades: boolean;
 }
 
-function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides }: CourseRowProps) {
+function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides, includeGrades }: CourseRowProps) {
   const style = getFacultyStyle(course.faculty, course.id, facultyOverrides);
   return (
     <div className="print-course">
@@ -47,8 +50,8 @@ function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides
           <span className="print-course-id">{course.id}</span>
           <span className="print-course-credits">{course.credits} נ״ז</span>
           {isCompleted && <span className="print-completed">✓</span>}
-          {isBinary && <span className="print-binary">עובר</span>}
-          {grade !== undefined && !isBinary && (
+          {includeGrades && isBinary && <span className="print-binary">עובר</span>}
+          {includeGrades && grade !== undefined && !isBinary && (
             <span className="print-grade">{grade}</span>
           )}
         </div>
@@ -57,18 +60,29 @@ function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides
   );
 }
 
-export function PrintView({ courses, trackDef, catalog }: Props) {
-  const semesters = usePlanStore((s) => s.semesters);
-  const completedCourses = usePlanStore((s) => s.completedCourses);
-  const grades = usePlanStore((s) => s.grades);
-  const binaryPass = usePlanStore((s) => s.binaryPass);
-  const semesterOrder = usePlanStore((s) => s.semesterOrder);
-  const summerSemesters = usePlanStore((s) => s.summerSemesters);
-  const semesterTypeOverrides = usePlanStore((s) => s.semesterTypeOverrides);
-  const currentSemester = usePlanStore((s) => s.currentSemester);
-  const facultyColorOverrides = usePlanStore((s) => s.facultyColorOverrides);
-  const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
-  const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations);
+interface SectionProps {
+  plan: StudentPlan;
+  courses: Map<string, SapCourse>;
+  trackDef: TrackDefinition | null;
+  catalog: TrackSpecializationCatalog | null;
+  includeGrades: boolean;
+  versionName?: string;
+}
+
+function PrintPlanSection({ plan, courses, trackDef, catalog, includeGrades, versionName }: SectionProps) {
+  const {
+    semesters,
+    completedCourses,
+    grades,
+    binaryPass,
+    semesterOrder,
+    summerSemesters,
+    semesterTypeOverrides,
+    currentSemester,
+    facultyColorOverrides,
+    selectedSpecializations,
+    doubleSpecializations,
+  } = plan;
 
   const { totalCredits, weightedAvg, completedSet } = useMemo(() => {
     const completedSet = new Set(completedCourses);
@@ -78,34 +92,34 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
       0,
     );
     const weightedAvg = computeWeightedAverage(
-      { semesters, grades, binaryPass: binaryPass ?? {} },
+      { semesters, grades: grades ?? {}, binaryPass: binaryPass ?? {} },
       courses,
     );
     return { totalCredits, weightedAvg, completedSet };
   }, [semesters, completedCourses, grades, binaryPass, courses]);
 
-  const semesterList = semesterOrder.length > 0
-    ? semesterOrder.filter((s) => s !== 0)
+  const semesterList = (semesterOrder ?? []).length > 0
+    ? (semesterOrder ?? []).filter((s) => s !== 0)
     : Object.keys(semesters)
         .map(Number)
         .filter((n) => n > 0)
         .sort((a, b) => a - b);
 
   const preCourses = semesters[0] ?? [];
-
   const dateStr = new Date().toLocaleDateString('he-IL');
 
   return (
-    <div className="print-view" dir="rtl" aria-hidden="true">
+    <>
       <header className="print-header">
         <div>
           <h1 className="print-title">מתכנן לימודים – הטכניון</h1>
           {trackDef && <p className="print-subtitle">{trackDef.name}</p>}
+          {versionName && <p className="print-subtitle">{versionName}</p>}
         </div>
         <div className="print-meta">
           <div><span className="print-meta-label">תאריך:</span> {dateStr}</div>
           <div><span className="print-meta-label">סה״כ נ״ז:</span> {totalCredits}</div>
-          {weightedAvg !== null && (
+          {includeGrades && weightedAvg !== null && (
             <div><span className="print-meta-label">ממוצע משוקלל:</span> {weightedAvg.toFixed(2)}</div>
           )}
           {trackDef && (
@@ -121,7 +135,7 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
             {preCourses.map((id) => {
               const course = courses.get(id);
               if (!course) return null;
-              const grade = grades[gradeKey(id, 0)] ?? grades[id];
+              const grade = (grades ?? {})[gradeKey(id, 0)] ?? (grades ?? {})[id];
               const isBinary = !!(binaryPass ?? {})[id];
               return (
                 <PrintCourseRow
@@ -131,6 +145,7 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
                   isBinary={isBinary}
                   isCompleted
                   facultyOverrides={facultyColorOverrides}
+                  includeGrades={includeGrades}
                 />
               );
             })}
@@ -148,11 +163,13 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
             (sum, id) => sum + (courses.get(id)?.credits ?? 0),
             0,
           );
-          const semAvg = computeWeightedAverage(
-            { semesters, grades, binaryPass: binaryPass ?? {} },
-            courses,
-            sem,
-          );
+          const semAvg = includeGrades
+            ? computeWeightedAverage(
+                { semesters, grades: grades ?? {}, binaryPass: binaryPass ?? {} },
+                courses,
+                sem,
+              )
+            : null;
 
           return (
             <div
@@ -183,7 +200,7 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
                   courseIds.map((id) => {
                     const course = courses.get(id);
                     if (!course) return null;
-                    const grade = grades[gradeKey(id, sem)] ?? grades[id];
+                    const grade = (grades ?? {})[gradeKey(id, sem)] ?? (grades ?? {})[id];
                     const isBinary = !!(binaryPass ?? {})[id];
                     return (
                       <PrintCourseRow
@@ -193,6 +210,7 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
                         isBinary={isBinary}
                         isCompleted={completedSet.has(id)}
                         facultyOverrides={facultyColorOverrides}
+                        includeGrades={includeGrades}
                       />
                     );
                   })
@@ -203,11 +221,11 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
         })}
       </div>
 
-      {selectedSpecializations.length > 0 && catalog && (
+      {(selectedSpecializations ?? []).length > 0 && catalog && (
         <section className="print-specs-section">
           <h2 className="print-section-title">שרשראות נבחרות</h2>
           <ul className="print-specs-list">
-            {selectedSpecializations.map((id) => {
+            {(selectedSpecializations ?? []).map((id) => {
               const group = catalog.groups.find((g) => g.id === id);
               const isDouble = (doubleSpecializations ?? []).includes(id);
               return (
@@ -224,6 +242,80 @@ export function PrintView({ courses, trackDef, catalog }: Props) {
       <footer className="print-footer">
         <span>נוצר ב-{dateStr} · מתכנן לימודים – הטכניון</span>
       </footer>
+    </>
+  );
+}
+
+export function PrintView({ courses, trackDef, catalog, includeGrades = true, versionIds }: Props) {
+  const storeVersions = usePlanStore((s) => s.versions);
+
+  // Capture all active-version fields for the default (no versionIds) path
+  const semesters = usePlanStore((s) => s.semesters);
+  const completedCourses = usePlanStore((s) => s.completedCourses);
+  const grades = usePlanStore((s) => s.grades);
+  const binaryPass = usePlanStore((s) => s.binaryPass);
+  const semesterOrder = usePlanStore((s) => s.semesterOrder);
+  const summerSemesters = usePlanStore((s) => s.summerSemesters);
+  const semesterTypeOverrides = usePlanStore((s) => s.semesterTypeOverrides);
+  const currentSemester = usePlanStore((s) => s.currentSemester);
+  const facultyColorOverrides = usePlanStore((s) => s.facultyColorOverrides);
+  const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
+  const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations);
+  const trackId = usePlanStore((s) => s.trackId);
+  const maxSemester = usePlanStore((s) => s.maxSemester);
+  const favorites = usePlanStore((s) => s.favorites);
+  const substitutions = usePlanStore((s) => s.substitutions);
+  const selectedPrereqGroups = usePlanStore((s) => s.selectedPrereqGroups);
+
+  const activePlan: StudentPlan = useMemo(() => ({
+    trackId,
+    semesters,
+    completedCourses,
+    selectedSpecializations,
+    favorites,
+    grades: grades ?? {},
+    substitutions,
+    maxSemester,
+    selectedPrereqGroups,
+    summerSemesters: summerSemesters ?? [],
+    currentSemester: currentSemester ?? null,
+    semesterOrder: semesterOrder ?? [],
+    semesterTypeOverrides: semesterTypeOverrides ?? {},
+    doubleSpecializations: doubleSpecializations ?? [],
+    binaryPass: binaryPass ?? {},
+    facultyColorOverrides: facultyColorOverrides ?? {},
+  }), [
+    trackId, semesters, completedCourses, selectedSpecializations, favorites,
+    grades, substitutions, maxSemester, selectedPrereqGroups, summerSemesters,
+    currentSemester, semesterOrder, semesterTypeOverrides, doubleSpecializations,
+    binaryPass, facultyColorOverrides,
+  ]);
+
+  const sections = useMemo<{ plan: StudentPlan; name?: string }[]>(() => {
+    if (!versionIds || versionIds.length === 0) {
+      return [{ plan: activePlan }];
+    }
+    const multi = versionIds.length > 1;
+    return versionIds
+      .map((id) => storeVersions.find((v) => v.id === id))
+      .filter((v): v is NonNullable<typeof v> => v != null)
+      .map((v) => ({ plan: v.plan, name: multi ? v.name : undefined }));
+  }, [versionIds, storeVersions, activePlan]);
+
+  return (
+    <div className="print-view" dir="rtl" aria-hidden="true">
+      {sections.map((s, i) => (
+        <div key={i} className={i > 0 ? 'print-version-break' : ''}>
+          <PrintPlanSection
+            plan={s.plan}
+            courses={courses}
+            trackDef={trackDef}
+            catalog={catalog}
+            includeGrades={includeGrades}
+            versionName={s.name}
+          />
+        </div>
+      ))}
     </div>
   );
 }

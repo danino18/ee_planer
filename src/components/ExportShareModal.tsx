@@ -17,6 +17,7 @@ import {
 
 interface Props {
   onClose: () => void;
+  onPrint: (opts: { includeGrades: boolean; versionIds: string[] }) => void;
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition | null;
   catalog: TrackSpecializationCatalog | null;
@@ -25,7 +26,7 @@ interface Props {
 type Tab = 'export' | 'import';
 type VersionScope = 'current' | 'all' | 'select';
 
-export function ExportShareModal({ onClose, courses, trackDef, catalog }: Props) {
+export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog }: Props) {
   const versions = usePlanStore((s) => s.versions);
   const activeVersionId = usePlanStore((s) => s.activeVersionId);
   const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
@@ -97,8 +98,8 @@ export function ExportShareModal({ onClose, courses, trackDef, catalog }: Props)
   }
 
   function handlePrint() {
+    onPrint({ includeGrades, versionIds: exportVersionIds });
     onClose();
-    setTimeout(() => window.print(), 100);
   }
 
   function handleFileChosen(file: File) {
