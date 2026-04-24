@@ -771,6 +771,13 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           </div>
         )}
 
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-700">ממוצע משוקלל</span>
+          <span className="text-sm font-bold text-gray-800">
+            {weightedAverage !== null ? weightedAverage.toFixed(1) : '—'}
+          </span>
+        </div>
+
         <div className="space-y-2 pt-1">
           {compactRequirements.map((req) => {
             const manualEnglishCourseIds = manualEnglishCourseIdsByRequirement.get(req.requirementId) ?? [];
@@ -808,12 +815,6 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           })}
         </div>
 
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700">ממוצע משוקלל</span>
-          <span className="text-sm font-bold text-gray-800">
-            {weightedAverage !== null ? weightedAverage.toFixed(1) : '—'}
-          </span>
-        </div>
       </div>
     </div>
   );
