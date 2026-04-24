@@ -17,6 +17,7 @@ import { LoginButton } from './components/LoginButton';
 import { Toast } from './components/Toast';
 import { MobileSidebarDrawer } from './components/MobileSidebarDrawer';
 import { ExportShareModal } from './components/ExportShareModal';
+import { PrintView } from './components/PrintView';
 import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
@@ -400,6 +401,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-100">
       <Toast message={toast.message} visible={toast.visible} />
       {showCompare && (
@@ -490,6 +492,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
         </div>
       </main>
     </div>
+    <PrintView courses={courses} trackDef={trackDef} catalog={specializationCatalog} />
+    </>
   );
 }
 

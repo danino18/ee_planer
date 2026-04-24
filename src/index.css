@@ -1,79 +1,318 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════
+   PRINT / PDF LAYOUT
+   The .print-view element is hidden on screen and shown only
+   when printing. All other app chrome is hidden in print mode.
+   ═══════════════════════════════════════════════════════════ */
+
+.print-view {
+  display: none;
+}
+
 @media print {
   @page {
     size: A4 landscape;
-    margin: 15mm;
+    margin: 12mm;
   }
 
-  /* ── Full-width layout ── */
-  body {
+  html, body {
     background: white !important;
+    color: #111827;
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
   }
 
-  main {
-    max-width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
+  /* Hide everything at body level except #root, and within #root hide
+     everything except the PrintView. */
+  body > *:not(#root) {
+    display: none !important;
   }
-
-  /* ── Hide chrome: header, sidebar, controls ── */
-  header,
-  aside,
-  nav,
-  .no-print,
-  [role="dialog"],
-  /* Semester add/remove/summer buttons row (flex-col gap-3 contains them) */
-  [data-print-col] ~ div,
-  /* CourseSearch bar above the grid */
-  main > div > .flex-1 > div:first-child {
+  #root > *:not(.print-view) {
     display: none !important;
   }
 
-  /* ── Neutralize dnd-kit inline transforms ── */
-  [style*="transform"] {
-    transform: none !important;
+  .print-view {
+    display: block !important;
+    direction: rtl;
+    width: 100%;
+    color: #111827;
+    font-size: 11px;
+    line-height: 1.35;
   }
 
-  /* ── Semester column grid: reflow to fill the page ── */
-  div[class*="grid"][class*="gap-3"],
-  div[class*="flex-col"][class*="gap-3"] {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
-    gap: 8px !important;
-    break-inside: auto;
-  }
-
-  /* ── Keep each semester column on one page ── */
-  [data-print-col] {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-    min-height: 0 !important;   /* remove min-h-40 that can overflow */
-    overflow: visible !important;
-    /* Ensure all content of the column is visible */
-    height: auto !important;
-    max-height: none !important;
-  }
-
-  /* ── Keep each course card together ── */
-  [data-print-col] .border.rounded-lg {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
-  /* ── Hide interactive course-card buttons (checkmark, star, search) ── */
-  [data-print-col] button {
-    display: none !important;
-  }
-
-  /* ── Hide search filter inside semester column header ── */
-  [data-print-col] input {
-    display: none !important;
-  }
-
-  /* ── Print colours faithfully (badges, faculty dots, etc.) ── */
-  * {
+  /* ─── Faithful colour rendering for badges / dots ─── */
+  .print-view,
+  .print-view * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* ═══ Header ═══ */
+  .print-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #111827;
+  }
+  .print-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 2px 0;
+  }
+  .print-subtitle {
+    font-size: 12px;
+    color: #4b5563;
+    margin: 0;
+  }
+  .print-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    font-size: 10px;
+    color: #374151;
+    text-align: left;
+  }
+  .print-meta-label {
+    color: #6b7280;
+    font-weight: 500;
+  }
+
+  /* ═══ Section titles ═══ */
+  .print-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 8px 0 6px 0;
+    padding-bottom: 3px;
+    border-bottom: 1px solid #d1d5db;
+    color: #111827;
+  }
+
+  /* ═══ Pre-enrollment completed courses ═══ */
+  .print-pre-section {
+    margin-bottom: 10px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-course-list-wide {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 4px 8px;
+  }
+
+  /* ═══ Semester grid ═══ */
+  .print-semesters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  /* 8+ semesters — use 4 columns (2 rows of 4). Works well on landscape A4. */
+  @media print and (min-width: 0) {
+    .print-semesters-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  .print-semester {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .print-semester-summer {
+    border-color: #fcd34d;
+    background: #fffbeb;
+  }
+  .print-semester-current {
+    border-color: #60a5fa;
+    border-width: 2px;
+  }
+
+  .print-semester-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 10.5px;
+  }
+  .print-semester-summer .print-semester-header {
+    background: #fef3c7;
+  }
+  .print-semester-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    color: #111827;
+  }
+  .print-summer-icon {
+    font-size: 11px;
+  }
+  .print-season-badge {
+    font-size: 9px;
+    color: #6b7280;
+    font-weight: 400;
+  }
+  .print-semester-stats {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .print-credits-badge {
+    font-size: 9px;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .print-avg-badge {
+    font-size: 9px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+
+  /* ═══ Course rows inside a semester ═══ */
+  .print-course-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 6px;
+  }
+  .print-empty {
+    color: #9ca3af;
+    font-style: italic;
+    text-align: center;
+    padding: 6px 0;
+    font-size: 10px;
+  }
+
+  .print-course {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 3px 4px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    background: #fcfcfd;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+  .print-course-body {
+    flex: 1;
+    min-width: 0;
+  }
+  .print-course-name {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: #111827;
+    line-height: 1.25;
+  }
+  .print-course-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 6px;
+    margin-top: 1px;
+    font-size: 9px;
+    color: #6b7280;
+    align-items: center;
+  }
+  .print-course-id {
+    color: #9ca3af;
+    font-variant-numeric: tabular-nums;
+  }
+  .print-course-credits {
+    color: #374151;
+  }
+  .print-completed {
+    color: #059669;
+    font-weight: 700;
+  }
+  .print-grade {
+    background: #f3f4f6;
+    color: #374151;
+    padding: 0 5px;
+    border-radius: 7px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .print-binary {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 0 5px;
+    border-radius: 7px;
+    font-weight: 600;
+    font-size: 8.5px;
+  }
+
+  /* ═══ Faculty dot colour classes (copied from Tailwind palette so they
+          work even if Tailwind tree-shakes the class off the main app) ═══ */
+  .bg-blue-500   { background-color: #3b82f6 !important; }
+  .bg-green-500  { background-color: #22c55e !important; }
+  .bg-yellow-500 { background-color: #eab308 !important; }
+  .bg-orange-500 { background-color: #f97316 !important; }
+  .bg-purple-500 { background-color: #a855f7 !important; }
+  .bg-red-500    { background-color: #ef4444 !important; }
+  .bg-teal-500   { background-color: #14b8a6 !important; }
+  .bg-pink-500   { background-color: #ec4899 !important; }
+  .bg-indigo-500 { background-color: #6366f1 !important; }
+  .bg-cyan-500   { background-color: #06b6d4 !important; }
+  .bg-gray-500   { background-color: #6b7280 !important; }
+
+  /* ═══ Specs section ═══ */
+  .print-specs-section {
+    margin-top: 10px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-specs-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .print-spec-item {
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #f9fafb;
+    color: #374151;
+  }
+  .print-spec-tag {
+    color: #7c3aed;
+    font-weight: 600;
+  }
+
+  /* ═══ Footer ═══ */
+  .print-footer {
+    margin-top: 12px;
+    padding-top: 6px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 9px;
+    color: #9ca3af;
+    text-align: center;
   }
 }
