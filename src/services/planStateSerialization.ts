@@ -29,6 +29,7 @@ export function serializePlanState(state: StudentPlan): StudentPlan {
     hasEnglishExemption: state.hasEnglishExemption ?? false,
     manualSapAverages: { ...(state.manualSapAverages ?? {}) },
     binaryPass: { ...(state.binaryPass ?? {}) },
+    explicitSportCompletions: [...(state.explicitSportCompletions ?? [])],
     completedInstances: [...(state.completedInstances ?? [])],
     savedTracks: state.savedTracks ? { ...state.savedTracks } : undefined,
     miluimCredits: state.miluimCredits,

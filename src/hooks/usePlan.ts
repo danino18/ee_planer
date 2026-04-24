@@ -170,6 +170,10 @@ export interface CoreSlot {
 export interface RequirementsInput {
   semesters: Record<number, string[]>;
   completedCourses: string[];
+  explicitSportCompletions: string[];
+  completedInstances: string[];
+  grades: Record<string, number>;
+  binaryPass: Record<string, boolean>;
   selectedSpecializations: string[];
   doubleSpecializations: string[];
   hasEnglishExemption: boolean;
@@ -193,6 +197,10 @@ export function computeRequirementsProgress(
   const {
     semesters,
     completedCourses,
+    explicitSportCompletions,
+    completedInstances,
+    grades,
+    binaryPass,
     selectedSpecializations,
     doubleSpecializations,
     hasEnglishExemption,
@@ -381,6 +389,10 @@ export function computeRequirementsProgress(
       trackDef,
       semesters,
       completedCourses,
+      explicitSportCompletions,
+      completedInstances,
+      grades,
+      binaryPass,
       miluimCredits,
       englishTaughtCourses,
       englishScore,
@@ -594,6 +606,10 @@ export function useRequirementsProgress(
 ) {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
+  const explicitSportCompletions = usePlanStore((s) => s.explicitSportCompletions ?? []);
+  const completedInstances = usePlanStore((s) => s.completedInstances ?? []);
+  const grades = usePlanStore((s) => s.grades);
+  const binaryPass = usePlanStore((s) => s.binaryPass ?? {});
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
   const doubleSpecializations = usePlanStore((s) => s.doubleSpecializations ?? []);
   const hasEnglishExemption = usePlanStore((s) => s.hasEnglishExemption ?? false);
@@ -612,6 +628,10 @@ export function useRequirementsProgress(
         {
           semesters,
           completedCourses,
+          explicitSportCompletions,
+          completedInstances,
+          grades,
+          binaryPass,
           selectedSpecializations,
           doubleSpecializations,
           hasEnglishExemption,
@@ -629,7 +649,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
   );
 }
 

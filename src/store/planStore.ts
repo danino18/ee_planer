@@ -20,6 +20,7 @@ import {
   sanitizeTrackSpecializationSelections,
 } from '../domain/specializations';
 import { serializePlanState } from '../services/planStateSerialization';
+import { isSportCourseId } from '../data/generalRequirements/courseClassification';
 
 export { gradeKey, REPEATABLE_COURSES } from '../utils/courseGrades';
 
@@ -172,6 +173,7 @@ const initialState: StudentPlan = {
   hasEnglishExemption: false,
   manualSapAverages: {},
   binaryPass: {},
+  explicitSportCompletions: [],
   miluimCredits: undefined,
   englishScore: undefined,
   englishTaughtCourses: [],
@@ -273,6 +275,27 @@ function sanitizeSpecializationStateForTrack(plan: StudentPlan): StudentPlan {
   };
 }
 
+function addExplicitSportCompletion(
+  explicitSportCompletions: string[] | undefined,
+  courseId: string,
+): string[] {
+  if (!isSportCourseId(courseId)) return explicitSportCompletions ?? [];
+  const next = explicitSportCompletions ?? [];
+  return next.includes(courseId) ? next : [...next, courseId];
+}
+
+function removeExplicitSportCompletion(
+  explicitSportCompletions: string[] | undefined,
+  courseId: string,
+): string[] {
+  if (!isSportCourseId(courseId)) return explicitSportCompletions ?? [];
+  return (explicitSportCompletions ?? []).filter((id) => id !== courseId);
+}
+
+function hasRecordedGradeForCourse(grades: Record<string, number>, courseId: string): boolean {
+  return Object.keys(grades).some((key) => key === courseId || key.startsWith(`${courseId}__`));
+}
+
 /** Shallow snapshot of all plan fields for undo history */
 function captureSnapshot(state: PlanState): StudentPlan {
   return serializePlanState(state);
@@ -294,6 +317,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     hasEnglishExemption: p.hasEnglishExemption ?? false,
     manualSapAverages: p.manualSapAverages ?? {},
     binaryPass: p.binaryPass ?? {},
+    explicitSportCompletions: p.explicitSportCompletions ?? [],
     englishTaughtCourses: p.englishTaughtCourses ?? [],
     facultyColorOverrides: p.facultyColorOverrides ?? {},
     completedInstances: p.completedInstances ?? [],
@@ -473,13 +497,26 @@ export const usePlanStore = create<PlanState>()(
           const history = pushHistory(state);
           const isCompleted = state.completedCourses.includes(courseId);
           if (isCompleted) {
-            return { completedCourses: state.completedCourses.filter((id) => id !== courseId), _history: history };
+            const hasOtherExplicitCompletion =
+              !!(state.binaryPass ?? {})[courseId] || hasRecordedGradeForCourse(state.grades, courseId);
+            return {
+              completedCourses: state.completedCourses.filter((id) => id !== courseId),
+              explicitSportCompletions: hasOtherExplicitCompletion
+                ? addExplicitSportCompletion(state.explicitSportCompletions, courseId)
+                : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
+              _history: history,
+            };
           }
           const inAnySemester = Object.values(state.semesters).some((ids) => ids.includes(courseId));
           const newSemesters = inAnySemester
             ? state.semesters
             : { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] };
-          return { completedCourses: [...state.completedCourses, courseId], semesters: newSemesters, _history: history };
+          return {
+            completedCourses: [...state.completedCourses, courseId],
+            explicitSportCompletions: addExplicitSportCompletion(state.explicitSportCompletions, courseId),
+            semesters: newSemesters,
+            _history: history,
+          };
         }),
 
       toggleCompletedInstance: (instanceKey) =>
@@ -525,7 +562,14 @@ export const usePlanStore = create<PlanState>()(
             const completedCourses = newBinaryPass[courseId]
               ? state.completedCourses
               : state.completedCourses.filter((id) => id !== courseId);
-            return { grades: newGrades, binaryPass: newBinaryPass, completedCourses };
+            return {
+              grades: newGrades,
+              binaryPass: newBinaryPass,
+              completedCourses,
+              explicitSportCompletions: newBinaryPass[courseId]
+                ? addExplicitSportCompletion(state.explicitSportCompletions, courseId)
+                : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
+            };
           }
           newGrades[key] = grade;
           delete newBinaryPass[courseId]; // grade and binary pass are mutually exclusive
@@ -538,7 +582,13 @@ export const usePlanStore = create<PlanState>()(
           const completedCourses = alreadyCompleted
             ? state.completedCourses
             : [...state.completedCourses, courseId];
-          return { grades: newGrades, binaryPass: newBinaryPass, completedCourses, semesters: newSemesters };
+          return {
+            grades: newGrades,
+            binaryPass: newBinaryPass,
+            completedCourses,
+            explicitSportCompletions: addExplicitSportCompletion(state.explicitSportCompletions, courseId),
+            semesters: newSemesters,
+          };
         }),
 
       setSubstitution: (fromId, toId) =>
@@ -740,7 +790,14 @@ export const usePlanStore = create<PlanState>()(
             const completedCourses = newGrades[courseId] !== undefined
               ? state.completedCourses
               : state.completedCourses.filter((id) => id !== courseId);
-            return { binaryPass: bp, grades: newGrades, completedCourses };
+            return {
+              binaryPass: bp,
+              grades: newGrades,
+              completedCourses,
+              explicitSportCompletions: newGrades[courseId] !== undefined
+                ? addExplicitSportCompletion(state.explicitSportCompletions, courseId)
+                : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
+            };
           }
           bp[courseId] = value;
           delete newGrades[courseId]; // binary pass and grade are mutually exclusive
@@ -753,7 +810,13 @@ export const usePlanStore = create<PlanState>()(
           const completedCourses = alreadyCompleted
             ? state.completedCourses
             : [...state.completedCourses, courseId];
-          return { binaryPass: bp, grades: newGrades, completedCourses, semesters: newSemesters };
+          return {
+            binaryPass: bp,
+            grades: newGrades,
+            completedCourses,
+            explicitSportCompletions: addExplicitSportCompletion(state.explicitSportCompletions, courseId),
+            semesters: newSemesters,
+          };
         }),
 
       reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
@@ -803,6 +866,7 @@ export const usePlanStore = create<PlanState>()(
             hasEnglishExemption: false,
             manualSapAverages: {},
             binaryPass: {},
+            explicitSportCompletions: [],
             miluimCredits: undefined,
             englishScore: undefined,
             englishTaughtCourses: [],

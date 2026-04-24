@@ -21,6 +21,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'hasEnglishExemption',
   'manualSapAverages',
   'binaryPass',
+  'explicitSportCompletions',
   'completedInstances',
   'savedTracks',
   'miluimCredits',
@@ -398,6 +399,12 @@ function sanitizeStudentPlanRecord(
     const binaryPass = validateBooleanMap(value.binaryPass, 600);
     if (!binaryPass) return null;
     sanitized.binaryPass = binaryPass;
+  }
+
+  if ('explicitSportCompletions' in value) {
+    const explicitSportCompletions = validateStringArray(value.explicitSportCompletions, 600, 32);
+    if (!explicitSportCompletions) return null;
+    sanitized.explicitSportCompletions = explicitSportCompletions;
   }
 
   if ('completedInstances' in value) {
