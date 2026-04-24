@@ -1,1 +1,43 @@
 @import "tailwindcss";
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  /* Hide app chrome */
+  header,
+  aside,
+  nav,
+  button,
+  .no-print,
+  [role="dialog"],
+  [role="toolbar"] {
+    display: none !important;
+  }
+
+  /* Neutralize dnd-kit inline transforms so items don't drift or overlap */
+  [style*="transform"] {
+    transform: none !important;
+  }
+
+  /* Keep semester columns and cards together on a page */
+  main,
+  main > *,
+  [data-semester-column],
+  [data-course-card] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Print colors faithfully */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

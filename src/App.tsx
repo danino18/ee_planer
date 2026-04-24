@@ -16,6 +16,7 @@ import { ChainRecommendations } from './components/ChainRecommendations';
 import { LoginButton } from './components/LoginButton';
 import { Toast } from './components/Toast';
 import { MobileSidebarDrawer } from './components/MobileSidebarDrawer';
+import { ExportShareModal } from './components/ExportShareModal';
 import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
@@ -390,6 +391,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
   const [showCompare, setShowCompare] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
@@ -408,6 +410,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           onClose={() => setShowCompare(false)}
         />
       )}
+      {showExport && (
+        <ExportShareModal
+          onClose={() => setShowExport(false)}
+          courses={courses}
+          trackDef={trackDef}
+          catalog={specializationCatalog}
+        />
+      )}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-5 py-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -424,6 +434,13 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                 aria-controls="sidebar-drawer"
               >☰</button>
               <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
+              <button
+                onClick={() => setShowExport(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
+                title="ייצוא, שיתוף, או ייבוא של המערכת"
+              >
+                <span>⇪</span><span className="hidden sm:inline"> שיתוף</span>
+              </button>
               <button
                 onClick={undo}
                 disabled={_history.length === 0}
