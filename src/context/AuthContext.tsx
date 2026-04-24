@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import {
   GoogleAuthProvider,
-  OAuthProvider,
   signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
@@ -15,7 +14,6 @@ interface AuthContextType {
   error: string | null;
   clearError: () => void;
   signInWithGoogle: () => Promise<void>;
-  signInWithMicrosoft: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -70,25 +68,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function signInWithMicrosoft() {
-    setError(null);
-    try {
-      const provider = new OAuthProvider('microsoft.com');
-      provider.setCustomParameters({ prompt: 'select_account' });
-      await signInWithPopup(auth, provider);
-    } catch (err: unknown) {
-      const code = (err as { code?: string }).code ?? '';
-      const message = mapFirebaseError(code);
-      if (message) setError(message);
-    }
-  }
-
   async function signOut() {
     await firebaseSignOut(auth);
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, clearError, signInWithGoogle, signInWithMicrosoft, signOut }}>
+    <AuthContext.Provider value={{ user, loading, error, clearError, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
