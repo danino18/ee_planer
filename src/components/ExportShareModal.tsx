@@ -60,7 +60,10 @@ export function ExportShareModal({ onClose, courses, trackDef, catalog }: Props)
     return selectedIds.filter((id) => versions.some((v) => v.id === id));
   }, [versionScope, activeVersionId, versions, selectedIds]);
 
-  const exportDisabled = exportVersionIds.length === 0;
+  // Only disable when user picked "select" but hasn't ticked any version.
+  // For 'current' and 'all', buildExportEnvelope always produces a valid envelope
+  // (buildEnvelopeFromState creates a fallback version when versions[] is empty).
+  const exportDisabled = versionScope === 'select' && selectedIds.length === 0;
 
   function getTrackId() {
     return usePlanStore.getState().trackId;

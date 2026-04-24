@@ -104,6 +104,7 @@ export const SemesterColumn = memo(function SemesterColumn({
     <div
       ref={setColumnRef}
       style={sortableStyle}
+      data-print-col
       className={`flex flex-col rounded-xl border-2 min-h-40 transition-colors ${columnStyle}`}
     >
       <div className={`px-3 py-2 rounded-t-xl border-b border-gray-200 ${isSummer ? 'bg-amber-50' : 'bg-white'}`}>
