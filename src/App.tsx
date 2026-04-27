@@ -26,6 +26,8 @@ import { eeCombinedTrack } from './data/tracks/ee_combined';
 import { ceTrack } from './data/tracks/ce';
 import type { SapCourse, TrackDefinition, VersionedPlanEnvelope } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
+import { useDegreeCompletionCheck } from './hooks/useDegreeCompletionCheck';
+import { DegreeCompletionPanel } from './components/DegreeCompletionPanel';
 import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
   getTrackSpecializationCatalog,
@@ -97,6 +99,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const specs = specializationCatalog.groups;
   const weightedAverage = useWeightedAverage(courses);
   const progress = useRequirementsProgress(courses, trackDef, specializationCatalog, weightedAverage);
+  const degreeCompletion = useDegreeCompletionCheck(courses, trackDef, specializationCatalog, weightedAverage);
 
   const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();
@@ -484,6 +487,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           {/* Desktop sidebar — hidden on mobile */}
           <aside className="hidden md:flex md:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
+            <DegreeCompletionPanel result={degreeCompletion} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
             <ChainRecommendations catalog={specializationCatalog} courses={courses} />
           </aside>
@@ -491,6 +495,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           {/* Mobile drawer — md:hidden enforced inside component */}
           <MobileSidebarDrawer open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
+            <DegreeCompletionPanel result={degreeCompletion} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
             <ChainRecommendations catalog={specializationCatalog} courses={courses} />
           </MobileSidebarDrawer>
