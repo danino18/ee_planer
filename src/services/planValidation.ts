@@ -1,4 +1,4 @@
-import type { StudentPlan, TrackId, PlanVersion, VersionedPlanEnvelope } from '../types';
+import type { StudentPlan, TrackId, PlanVersion, VersionedPlanEnvelope, ElectiveCreditArea } from '../types';
 
 const TRACK_IDS: TrackId[] = ['ee', 'cs', 'ee_math', 'ee_physics', 'ee_combined', 'ce'];
 const TRACK_ID_SET = new Set<TrackId>(TRACK_IDS);
@@ -31,10 +31,12 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'facultyColorOverrides',
   'coreToChainOverrides',
   'courseChainAssignments',
+  'electiveCreditAssignments',
   'roboticsMinorEnabled',
   'entrepreneurshipMinorEnabled',
   'initializedTracks',
 ]);
+const ELECTIVE_CREDIT_AREAS = new Set<ElectiveCreditArea>(['ee', 'physics', 'math', 'general']);
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) {
@@ -146,6 +148,31 @@ function validateStringMap(
       return null;
     }
     result[key] = entryValue;
+  }
+
+  return result;
+}
+
+function validateElectiveCreditAssignmentMap(
+  value: unknown,
+  maxEntries: number,
+): Record<string, ElectiveCreditArea> | null {
+  if (!isPlainObject(value) || Object.keys(value).length > maxEntries) {
+    return null;
+  }
+
+  const result: Record<string, ElectiveCreditArea> = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (
+      typeof key !== 'string' ||
+      key.length === 0 ||
+      key.length > 128 ||
+      typeof entryValue !== 'string' ||
+      !ELECTIVE_CREDIT_AREAS.has(entryValue as ElectiveCreditArea)
+    ) {
+      return null;
+    }
+    result[key] = entryValue as ElectiveCreditArea;
   }
 
   return result;
@@ -477,6 +504,12 @@ function sanitizeStudentPlanRecord(
     const courseChainAssignments = validateStringMap(value.courseChainAssignments, 200, 64);
     if (!courseChainAssignments) return null;
     sanitized.courseChainAssignments = courseChainAssignments;
+  }
+
+  if ('electiveCreditAssignments' in value) {
+    const electiveCreditAssignments = validateElectiveCreditAssignmentMap(value.electiveCreditAssignments, 600);
+    if (!electiveCreditAssignments) return null;
+    sanitized.electiveCreditAssignments = electiveCreditAssignments;
   }
 
   if ('roboticsMinorEnabled' in value) {

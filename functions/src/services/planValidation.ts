@@ -9,6 +9,7 @@ const MAX_SAVED_TRACKS = 6;
 const MAX_SEMESTERS = 16;
 const COURSE_ID_MAX_LENGTH = 32;
 const STRING_VALUE_MAX_LENGTH = 128;
+const ELECTIVE_CREDIT_AREAS = new Set(["ee", "physics", "math", "general"]);
 
 export class PlanValidationError extends Error {
   constructor(message: string) {
@@ -156,6 +157,29 @@ function cleanStringRecord(
   for (const [key, rawValue] of entries) {
     const cleanKey = cleanString(key, `${fieldName} key`, STRING_VALUE_MAX_LENGTH);
     result[cleanKey] = cleanString(rawValue, `${fieldName}.${cleanKey}`, maxValueLength);
+  }
+  return result;
+}
+
+function cleanElectiveCreditAssignmentRecord(
+  value: unknown,
+  fieldName = "electiveCreditAssignments",
+  maxEntries = MAX_COURSES
+): Record<string, string> {
+  const source = optionalRecord(value, fieldName);
+  if (!source) return {};
+  const entries = Object.entries(source);
+  if (entries.length > maxEntries) {
+    throw new PlanValidationError(`${fieldName} has too many entries`);
+  }
+
+  const result: Record<string, string> = {};
+  for (const [key, rawValue] of entries) {
+    const courseId = cleanCourseId(key, `${fieldName} key`);
+    if (typeof rawValue !== "string" || !ELECTIVE_CREDIT_AREAS.has(rawValue)) {
+      throw new PlanValidationError(`${fieldName}.${courseId} is invalid`);
+    }
+    result[courseId] = rawValue;
   }
   return result;
 }
@@ -311,6 +335,7 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       "coreToChainOverrides",
       MAX_COURSES
     ),
+    electiveCreditAssignments: cleanElectiveCreditAssignmentRecord(source.electiveCreditAssignments),
     roboticsMinorEnabled: cleanBoolean(source.roboticsMinorEnabled, "roboticsMinorEnabled"),
     entrepreneurshipMinorEnabled: cleanBoolean(
       source.entrepreneurshipMinorEnabled,

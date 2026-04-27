@@ -9,6 +9,9 @@ export const eeTrack: TrackDefinition = {
   electiveCreditsRequired: 39.5,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 3,
+  electivePolicy: {
+    facultyCourseAreas: ['ee'],
+  },
   labPool: {
     required: 3,
     mandatory: true,

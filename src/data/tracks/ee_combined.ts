@@ -9,6 +9,27 @@ export const eeCombinedTrack: TrackDefinition = {
   electiveCreditsRequired: 30,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 3,
+  electivePolicy: {
+    facultyCourseAreas: ['ee'],
+    areaRequirements: [
+      { area: 'ee', minCredits: 22 },
+      {
+        area: 'physics',
+        minCredits: 5,
+        requiredAnyOfCourseIds: [
+          '01160210',
+          '01160029',
+          '01160031',
+          '01160354',
+          '01160004',
+          '01160027',
+        ],
+      },
+    ],
+    manualAssignmentAreas: {
+      physics: ['physics', 'ee', 'general'],
+    },
+  },
   semesterSchedule: [
     {
       semester: 1,

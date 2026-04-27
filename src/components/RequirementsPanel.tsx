@@ -3,9 +3,15 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
-import type { SpecializationDiagnostic } from '../types';
-import type { EnglishRequirementItem, CoreSlot } from '../hooks/usePlan';
+import type { ElectiveCreditArea, SpecializationDiagnostic } from '../types';
+import type {
+  ElectiveAreaProgress,
+  ElectiveAssignmentChoice,
+  EnglishRequirementItem,
+  CoreSlot,
+} from '../hooks/usePlan';
 import type { RoboticsMinorProgress } from '../hooks/useRoboticsMinor';
+import { ELECTIVE_AREA_LABELS } from '../domain/electives';
 import {
   ROBOTICS_MINOR_MIN_GPA,
   ROBOTICS_MINOR_MIN_TOTAL_CREDITS,
@@ -25,6 +31,14 @@ const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
 ];
+
+const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4';
+const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
+const CREDIT_ASSIGNMENT_LABEL = '\u05e9\u05d9\u05d5\u05da \u05e0\u05e7"\u05d6';
+
+function formatCredits(value: number): string {
+  return value % 1 === 0 ? String(value) : value.toFixed(1);
+}
 
 interface ProgressRowProps {
   label: string;
@@ -48,6 +62,84 @@ function ProgressRow({ label, earned, required, color }: ProgressRowProps) {
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
+    </div>
+  );
+}
+
+interface ElectiveBreakdownProps {
+  areaRequirements: ElectiveAreaProgress[];
+  assignmentChoices: ElectiveAssignmentChoice[];
+  onSelectAssignment: (courseId: string, area: ElectiveCreditArea) => void;
+}
+
+function ElectiveBreakdown({
+  areaRequirements,
+  assignmentChoices,
+  onSelectAssignment,
+}: ElectiveBreakdownProps) {
+  if (areaRequirements.length === 0 && assignmentChoices.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-3 rounded-lg border border-purple-100 bg-purple-50/60 px-3 py-2.5 space-y-2.5">
+      {areaRequirements.length > 0 && (
+        <div className="space-y-2">
+          {areaRequirements.map((requirement) => {
+            const pct = Math.min(100, requirement.required > 0 ? (requirement.earned / requirement.required) * 100 : 0);
+            const done = requirement.earned >= requirement.required;
+            return (
+              <div key={requirement.area}>
+                <div className="flex justify-between items-center gap-3 mb-1">
+                  <span className="text-xs font-medium text-gray-700">{requirement.label}</span>
+                  <span className={`text-xs font-semibold shrink-0 ${done ? 'text-green-600' : 'text-gray-600'}`}>
+                    {formatCredits(requirement.earned)} / {formatCredits(requirement.required)}
+                  </span>
+                </div>
+                <div className="w-full bg-purple-100 rounded-full h-1.5">
+                  <div
+                    className={`h-1.5 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-purple-500'}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                {requirement.requiredAnyOfCourseIds && (
+                  <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-gray-600">
+                    <span className={`font-bold shrink-0 ${requirement.requiredAnyOfDone ? 'text-green-600' : 'text-gray-400'}`}>
+                      {requirement.requiredAnyOfDone ? '\u2713' : '\u25cb'}
+                    </span>
+                    <span>
+                      {REQUIRED_ANY_OF_LABEL}: {(requirement.requiredAnyOfCourseNames ?? requirement.requiredAnyOfCourseIds).join(', ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {assignmentChoices.length > 0 && (
+        <div className="border-t border-purple-100 pt-2 space-y-1.5">
+          <p className="text-xs font-medium text-gray-700">{MANUAL_ASSIGNMENT_TITLE}</p>
+          {assignmentChoices.map((choice) => (
+            <label key={choice.courseId} className="flex items-center justify-between gap-2 text-xs text-gray-600">
+              <span className="min-w-0 truncate">{choice.courseName}</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] text-gray-400">{CREDIT_ASSIGNMENT_LABEL}</span>
+                <select
+                  value={choice.selectedArea}
+                  onChange={(event) => onSelectAssignment(choice.courseId, event.target.value as ElectiveCreditArea)}
+                  className="text-xs border border-purple-200 rounded bg-white px-1.5 py-0.5 text-gray-700"
+                >
+                  {choice.options.map((area) => (
+                    <option key={area} value={area}>{ELECTIVE_AREA_LABELS[area]}</option>
+                  ))}
+                </select>
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -228,6 +320,11 @@ interface Props {
   progress: {
     mandatory: { earned: number; required: number };
     elective: { earned: number; required: number };
+    electiveBreakdown: {
+      areaRequirements: ElectiveAreaProgress[];
+      assignmentChoices: ElectiveAssignmentChoice[];
+      generalCourseIds: string[];
+    };
     total: { earned: number; required: number };
     specializationGroups: {
       completed: number;
@@ -283,6 +380,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     toggleRoboticsMinor,
     toggleEntrepreneurshipMinor,
     addCourseToSemester,
+    setElectiveCreditAssignment,
     miluimCredits,
     englishTaughtCourses,
     coreToChainOverrides,
@@ -301,6 +399,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     toggleRoboticsMinor: state.toggleRoboticsMinor,
     toggleEntrepreneurshipMinor: state.toggleEntrepreneurshipMinor,
     addCourseToSemester: state.addCourseToSemester,
+    setElectiveCreditAssignment: state.setElectiveCreditAssignment,
     miluimCredits: state.miluimCredits,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     coreToChainOverrides: state.coreToChainOverrides ?? [],
@@ -432,6 +531,11 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
+      <ElectiveBreakdown
+        areaRequirements={progress.electiveBreakdown.areaRequirements}
+        assignmentChoices={progress.electiveBreakdown.assignmentChoices}
+        onSelectAssignment={setElectiveCreditAssignment}
+      />
       {progress.coreRequirementProgress && (() => {
         const { completed, required, slots, canRelease } = progress.coreRequirementProgress!;
         const done = completed >= required;

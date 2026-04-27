@@ -5,9 +5,10 @@ import type {
   TrackDefinition,
   SpecializationGroup,
   TrackSpecializationCatalog,
+  ElectiveCreditArea,
 } from '../types';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
-import { evaluateSpecializationGroup } from '../domain/specializations';
+import { evaluateSpecializationGroup } from '../domain/specializations/engine';
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
 import { computeRoboticsMinorProgress } from './useRoboticsMinor';
 import type { RoboticsMinorProgress } from './useRoboticsMinor';
@@ -26,6 +27,11 @@ import {
   getVisibleMandatoryCourseIds,
 } from '../data/tracks/semesterSchedule';
 import { computeWeightedAverage } from '../utils/courseGrades';
+import {
+  ELECTIVE_AREA_LABELS,
+  getElectiveCreditAssignmentOptions,
+  resolveElectiveCreditArea,
+} from '../domain/electives';
 
 const PREREQ_EQUIVALENCES: string[][] = [
   ['01040064', '01040065', '01040016'],
@@ -183,8 +189,27 @@ export interface RequirementsInput {
   semesterOrder: number[];
   coreToChainOverrides: string[];
   courseChainAssignments?: Record<string, string>;
+  electiveCreditAssignments?: Record<string, ElectiveCreditArea>;
   roboticsMinorEnabled: boolean;
   entrepreneurshipMinorEnabled: boolean;
+}
+
+export interface ElectiveAreaProgress {
+  area: Exclude<ElectiveCreditArea, 'general'>;
+  label: string;
+  earned: number;
+  required: number;
+  courseIds: string[];
+  requiredAnyOfCourseIds?: string[];
+  requiredAnyOfCourseNames?: string[];
+  requiredAnyOfDone?: boolean;
+}
+
+export interface ElectiveAssignmentChoice {
+  courseId: string;
+  courseName: string;
+  selectedArea: ElectiveCreditArea;
+  options: ElectiveCreditArea[];
 }
 
 export function computeRequirementsProgress(
@@ -210,6 +235,7 @@ export function computeRequirementsProgress(
     semesterOrder,
     coreToChainOverrides,
     courseChainAssignments,
+    electiveCreditAssignments,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
   } = input;
@@ -312,6 +338,18 @@ export function computeRequirementsProgress(
 
     let electiveCredits = 0;
     const counted = new Set<string>();
+    const generalElectiveCourseIds = new Set<string>();
+    const electiveAreaCredits = new Map<Exclude<ElectiveCreditArea, 'general'>, number>();
+    const electiveAreaCourseIds = new Map<Exclude<ElectiveCreditArea, 'general'>, Set<string>>();
+    const electiveAssignmentChoices: ElectiveAssignmentChoice[] = [];
+
+    const addAreaCredit = (area: Exclude<ElectiveCreditArea, 'general'>, id: string, credits: number) => {
+      electiveAreaCredits.set(area, (electiveAreaCredits.get(area) ?? 0) + credits);
+      const ids = electiveAreaCourseIds.get(area) ?? new Set<string>();
+      ids.add(id);
+      electiveAreaCourseIds.set(area, ids);
+    };
+
     for (const id of allPlaced) {
       if (
         !mandatoryIds.has(id) &&
@@ -321,10 +359,54 @@ export function computeRequirementsProgress(
         !isSportCourseId(id) &&
         !isFreeElectiveCourseId(id)
       ) {
-        electiveCredits += courses.get(id)?.credits ?? 0;
+        const course = courses.get(id);
+        if (!course) continue;
+
+        const selectedArea = resolveElectiveCreditArea(course, trackDef, electiveCreditAssignments);
+        const options = getElectiveCreditAssignmentOptions(course, trackDef);
+        if (options.length > 1) {
+          electiveAssignmentChoices.push({
+            courseId: id,
+            courseName: course.name,
+            selectedArea,
+            options,
+          });
+        }
+
+        if (selectedArea === 'general') {
+          generalElectiveCourseIds.add(id);
+        } else {
+          electiveCredits += course.credits;
+          addAreaCredit(selectedArea, id, course.credits);
+        }
         counted.add(id);
       }
     }
+
+    const electiveAreaRequirements: ElectiveAreaProgress[] = (trackDef.electivePolicy?.areaRequirements ?? [])
+      .map((requirement) => {
+        const courseIds = [...(electiveAreaCourseIds.get(requirement.area) ?? new Set<string>())];
+        const requiredAnyOfDone = requirement.requiredAnyOfCourseIds
+          ? requirement.requiredAnyOfCourseIds.some((courseId) => courseIds.includes(courseId))
+          : undefined;
+
+        return {
+          area: requirement.area,
+          label: ELECTIVE_AREA_LABELS[requirement.area],
+          earned: electiveAreaCredits.get(requirement.area) ?? 0,
+          required: requirement.minCredits,
+          courseIds,
+          requiredAnyOfCourseIds: requirement.requiredAnyOfCourseIds,
+          requiredAnyOfCourseNames: requirement.requiredAnyOfCourseIds?.map((courseId) =>
+            courses.get(courseId)?.name ?? courseId
+          ),
+          requiredAnyOfDone,
+        };
+      });
+    const electiveAreaRequirementsSatisfied = electiveAreaRequirements.every((requirement) =>
+      requirement.earned >= requirement.required &&
+      requirement.requiredAnyOfDone !== false
+    );
 
     const selectedGroups = specializationCatalog.groups.filter((group) =>
       selectedSpecializations.includes(group.id)
@@ -396,6 +478,7 @@ export function computeRequirementsProgress(
       miluimCredits,
       englishTaughtCourses,
       englishScore,
+      generalElectiveCourseIds,
     });
     const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
@@ -546,6 +629,11 @@ export function computeRequirementsProgress(
     return {
       mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
+      electiveBreakdown: {
+        areaRequirements: electiveAreaRequirements,
+        assignmentChoices: electiveAssignmentChoices,
+        generalCourseIds: [...generalElectiveCourseIds],
+      },
       total: { earned: totalCredits, required: trackDef.totalCreditsRequired + (roboticsMinorEnabled ? ROBOTICS_MINOR_EXTRA_CREDITS : 0) + (entrepreneurshipMinorEnabled ? ENTREPRENEURSHIP_MINOR_EXTRA_CREDITS : 0) },
       specializationGroups: {
         completed: specializationCatalog.interactionDisabled ? 0 : completedCount,
@@ -590,6 +678,7 @@ export function computeRequirementsProgress(
       isReady:
         mandatoryDone >= trackDef.mandatoryCredits &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
+        electiveAreaRequirementsSatisfied &&
         (specializationCatalog.interactionDisabled
           ? false
           : completedCount >= trackDef.specializationGroupsRequired) &&
@@ -619,6 +708,7 @@ export function useRequirementsProgress(
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
   const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
   const courseChainAssignments = usePlanStore((s) => s.courseChainAssignments);
+  const electiveCreditAssignments = usePlanStore((s) => s.electiveCreditAssignments);
   const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
   const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
 
@@ -641,6 +731,7 @@ export function useRequirementsProgress(
           semesterOrder,
           coreToChainOverrides,
           courseChainAssignments,
+          electiveCreditAssignments,
           roboticsMinorEnabled,
           entrepreneurshipMinorEnabled,
         },
@@ -649,7 +740,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
   );
 }
 

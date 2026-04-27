@@ -9,6 +9,19 @@ export const eeMathTrack: TrackDefinition = {
   electiveCreditsRequired: 25,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 2,
+  electivePolicy: {
+    facultyCourseAreas: ['ee'],
+    areaRequirements: [
+      { area: 'ee', minCredits: 18 },
+      {
+        area: 'math',
+        minCredits: 5,
+      },
+    ],
+    manualAssignmentAreas: {
+      math: ['math', 'general'],
+    },
+  },
   semesterSchedule: [
     {
       semester: 1,

@@ -1,4 +1,5 @@
 const TRACK_IDS = ["ee", "cs", "ee_math", "ee_physics", "ee_combined", "ce"] as const;
+const ELECTIVE_CREDIT_AREAS = new Set(["ee", "physics", "math", "general"]);
 const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "trackId",
   "semesters",
@@ -26,6 +27,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "facultyColorOverrides",
   "dismissedRecommendedCourses",
   "coreToChainOverrides",
+  "electiveCreditAssignments",
   "roboticsMinorEnabled",
   "entrepreneurshipMinorEnabled",
   "initializedTracks",
@@ -188,6 +190,30 @@ function validateStringMap(
   const result: Record<string, string> = {};
   for (const [key, entryValue] of Object.entries(value)) {
     if (!isNonEmptyString(key, 128) || !isNonEmptyString(entryValue, maxValueLength)) {
+      return fail(`Invalid ${field}`);
+    }
+    result[key] = entryValue;
+  }
+
+  return result;
+}
+
+function validateElectiveCreditAssignmentMap(
+  field: string,
+  value: unknown,
+  maxEntries: number
+): Record<string, string> | ValidationFailure {
+  if (!isPlainObject(value) || Object.keys(value).length > maxEntries) {
+    return fail(`Invalid ${field}`);
+  }
+
+  const result: Record<string, string> = {};
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (
+      !isNonEmptyString(key, 128) ||
+      typeof entryValue !== "string" ||
+      !ELECTIVE_CREDIT_AREAS.has(entryValue)
+    ) {
       return fail(`Invalid ${field}`);
     }
     result[key] = entryValue;
@@ -564,6 +590,18 @@ function validateStudentPlanRecord(
       return coreToChainOverrides;
     }
     sanitized.coreToChainOverrides = coreToChainOverrides;
+  }
+
+  if ("electiveCreditAssignments" in value) {
+    const electiveCreditAssignments = validateElectiveCreditAssignmentMap(
+      "electiveCreditAssignments",
+      value.electiveCreditAssignments,
+      600
+    );
+    if (isValidationFailure(electiveCreditAssignments)) {
+      return electiveCreditAssignments;
+    }
+    sanitized.electiveCreditAssignments = electiveCreditAssignments;
   }
 
   if ("roboticsMinorEnabled" in value) {
