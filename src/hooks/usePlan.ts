@@ -6,6 +6,8 @@ import type {
   SpecializationGroup,
   TrackSpecializationCatalog,
 } from '../types';
+import type { RequirementsInput } from '../domain/degreeCompletion/types';
+export type { RequirementsInput };
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { evaluateSpecializationGroup } from '../domain/specializations';
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
@@ -165,26 +167,6 @@ export interface CoreSlot {
   released: boolean;    // placed but released to chain by user
   activeId?: string;    // which specific ID is placed (for OR pairs)
   availableIds: string[]; // courses in the slot that are not yet placed/completed
-}
-
-export interface RequirementsInput {
-  semesters: Record<number, string[]>;
-  completedCourses: string[];
-  explicitSportCompletions: string[];
-  completedInstances: string[];
-  grades: Record<string, number>;
-  binaryPass: Record<string, boolean>;
-  selectedSpecializations: string[];
-  doubleSpecializations: string[];
-  hasEnglishExemption: boolean;
-  miluimCredits: number;
-  englishScore: number | undefined;
-  englishTaughtCourses: string[];
-  semesterOrder: number[];
-  coreToChainOverrides: string[];
-  courseChainAssignments?: Record<string, string>;
-  roboticsMinorEnabled: boolean;
-  entrepreneurshipMinorEnabled: boolean;
 }
 
 export function computeRequirementsProgress(

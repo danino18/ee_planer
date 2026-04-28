@@ -1,3 +1,23 @@
+export interface RequirementsInput {
+  semesters: Record<number, string[]>;
+  completedCourses: string[];
+  explicitSportCompletions: string[];
+  completedInstances: string[];
+  grades: Record<string, number>;
+  binaryPass: Record<string, boolean>;
+  selectedSpecializations: string[];
+  doubleSpecializations: string[];
+  hasEnglishExemption: boolean;
+  miluimCredits: number;
+  englishScore: number | undefined;
+  englishTaughtCourses: string[];
+  semesterOrder: number[];
+  coreToChainOverrides: string[];
+  courseChainAssignments?: Record<string, string>;
+  roboticsMinorEnabled: boolean;
+  entrepreneurshipMinorEnabled: boolean;
+}
+
 export type DegreeBucket =
   | 'mandatory'
   | 'mandatory_lab'

@@ -2,17 +2,37 @@ import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { SapCourse, TrackDefinition, TrackSpecializationCatalog } from '../types';
-import { computeDegreeCompletionCheck } from '../domain/degreeCompletion';
-import type { DegreeCompletionResult } from '../domain/degreeCompletion';
+import {
+  computeDegreeCompletionCheck,
+  suggestChainAssignments,
+  suggestMissingCourses,
+} from '../domain/degreeCompletion';
+import type {
+  DegreeCompletionResult,
+  ChainAssignmentSuggestion,
+  CourseRecommendation,
+  SchedulingContext,
+} from '../domain/degreeCompletion';
 
 export type { DegreeCompletionResult };
+
+export interface DegreeCompletionData {
+  result: DegreeCompletionResult;
+  chainSuggestions: ChainAssignmentSuggestion[];
+  courseRecommendations: CourseRecommendation[];
+}
+
+const SEM_LABELS = [
+  "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
+  "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
+];
 
 export function useDegreeCompletionCheck(
   courses: Map<string, SapCourse>,
   trackDef: TrackDefinition | null,
   catalog: TrackSpecializationCatalog,
   weightedAverage: number | null,
-): DegreeCompletionResult | null {
+): DegreeCompletionData | null {
   const input = usePlanStore(useShallow((s) => ({
     semesters: s.semesters,
     completedCourses: s.completedCourses,
@@ -31,10 +51,54 @@ export function useDegreeCompletionCheck(
     courseChainAssignments: s.courseChainAssignments,
     roboticsMinorEnabled: s.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: s.entrepreneurshipMinorEnabled ?? false,
+    // Scheduling context fields
+    summerSemesters: s.summerSemesters,
+    semesterTypeOverrides: s.semesterTypeOverrides ?? {},
+    targetGraduationSemesterId: s.targetGraduationSemesterId ?? null,
+    loadProfile: s.loadProfile ?? 'fulltime' as const,
   })));
 
   return useMemo(() => {
     if (!trackDef) return null;
-    return computeDegreeCompletionCheck(input, courses, trackDef, catalog, weightedAverage);
+
+    const result = computeDegreeCompletionCheck(input, courses, trackDef, catalog, weightedAverage);
+
+    const optimizerInput = {
+      completedCourses: input.completedCourses,
+      semesters: input.semesters,
+      selectedSpecializations: input.selectedSpecializations,
+      courseChainAssignments: input.courseChainAssignments,
+      doubleSpecializations: input.doubleSpecializations,
+    };
+
+    // Build semester labels map
+    const semesterLabels = new Map<number, string>();
+    const summerSet = new Set(input.summerSemesters);
+    let regularIdx = 0;
+    let summerIdx = 0;
+    for (const semId of input.semesterOrder) {
+      if (summerSet.has(semId)) {
+        semesterLabels.set(semId, `קיץ ${SEM_LABELS[summerIdx] ?? semId}`);
+        summerIdx++;
+      } else {
+        semesterLabels.set(semId, `סמסטר ${SEM_LABELS[regularIdx] ?? semId}`);
+        regularIdx++;
+      }
+    }
+
+    const context: SchedulingContext = {
+      semesterOrder: input.semesterOrder,
+      summerSemesters: input.summerSemesters,
+      semesterTypeOverrides: input.semesterTypeOverrides,
+      semesters: input.semesters,
+      targetGraduationSemesterId: input.targetGraduationSemesterId,
+      loadProfile: input.loadProfile,
+      semesterLabels,
+    };
+
+    const chainSuggestions = suggestChainAssignments(optimizerInput, courses, catalog);
+    const courseRecommendations = suggestMissingCourses(optimizerInput, courses, catalog, context);
+
+    return { result, chainSuggestions, courseRecommendations };
   }, [input, courses, trackDef, catalog, weightedAverage]);
 }

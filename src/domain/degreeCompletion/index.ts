@@ -14,4 +14,12 @@ export type {
   DegreeRequirementCheck,
   DegreeRequirementStatus,
   DegreeRequirementUnit,
+  RequirementsInput,
 } from './types';
+export { suggestChainAssignments, suggestMissingCourses } from './optimizer';
+export type {
+  ChainAssignmentSuggestion,
+  CourseRecommendation,
+  OptimizerInput,
+  SchedulingContext,
+} from './optimizer';

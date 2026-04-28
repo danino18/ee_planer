@@ -42,5 +42,7 @@ export function serializePlanState(state: StudentPlan): StudentPlan {
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
     initializedTracks: [...(state.initializedTracks ?? [])],
+    targetGraduationSemesterId: state.targetGraduationSemesterId ?? null,
+    loadProfile: state.loadProfile ?? 'fulltime',
   };
 }
