@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
@@ -36,6 +37,14 @@ const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8
 const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
 const CREDIT_ASSIGNMENT_LABEL = '\u05e9\u05d9\u05d5\u05da \u05e0\u05e7"\u05d6';
 const SPORT_REQUIREMENT_HELP = 'כדי שקורס ספורט ייכנס לספירה, יש ללחוץ על כרטיס הקורס ולסמן אותו כהושלם או כעובר.';
+const SPORT_TOOLTIP_WIDTH = 224;
+const SPORT_TOOLTIP_MARGIN = 12;
+const SPORT_TOOLTIP_GAP = 8;
+
+type TooltipPosition = {
+  top: number;
+  left: number;
+};
 
 function formatCredits(value: number): string {
   return value % 1 === 0 ? String(value) : value.toFixed(1);
@@ -210,11 +219,72 @@ function CompactRequirementRow({
   englishRequirementItems,
 }: CompactRequirementRowProps) {
   const [sportHelpOpen, setSportHelpOpen] = useState(false);
+  const [sportHelpPinned, setSportHelpPinned] = useState(false);
+  const [sportTooltipPosition, setSportTooltipPosition] = useState<TooltipPosition | null>(null);
+  const sportHelpButtonRef = useRef<HTMLButtonElement>(null);
+  const sportTooltipRef = useRef<HTMLDivElement>(null);
   const pct = Math.min(100, targetValue > 0 ? (req.completedValue / targetValue) * 100 : 0);
   const isDone = req.completedValue >= targetValue;
   const missingText = missingValue > 0
     ? `${missingValue % 1 === 0 ? missingValue : missingValue.toFixed(1)} ${req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים'} חסרים`
     : 'הושלם';
+
+  useEffect(() => {
+    if (!sportHelpOpen || req.requirementId !== 'sport') return undefined;
+
+    function updatePosition() {
+      const button = sportHelpButtonRef.current;
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const tooltipHeight = sportTooltipRef.current?.offsetHeight ?? 72;
+      const left = Math.min(
+        window.innerWidth - SPORT_TOOLTIP_MARGIN - SPORT_TOOLTIP_WIDTH,
+        Math.max(
+          SPORT_TOOLTIP_MARGIN,
+          rect.left + (rect.width / 2) - (SPORT_TOOLTIP_WIDTH / 2),
+        ),
+      );
+      const hasRoomBelow = rect.bottom + SPORT_TOOLTIP_GAP + tooltipHeight + SPORT_TOOLTIP_MARGIN <= window.innerHeight;
+      const top = hasRoomBelow
+        ? rect.bottom + SPORT_TOOLTIP_GAP
+        : Math.max(SPORT_TOOLTIP_MARGIN, rect.top - SPORT_TOOLTIP_GAP - tooltipHeight);
+
+      setSportTooltipPosition({ top, left });
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (
+        sportHelpButtonRef.current?.contains(target) ||
+        sportTooltipRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setSportHelpOpen(false);
+      setSportHelpPinned(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setSportHelpOpen(false);
+        setSportHelpPinned(false);
+      }
+    }
+
+    updatePosition();
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [req.requirementId, sportHelpOpen]);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
@@ -223,25 +293,32 @@ function CompactRequirementRow({
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
             {req.requirementId === 'sport' && (
-              <span className="group relative inline-flex">
+              <span className="inline-flex">
                 <button
+                  ref={sportHelpButtonRef}
                   type="button"
-                  onClick={() => setSportHelpOpen((open) => !open)}
-                  onBlur={() => setSportHelpOpen(false)}
+                  onMouseEnter={() => setSportHelpOpen(true)}
+                  onMouseLeave={() => {
+                    if (!sportHelpPinned) setSportHelpOpen(false);
+                  }}
+                  onFocus={() => setSportHelpOpen(true)}
+                  onBlur={() => {
+                    if (!sportHelpPinned) setSportHelpOpen(false);
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSportHelpPinned((pinned) => {
+                      const nextPinned = !pinned;
+                      setSportHelpOpen(nextPinned);
+                      return nextPinned;
+                    });
+                  }}
                   className="w-4 h-4 rounded-full border border-blue-200 bg-blue-50 text-[10px] font-bold leading-none text-blue-600 hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   aria-label={SPORT_REQUIREMENT_HELP}
                   aria-expanded={sportHelpOpen}
                 >
                   i
                 </button>
-                <span
-                  role="tooltip"
-                  className={`absolute right-0 top-5 z-20 w-56 rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs leading-snug text-gray-700 shadow-lg ${
-                    sportHelpOpen ? 'block' : 'hidden'
-                  } group-hover:block`}
-                >
-                  {SPORT_REQUIREMENT_HELP}
-                </span>
               </span>
             )}
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
@@ -259,6 +336,22 @@ function CompactRequirementRow({
           style={{ width: `${pct}%` }}
         />
       </div>
+
+      {req.requirementId === 'sport' && sportHelpOpen && sportTooltipPosition && createPortal(
+        <div
+          ref={sportTooltipRef}
+          role="tooltip"
+          className="fixed z-[200] rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs leading-snug text-gray-700 shadow-lg"
+          style={{
+            top: `${sportTooltipPosition.top}px`,
+            left: `${sportTooltipPosition.left}px`,
+            width: `${SPORT_TOOLTIP_WIDTH}px`,
+          }}
+        >
+          {SPORT_REQUIREMENT_HELP}
+        </div>,
+        document.body,
+      )}
 
       {req.requirementId === 'english' && onSetEnglishScore && (
         <div className="mt-3 flex items-center gap-2">

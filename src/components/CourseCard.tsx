@@ -117,21 +117,46 @@ export const CourseCard = memo(function CourseCard({
           transition-all duration-100
         `}
       >
-        <button
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFavorite(course.id);
-          }}
-          className={`absolute top-0 left-0 w-11 h-11 flex items-center justify-center text-sm leading-none ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
-          title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
-        >
-          {isFavorite ? '★' : '☆'}
-        </button>
+        <div className="absolute top-0 left-0 z-10 flex items-center">
+          <button
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFavorite(course.id);
+            }}
+            className={`w-11 h-11 flex items-center justify-center text-sm leading-none ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
+            title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
+          >
+            {isFavorite ? '★' : '☆'}
+          </button>
+          {semester !== undefined && (
+            <button
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                removeCourseFromSemester(course.id, semester, instanceKey);
+              }}
+              className="w-11 h-11 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 hover:text-red-500 transition-colors"
+              title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
+              aria-label={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
+            >
+              ×
+            </button>
+          )}
+        </div>
 
         {semester !== undefined && (
           <button
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onClick={(e) => {
               e.stopPropagation();
               if (isRepeatable && instanceKey) {
@@ -147,7 +172,7 @@ export const CourseCard = memo(function CourseCard({
           </button>
         )}
 
-        <p className="text-xs font-medium text-gray-900 leading-snug px-11 pt-0.5">{course.name}</p>
+        <p className="text-xs font-medium text-gray-900 leading-snug pr-11 pl-[5.5rem] pt-0.5">{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">
@@ -208,20 +233,6 @@ export const CourseCard = memo(function CourseCard({
             <span className="text-xs font-bold text-gray-600">{course.credits} נק"ז</span>
           </div>
         </div>
-
-        {semester !== undefined && (
-          <button
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => {
-              e.stopPropagation();
-              removeCourseFromSemester(course.id, semester, instanceKey);
-            }}
-            className="absolute bottom-0 left-0 w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-gray-300 hover:text-red-500 text-sm transition-colors"
-            title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
-          >
-            ×
-          </button>
-        )}
       </div>
 
       {modalOpen && (

@@ -104,3 +104,29 @@ test('removing the last unassigned course occurrence clears related course metad
   assert.deepEqual(state.selectedPrereqGroups, {});
 });
 
+test('removing a repeatable course instance from a regular semester removes that instance only', () => {
+  usePlanStore.getState().loadPlan({
+    trackId: 'ee',
+    semesters: { 0: [], 1: ['03940810', '03940810'] },
+    completedCourses: ['03940810'],
+    selectedSpecializations: [],
+    favorites: [],
+    grades: {},
+    substitutions: {},
+    maxSemester: 1,
+    selectedPrereqGroups: {},
+    summerSemesters: [],
+    currentSemester: null,
+    semesterOrder: [1],
+    explicitSportCompletions: ['03940810'],
+    completedInstances: ['03940810__1__0', '03940810__1__1'],
+  });
+
+  usePlanStore.getState().removeCourseFromSemester('03940810', 1, '03940810__1__1');
+
+  const state = usePlanStore.getState();
+  assert.deepEqual(state.semesters[1], ['03940810']);
+  assert.deepEqual(state.completedCourses, ['03940810']);
+  assert.deepEqual(state.explicitSportCompletions, ['03940810']);
+  assert.deepEqual(state.completedInstances, ['03940810__1__0']);
+});
