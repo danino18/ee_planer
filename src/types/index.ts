@@ -1,5 +1,29 @@
 export type TrackId = 'ee' | 'cs' | 'ee_math' | 'ee_physics' | 'ee_combined' | 'ce';
 
+export type CourseFacultyArea =
+  | 'ee'
+  | 'math'
+  | 'physics'
+  | 'cs'
+  | 'humanities'
+  | 'other'
+  | 'unknown';
+
+export type ElectiveCreditArea = 'ee' | 'physics' | 'math' | 'general';
+
+export interface ElectiveAreaRequirement {
+  area: Exclude<ElectiveCreditArea, 'general'>;
+  minCredits: number;
+  allowedCourseIds?: string[];
+  requiredAnyOfCourseIds?: string[];
+}
+
+export interface TrackElectivePolicy {
+  facultyCourseAreas: CourseFacultyArea[];
+  areaRequirements?: ElectiveAreaRequirement[];
+  manualAssignmentAreas?: Partial<Record<CourseFacultyArea, ElectiveCreditArea[]>>;
+}
+
 export interface SapCourse {
   id: string;
   name: string;
@@ -37,6 +61,7 @@ export interface TrackDefinition {
   semesterSchedule: SemesterScheduleEntry[];
   specializationGroupsRequired: number;
   description: string;
+  electivePolicy?: TrackElectivePolicy;
   labPool?: {
     courses: string[];
     required: number;     // mandatory minimum (0 = purely optional)
@@ -235,6 +260,7 @@ export interface StudentPlan {
   facultyColorOverrides?: Record<string, string>;  // faculty name → color key override
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
   courseChainAssignments?: Record<string, string>;  // courseId → chainGroupId: explicit single-chain assignment
+  electiveCreditAssignments?: Record<string, ElectiveCreditArea>;  // courseId -> manual elective credit bucket
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
   initializedTracks?: string[];  // trackIds that have been fully initialized at least once

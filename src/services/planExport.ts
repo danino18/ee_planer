@@ -11,6 +11,7 @@ import { buildEnvelopeFromState } from './planSync';
 import { sanitizeEnvelope } from './planValidation';
 import { computeRequirementsProgress } from '../hooks/usePlan';
 import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
+import { ELECTIVE_AREA_LABELS } from '../domain/electives';
 
 export interface ExportOptions {
   includeGrades: boolean;
@@ -270,6 +271,7 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
       semesterOrder: plan.semesterOrder,
       coreToChainOverrides: plan.coreToChainOverrides ?? [],
       courseChainAssignments: plan.courseChainAssignments,
+      electiveCreditAssignments: plan.electiveCreditAssignments,
       roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
       entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
     },
@@ -300,6 +302,28 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
 
   pushMetric('נ"ז חובה', progress.mandatory.earned, progress.mandatory.required, 'נ"ז');
   pushMetric('נ"ז בחירה', progress.elective.earned, progress.elective.required, 'נ"ז');
+  for (const requirement of progress.electiveBreakdown.areaRequirements) {
+    pushMetric(requirement.label, requirement.earned, requirement.required, 'נ"ז');
+    if (requirement.requiredAnyOfCourseIds) {
+      const done = requirement.requiredAnyOfDone ? '\u05d4\u05d5\u05e9\u05dc\u05dd' : '\u05d1\u05ea\u05d4\u05dc\u05d9\u05da';
+      rows.push(csvRow([
+        `${requirement.label} - \u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4`,
+        requirement.requiredAnyOfDone ? 1 : 0,
+        1,
+        '\u05ea\u05e0\u05d0\u05d9',
+        done,
+      ]));
+    }
+  }
+  for (const choice of progress.electiveBreakdown.assignmentChoices) {
+    rows.push(csvRow([
+      `\u05e9\u05d9\u05d5\u05da \u05d1\u05d7\u05d9\u05e8\u05d4 - ${choice.courseName}`,
+      ELECTIVE_AREA_LABELS[choice.selectedArea],
+      '',
+      '',
+      '',
+    ]));
+  }
   pushMetric('נ"ז סה"כ', progress.total.earned, progress.total.required, 'נ"ז');
   pushMetric('כלליים', progress.general.earned, progress.general.required, 'נ"ז');
   pushMetric('ספורט', progress.sport.earned, progress.sport.required, 'נ"ז');
@@ -382,6 +406,7 @@ function buildSpecializationRows(ctx: CsvBuildContext): string[] {
       semesterOrder: plan.semesterOrder,
       coreToChainOverrides: plan.coreToChainOverrides ?? [],
       courseChainAssignments: plan.courseChainAssignments,
+      electiveCreditAssignments: plan.electiveCreditAssignments,
       roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
       entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
     },

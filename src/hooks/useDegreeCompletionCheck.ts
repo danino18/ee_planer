@@ -6,6 +6,7 @@ import {
   computeDegreeCompletionCheck,
   suggestChainAssignments,
   suggestMissingCourses,
+  suggestTrackScheduleCourses,
 } from '../domain/degreeCompletion';
 import type {
   DegreeCompletionResult,
@@ -97,7 +98,20 @@ export function useDegreeCompletionCheck(
     };
 
     const chainSuggestions = suggestChainAssignments(optimizerInput, courses, catalog);
-    const courseRecommendations = suggestMissingCourses(optimizerInput, courses, catalog, context);
+
+    // Chain recs (choice/elective from selected specializations)
+    const chainRecs = suggestMissingCourses(optimizerInput, courses, catalog, context);
+
+    // Mandatory/lab recs from the track schedule (base layer)
+    const trackRecs = trackDef
+      ? suggestTrackScheduleCourses(optimizerInput, courses, trackDef, context)
+      : [];
+
+    // Chain recs win when a course appears in both (more context)
+    const chainCourseIds = new Set(chainRecs.map((r) => r.courseId));
+    const dedupedTrackRecs = trackRecs.filter((r) => !chainCourseIds.has(r.courseId));
+
+    const courseRecommendations = [...dedupedTrackRecs, ...chainRecs];
 
     return { result, chainSuggestions, courseRecommendations };
   }, [input, courses, trackDef, catalog, weightedAverage]);

@@ -9,6 +9,27 @@ export const eePhysicsTrack: TrackDefinition = {
   electiveCreditsRequired: 25.5,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 2,
+  electivePolicy: {
+    facultyCourseAreas: ['ee'],
+    areaRequirements: [
+      { area: 'ee', minCredits: 18 },
+      {
+        area: 'physics',
+        minCredits: 5,
+        requiredAnyOfCourseIds: [
+          '01160210',
+          '01160029',
+          '01160031',
+          '01160354',
+          '01160004',
+          '01160027',
+        ],
+      },
+    ],
+    manualAssignmentAreas: {
+      physics: ['physics', 'ee', 'general'],
+    },
+  },
   labPool: {
     required: 3,
     mandatory: true,

@@ -17,6 +17,7 @@ export interface BuildGeneralRequirementsParams {
   englishTaughtCourses: string[];
   miluimCredits: number;
   englishScore?: number;
+  generalElectiveCourseIds?: Iterable<string>;
 }
 
 function shouldCountCourseForGeneralRequirements(
@@ -39,10 +40,12 @@ export function buildGeneralRequirementsProgress({
   englishTaughtCourses,
   miluimCredits,
   englishScore,
+  generalElectiveCourseIds = [],
 }: BuildGeneralRequirementsParams): GeneralRequirementProgress[] {
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
   const explicitSportCompletionSet = new Set(explicitSportCompletions);
   const completedInstanceSet = new Set(completedInstances);
+  const generalElectiveCourseIdSet = new Set(generalElectiveCourseIds);
   const courseRefs: CourseRef[] = [];
   const nonRepeatableSeen = new Set<string>([...completedCourses]);
 
@@ -114,6 +117,11 @@ export function buildGeneralRequirementsProgress({
       return {
         ...rule,
         targetValue: Math.max(0, trackDef.generalCreditsRequired - miluimCredits),
+        courseMatcher: {
+          predicate: (course) =>
+            generalElectiveCourseIdSet.has(course.courseId) ||
+            rule.courseMatcher.predicate?.(course) === true,
+        },
       };
     }
 

@@ -69,6 +69,7 @@ function createPlanPayload() {
         dismissedRecommendedCourses: {},
         facultyColorOverrides: {},
         coreToChainOverrides: ['02340117'],
+        electiveCreditAssignments: { '01160210': 'physics' },
         roboticsMinorEnabled: true,
         entrepreneurshipMinorEnabled: false,
       },
@@ -79,6 +80,7 @@ function createPlanPayload() {
     dismissedRecommendedCourses: {},
     facultyColorOverrides: {},
     coreToChainOverrides: ['02340117'],
+    electiveCreditAssignments: { '01160210': 'physics' },
     roboticsMinorEnabled: true,
     entrepreneurshipMinorEnabled: true,
   };
@@ -90,6 +92,8 @@ test('client sanitizer accepts current StudentPlan fields in plan and savedTrack
   assert.ok(sanitized, 'expected payload to sanitize successfully');
   assert.deepEqual(sanitized.coreToChainOverrides, ['02340117']);
   assert.deepEqual(sanitized.savedTracks.cs.coreToChainOverrides, ['02340117']);
+  assert.deepEqual(sanitized.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(sanitized.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
   assert.equal(sanitized.roboticsMinorEnabled, true);
   assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
   assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
@@ -129,6 +133,7 @@ test('client sanitizer accepts nested savedTracks (real-world multi-track-switch
             dismissedRecommendedCourses: {},
             facultyColorOverrides: {},
             coreToChainOverrides: [],
+            electiveCreditAssignments: {},
             roboticsMinorEnabled: false,
             entrepreneurshipMinorEnabled: false,
           },
@@ -153,6 +158,8 @@ test('server security validator accepts current StudentPlan fields in plan and s
 
   assert.deepEqual(validated.value.coreToChainOverrides, ['02340117']);
   assert.deepEqual(validated.value.savedTracks.cs.coreToChainOverrides, ['02340117']);
+  assert.deepEqual(validated.value.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(validated.value.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
   assert.equal(validated.value.roboticsMinorEnabled, true);
   assert.equal(validated.value.entrepreneurshipMinorEnabled, true);
   assert.equal(validated.value.savedTracks.cs.roboticsMinorEnabled, true);
@@ -164,6 +171,8 @@ test('server service sanitizer accepts minor flags in plan and savedTracks paylo
 
   assert.equal(sanitized.roboticsMinorEnabled, true);
   assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
+  assert.deepEqual(sanitized.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(sanitized.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
   assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
   assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
 });
@@ -180,4 +189,25 @@ test('cloud sync schema stays aligned for minor flags', () => {
     assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
     assert.match(serviceValidatorSource, new RegExp(`${key}: cleanBoolean`), `service sanitizer must clean ${key}`);
   }
+
+  assert.match(
+    serializerSource,
+    /electiveCreditAssignments: \{ \.\.\.\(state\.electiveCreditAssignments/,
+    'serializePlanState must include electiveCreditAssignments',
+  );
+  assert.match(
+    clientValidatorSource,
+    /['"]electiveCreditAssignments['"]/,
+    'client validator must allow electiveCreditAssignments',
+  );
+  assert.match(
+    securityValidatorSource,
+    /["']electiveCreditAssignments["']/,
+    'security validator must allow electiveCreditAssignments',
+  );
+  assert.match(
+    serviceValidatorSource,
+    /electiveCreditAssignments: cleanElectiveCreditAssignmentRecord/,
+    'service sanitizer must clean electiveCreditAssignments',
+  );
 });

@@ -1,3 +1,5 @@
+import type { ElectiveCreditArea } from '../../types';
+
 export interface RequirementsInput {
   semesters: Record<number, string[]>;
   completedCourses: string[];
@@ -14,6 +16,7 @@ export interface RequirementsInput {
   semesterOrder: number[];
   coreToChainOverrides: string[];
   courseChainAssignments?: Record<string, string>;
+  electiveCreditAssignments?: Record<string, ElectiveCreditArea>;
   roboticsMinorEnabled: boolean;
   entrepreneurshipMinorEnabled: boolean;
 }

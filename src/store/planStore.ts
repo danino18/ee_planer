@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope } from '../types';
+import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope, ElectiveCreditArea } from '../types';
 import { eeTrack } from '../data/tracks/ee';
 import { csTrack } from '../data/tracks/cs';
 import { eeMathTrack } from '../data/tracks/ee_math';
@@ -63,6 +63,7 @@ interface PlanState extends StudentPlan {
   setMiluimCredits: (n: number | null) => void;
   setCoreToChainOverrides: (ids: string[]) => void;
   setCourseChainAssignment: (courseId: string, chainGroupId: string | null) => void;
+  setElectiveCreditAssignment: (courseId: string, area: ElectiveCreditArea | null) => void;
   toggleRoboticsMinor: () => void;
   toggleEntrepreneurshipMinor: () => void;
   setEnglishScore: (score: number | null) => void;
@@ -183,6 +184,7 @@ const initialState: StudentPlan = {
   completedInstances: [],
   dismissedRecommendedCourses: {},
   coreToChainOverrides: [],
+  electiveCreditAssignments: {},
   roboticsMinorEnabled: false,
   entrepreneurshipMinorEnabled: false,
   initializedTracks: [],
@@ -327,6 +329,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     completedInstances: p.completedInstances ?? [],
     dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
     coreToChainOverrides: p.coreToChainOverrides ?? [],
+    electiveCreditAssignments: p.electiveCreditAssignments ?? {},
     targetGraduationSemesterId: p.targetGraduationSemesterId ?? null,
     loadProfile: p.loadProfile ?? 'fulltime',
     savedTracks: p.savedTracks ?? current.savedTracks ?? {},
@@ -775,6 +778,17 @@ export const usePlanStore = create<PlanState>()(
           return { courseChainAssignments: { ...current, [courseId]: chainGroupId } };
         }),
 
+      setElectiveCreditAssignment: (courseId, area) =>
+        set((state) => {
+          const current = state.electiveCreditAssignments ?? {};
+          if (area === null) {
+            const rest = { ...current };
+            delete rest[courseId];
+            return { electiveCreditAssignments: rest };
+          }
+          return { electiveCreditAssignments: { ...current, [courseId]: area } };
+        }),
+
       toggleRoboticsMinor: () =>
         set((state) => ({ roboticsMinorEnabled: !state.roboticsMinorEnabled })),
 
@@ -886,6 +900,7 @@ export const usePlanStore = create<PlanState>()(
             completedInstances: [],
             dismissedRecommendedCourses,
             savedTracks,
+            electiveCreditAssignments: {},
             _history: [],
             _initKey: state._initKey + 1,
             isSwitchingTrack: false,
