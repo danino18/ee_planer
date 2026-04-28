@@ -1,10 +1,12 @@
 import type {
   SapCourse,
   SpecializationGroup,
+  TrackDefinition,
   TrackSpecializationCatalog,
   SpecializationMode,
 } from '../../types';
 import { evaluateSpecializationGroup } from '../specializations';
+import { getAllScheduledCourseIds } from '../../data/tracks/semesterSchedule';
 
 export interface OptimizerInput {
   completedCourses: string[];
@@ -323,6 +325,66 @@ export function suggestMissingCourses(
   recommendations.sort(
     (a, b) => (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2) || b.credits - a.credits,
   );
+
+  return recommendations;
+}
+
+export function suggestTrackScheduleCourses(
+  input: OptimizerInput,
+  courses: Map<string, SapCourse>,
+  trackDef: TrackDefinition,
+  context: SchedulingContext,
+): CourseRecommendation[] {
+  const allPlaced = buildAllPlaced(input);
+  const coursesBeforeSemester = buildCoursesBeforeSemester(context, input.completedCourses);
+  const recommendations: CourseRecommendation[] = [];
+
+  // Mandatory courses from semester schedule
+  const scheduledIds = getAllScheduledCourseIds(trackDef);
+  let mandatoryCount = 0;
+  for (const courseId of scheduledIds) {
+    if (mandatoryCount >= 10) break;
+    if (allPlaced.has(courseId)) continue;
+    const courseData = courses.get(courseId);
+    if (!courseData) continue;
+    const sem = findBestSemester(courseId, courseData, context, courses, coursesBeforeSemester);
+    recommendations.push({
+      courseId,
+      courseName: courseData.name,
+      credits: courseData.credits,
+      requirementId: 'mandatory_schedule',
+      requirementTitle: 'קורסי חובה',
+      priority: 'mandatory',
+      suggestedSemesterId: sem.semId,
+      suggestedSemesterLabel: sem.label,
+      semesterLoadWarning: sem.warning,
+    });
+    mandatoryCount++;
+  }
+
+  // Lab pool courses (if track has one)
+  if (trackDef.labPool && trackDef.labPool.required > 0) {
+    let labCount = 0;
+    for (const courseId of trackDef.labPool.courses) {
+      if (labCount >= 5) break;
+      if (allPlaced.has(courseId)) continue;
+      const courseData = courses.get(courseId);
+      if (!courseData) continue;
+      const sem = findBestSemester(courseId, courseData, context, courses, coursesBeforeSemester);
+      recommendations.push({
+        courseId,
+        courseName: courseData.name,
+        credits: courseData.credits,
+        requirementId: 'lab_pool',
+        requirementTitle: 'מעבדות',
+        priority: 'choice',
+        suggestedSemesterId: sem.semId,
+        suggestedSemesterLabel: sem.label,
+        semesterLoadWarning: sem.warning,
+      });
+      labCount++;
+    }
+  }
 
   return recommendations;
 }
