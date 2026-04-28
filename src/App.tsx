@@ -235,7 +235,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       applyingCloudPlan.current = false;
     }
 
-    if (lastLoadedUid.current === user.uid) return;
     lastLoadedUid.current = user.uid;
     const uid = user.uid;
 

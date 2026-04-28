@@ -204,6 +204,11 @@ test('App sync logic uses the shared envelope helpers instead of ad-hoc serializ
     /\(\) => {\s*cloudSyncReady\.current = true;\s*void doSave\(\);\s*}/,
     'App should permit the first cloud save when the remote plan document is absent',
   );
+  assert.doesNotMatch(
+    appSource,
+    /if \(lastLoadedUid\.current === user\.uid\) return;/,
+    'App must resubscribe for the same user after track/switching dependency cleanup so cloudSyncReady can be restored',
+  );
   assert.notEqual(getPlanSignature(localEnvelopeForSignatureCheck()), '', 'plan signatures should be non-empty for sync comparisons');
 });
 
