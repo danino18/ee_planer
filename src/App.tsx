@@ -27,7 +27,7 @@ import { ceTrack } from './data/tracks/ce';
 import type { SapCourse, TrackDefinition, VersionedPlanEnvelope } from './types';
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 import { useDegreeCompletionCheck } from './hooks/useDegreeCompletionCheck';
-import { DegreeCompletionPanel } from './components/DegreeCompletionPanel';
+import { DegreeCompletionModal } from './components/DegreeCompletionModal';
 import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
   getTrackSpecializationCatalog,
@@ -396,6 +396,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const [showCompare, setShowCompare] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [showDegreeCheck, setShowDegreeCheck] = useState(false);
   const [printOptions, setPrintOptions] = useState<{
     includeGrades: boolean;
     versionIds: string[];
@@ -472,6 +473,22 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                 <span>⟳</span><span className="hidden sm:inline"> מומלצת</span>
               </button>
               <button
+                onClick={() => setShowDegreeCheck(true)}
+                className={`text-sm border px-3 py-1.5 rounded-lg transition-colors ${
+                  degreeCompletion?.result.isComplete
+                    ? 'text-green-700 border-green-300 hover:border-green-500 bg-green-50'
+                    : 'text-purple-700 border-purple-300 hover:border-purple-500 hover:text-purple-900'
+                }`}
+                title="בדיקת גמר תואר והמלצות"
+              >
+                <span className="hidden sm:inline">
+                  {degreeCompletion?.result.isComplete ? '✓ גמר תואר' : 'גמר תואר'}
+                </span>
+                <span className="sm:hidden">
+                  {degreeCompletion?.result.isComplete ? '✓' : '🎓'}
+                </span>
+              </button>
+              <button
                 onClick={beginTrackSwitch}
                 className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
               >
@@ -487,7 +504,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           {/* Desktop sidebar — hidden on mobile */}
           <aside className="hidden md:flex md:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
-            <DegreeCompletionPanel result={degreeCompletion} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
             <ChainRecommendations catalog={specializationCatalog} courses={courses} />
           </aside>
@@ -495,7 +511,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           {/* Mobile drawer — md:hidden enforced inside component */}
           <MobileSidebarDrawer open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
-            <DegreeCompletionPanel result={degreeCompletion} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
             <ChainRecommendations catalog={specializationCatalog} courses={courses} />
           </MobileSidebarDrawer>
@@ -513,6 +528,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       catalog={specializationCatalog}
       includeGrades={printOptions?.includeGrades ?? true}
       versionIds={printOptions?.versionIds}
+    />
+    <DegreeCompletionModal
+      open={showDegreeCheck}
+      onClose={() => setShowDegreeCheck(false)}
+      data={degreeCompletion}
     />
     </>
   );

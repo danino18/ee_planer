@@ -264,4 +264,6 @@ export interface StudentPlan {
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
   initializedTracks?: string[];  // trackIds that have been fully initialized at least once
+  targetGraduationSemesterId?: number | null;  // semesterId from semesterOrder the student wants to graduate in
+  loadProfile?: 'working' | 'fulltime';  // student's load preference for smart scheduling
 }

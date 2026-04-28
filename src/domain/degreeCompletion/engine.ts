@@ -1,5 +1,5 @@
 import type { SapCourse, TrackDefinition, TrackSpecializationCatalog } from '../../types';
-import type { RequirementsInput } from '../../hooks/usePlan';
+import type { RequirementsInput } from './types';
 import { computeRequirementsProgress } from '../../hooks/usePlan';
 import { buildCourseAssignments, buildRequirementChecks } from './helpers';
 import type { DegreeCompletionResult } from './types';

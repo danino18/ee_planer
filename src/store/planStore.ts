@@ -67,6 +67,8 @@ interface PlanState extends StudentPlan {
   toggleRoboticsMinor: () => void;
   toggleEntrepreneurshipMinor: () => void;
   setEnglishScore: (score: number | null) => void;
+  setTargetGraduationSemesterId: (semId: number | null) => void;
+  setLoadProfile: (profile: 'working' | 'fulltime') => void;
   toggleEnglishTaughtCourse: (courseId: string) => void;
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
@@ -186,6 +188,8 @@ const initialState: StudentPlan = {
   roboticsMinorEnabled: false,
   entrepreneurshipMinorEnabled: false,
   initializedTracks: [],
+  targetGraduationSemesterId: null,
+  loadProfile: 'fulltime' as const,
 };
 
 function removeRecommendedCourses(
@@ -326,6 +330,8 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
     coreToChainOverrides: p.coreToChainOverrides ?? [],
     electiveCreditAssignments: p.electiveCreditAssignments ?? {},
+    targetGraduationSemesterId: p.targetGraduationSemesterId ?? null,
+    loadProfile: p.loadProfile ?? 'fulltime',
     savedTracks: p.savedTracks ?? current.savedTracks ?? {},
     _history: [],
     _initKey: current._initKey,
@@ -789,6 +795,12 @@ export const usePlanStore = create<PlanState>()(
       toggleEntrepreneurshipMinor: () =>
         set((state) => ({ entrepreneurshipMinorEnabled: !state.entrepreneurshipMinorEnabled })),
 
+      setTargetGraduationSemesterId: (semId) =>
+        set(() => ({ targetGraduationSemesterId: semId })),
+
+      setLoadProfile: (profile) =>
+        set(() => ({ loadProfile: profile })),
+
       setFacultyColorOverride: (faculty, colorKey) =>
         set((state) => ({
           facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}), [faculty]: colorKey },
@@ -893,6 +905,8 @@ export const usePlanStore = create<PlanState>()(
             _initKey: state._initKey + 1,
             isSwitchingTrack: false,
             initializedTracks: (state.initializedTracks ?? []).filter((id) => id !== state.trackId),
+            targetGraduationSemesterId: null,
+            loadProfile: 'fulltime' as const,
             hasPendingCloudSync: false,
             lastLocalEditAt: 0,
           };

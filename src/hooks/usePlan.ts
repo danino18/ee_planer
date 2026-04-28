@@ -7,6 +7,8 @@ import type {
   TrackSpecializationCatalog,
   ElectiveCreditArea,
 } from '../types';
+import type { RequirementsInput } from '../domain/degreeCompletion/types';
+export type { RequirementsInput };
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
 import { evaluateSpecializationGroup } from '../domain/specializations/engine';
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
@@ -173,27 +175,6 @@ export interface CoreSlot {
   availableIds: string[]; // courses in the slot that are not yet placed/completed
 }
 
-export interface RequirementsInput {
-  semesters: Record<number, string[]>;
-  completedCourses: string[];
-  explicitSportCompletions: string[];
-  completedInstances: string[];
-  grades: Record<string, number>;
-  binaryPass: Record<string, boolean>;
-  selectedSpecializations: string[];
-  doubleSpecializations: string[];
-  hasEnglishExemption: boolean;
-  miluimCredits: number;
-  englishScore: number | undefined;
-  englishTaughtCourses: string[];
-  semesterOrder: number[];
-  coreToChainOverrides: string[];
-  courseChainAssignments?: Record<string, string>;
-  electiveCreditAssignments?: Record<string, ElectiveCreditArea>;
-  roboticsMinorEnabled: boolean;
-  entrepreneurshipMinorEnabled: boolean;
-}
-
 export interface ElectiveAreaProgress {
   area: Exclude<ElectiveCreditArea, 'general'>;
   label: string;
@@ -211,6 +192,7 @@ export interface ElectiveAssignmentChoice {
   selectedArea: ElectiveCreditArea;
   options: ElectiveCreditArea[];
 }
+
 
 export function computeRequirementsProgress(
   input: RequirementsInput,
