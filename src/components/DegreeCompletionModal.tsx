@@ -344,42 +344,59 @@ export function DegreeCompletionModal({ open, onClose, data }: Props) {
           )}
 
           {/* Course recommendations */}
-          {recommendationGroups.size > 0 && (
+          {data && !data.result.isComplete && (
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-gray-800">קורסים מומלצים לסגירת התואר</h3>
               </div>
-              {needsSetup && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
-                  הגדר סמסטר סיום בהגדרות למעלה לקבלת המלצות מדויקות יותר
-                </p>
-              )}
-              <div className="space-y-5">
-                {[...recommendationGroups.entries()].map(([title, recs]) => (
-                  <div key={title}>
-                    <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{title}</p>
-                    <div>
-                      {recs.map((rec) => (
-                        <RecommendationRow
-                          key={rec.courseId}
-                          rec={rec}
-                          onAdd={() => {
-                            if (rec.suggestedSemesterId !== null) {
-                              addCourseToSemester(rec.courseId, rec.suggestedSemesterId);
-                            }
-                          }}
-                        />
-                      ))}
-                    </div>
+              {recommendationGroups.size > 0 ? (
+                <>
+                  {needsSetup && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+                      הגדר סמסטר סיום בהגדרות למעלה לקבלת המלצות מדויקות יותר
+                    </p>
+                  )}
+                  <div className="space-y-5">
+                    {[...recommendationGroups.entries()].map(([title, recs]) => (
+                      <div key={title}>
+                        <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">{title}</p>
+                        <div>
+                          {recs.map((rec) => (
+                            <RecommendationRow
+                              key={rec.courseId}
+                              rec={rec}
+                              onAdd={() => {
+                                if (rec.suggestedSemesterId !== null) {
+                                  addCourseToSemester(rec.courseId, rec.suggestedSemesterId);
+                                }
+                              }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {data && !data.result.isComplete && recommendationGroups.size === 0 && (
-            <div className="text-center py-4 text-sm text-gray-500">
-              <p>בחר שרשראות התמחות בלוח הצד כדי לקבל המלצות על קורסים</p>
+                </>
+              ) : (
+                <div className="space-y-3">
+                  {data.result.missingRequirements.length > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">לסגירת התואר נדרשים עוד:</p>
+                      <ul className="space-y-1">
+                        {data.result.missingRequirements.map((req) => (
+                          <li key={req.id} className="text-xs text-gray-700 flex items-center gap-1.5">
+                            <span className="text-amber-500 shrink-0">○</span>
+                            {req.title}: עוד {req.missingValue} {UNIT_LABELS[req.unit] ?? req.unit}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <p className="text-xs text-center text-gray-500">
+                    בחר שרשראות התמחות בלוח הצד לקבלת המלצות על קורסים ספציפיים
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
