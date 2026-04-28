@@ -35,6 +35,8 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'roboticsMinorEnabled',
   'entrepreneurshipMinorEnabled',
   'initializedTracks',
+  'targetGraduationSemesterId',
+  'loadProfile',
 ]);
 const ELECTIVE_CREDIT_AREAS = new Set<ElectiveCreditArea>(['ee', 'physics', 'math', 'general']);
 
@@ -526,6 +528,21 @@ function sanitizeStudentPlanRecord(
     const initializedTracks = validateStringArray(value.initializedTracks, 20, 32);
     if (!initializedTracks) return null;
     sanitized.initializedTracks = initializedTracks;
+  }
+
+  if ('targetGraduationSemesterId' in value) {
+    const { targetGraduationSemesterId } = value;
+    if (targetGraduationSemesterId !== null && !isIntegerInRange(targetGraduationSemesterId, 1, 16)) {
+      return null;
+    }
+    sanitized.targetGraduationSemesterId = targetGraduationSemesterId as number | null;
+  }
+
+  if ('loadProfile' in value) {
+    if (value.loadProfile !== 'working' && value.loadProfile !== 'fulltime') {
+      return null;
+    }
+    sanitized.loadProfile = value.loadProfile;
   }
 
   return sanitized as StudentPlan;

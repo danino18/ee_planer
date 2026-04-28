@@ -19,6 +19,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "hasEnglishExemption",
   "manualSapAverages",
   "binaryPass",
+  "explicitSportCompletions",
   "completedInstances",
   "savedTracks",
   "miluimCredits",
@@ -27,10 +28,13 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "facultyColorOverrides",
   "dismissedRecommendedCourses",
   "coreToChainOverrides",
+  "courseChainAssignments",
   "electiveCreditAssignments",
   "roboticsMinorEnabled",
   "entrepreneurshipMinorEnabled",
   "initializedTracks",
+  "targetGraduationSemesterId",
+  "loadProfile",
 ]);
 
 interface ValidationSuccess {
@@ -509,6 +513,19 @@ function validateStudentPlanRecord(
     sanitized.binaryPass = binaryPass;
   }
 
+  if ("explicitSportCompletions" in value) {
+    const explicitSportCompletions = validateStringArray(
+      "explicitSportCompletions",
+      value.explicitSportCompletions,
+      600,
+      32
+    );
+    if (isValidationFailure(explicitSportCompletions)) {
+      return explicitSportCompletions;
+    }
+    sanitized.explicitSportCompletions = explicitSportCompletions;
+  }
+
   if ("completedInstances" in value) {
     const completedInstances = validateStringArray("completedInstances", value.completedInstances, 600, 64);
     if (isValidationFailure(completedInstances)) {
@@ -592,6 +609,19 @@ function validateStudentPlanRecord(
     sanitized.coreToChainOverrides = coreToChainOverrides;
   }
 
+  if ("courseChainAssignments" in value) {
+    const courseChainAssignments = validateStringMap(
+      "courseChainAssignments",
+      value.courseChainAssignments,
+      200,
+      64
+    );
+    if (isValidationFailure(courseChainAssignments)) {
+      return courseChainAssignments;
+    }
+    sanitized.courseChainAssignments = courseChainAssignments;
+  }
+
   if ("electiveCreditAssignments" in value) {
     const electiveCreditAssignments = validateElectiveCreditAssignmentMap(
       "electiveCreditAssignments",
@@ -622,6 +652,24 @@ function validateStudentPlanRecord(
     const initializedTracks = validateStringArray("initializedTracks", value.initializedTracks, 20, 32);
     if (isValidationFailure(initializedTracks)) return initializedTracks;
     sanitized.initializedTracks = initializedTracks;
+  }
+
+  if ("targetGraduationSemesterId" in value) {
+    const targetGraduationSemesterId = value.targetGraduationSemesterId;
+    if (
+      targetGraduationSemesterId !== null &&
+      !isIntegerInRange(targetGraduationSemesterId, 1, 16)
+    ) {
+      return fail("Invalid targetGraduationSemesterId");
+    }
+    sanitized.targetGraduationSemesterId = targetGraduationSemesterId;
+  }
+
+  if ("loadProfile" in value) {
+    if (value.loadProfile !== "working" && value.loadProfile !== "fulltime") {
+      return fail("Invalid loadProfile");
+    }
+    sanitized.loadProfile = value.loadProfile;
   }
 
   return success(sanitized);

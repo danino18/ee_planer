@@ -96,6 +96,14 @@ function cleanBoolean(value: unknown, fieldName: string, defaultValue = false): 
   return value;
 }
 
+function cleanLoadProfile(value: unknown): "working" | "fulltime" {
+  if (value === undefined) return "fulltime";
+  if (value !== "working" && value !== "fulltime") {
+    throw new PlanValidationError("loadProfile must be working or fulltime");
+  }
+  return value;
+}
+
 function cleanNumberRecord(
   value: unknown,
   fieldName: string,
@@ -321,6 +329,11 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
     hasEnglishExemption: cleanBoolean(source.hasEnglishExemption, "hasEnglishExemption"),
     manualSapAverages: cleanNumberRecord(source.manualSapAverages, "manualSapAverages", 0, 100),
     binaryPass: cleanBooleanRecord(source.binaryPass, "binaryPass"),
+    explicitSportCompletions: cleanStringArray(
+      source.explicitSportCompletions,
+      "explicitSportCompletions",
+      MAX_COURSES
+    ),
     completedInstances: cleanStringArray(source.completedInstances, "completedInstances", MAX_COURSES, 64),
     englishTaughtCourses: cleanStringArray(source.englishTaughtCourses, "englishTaughtCourses", MAX_COURSES),
     dismissedRecommendedCourses: cleanDismissedRecommendedCourses(source.dismissedRecommendedCourses),
@@ -335,12 +348,26 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       "coreToChainOverrides",
       MAX_COURSES
     ),
+    courseChainAssignments: cleanStringRecord(
+      source.courseChainAssignments,
+      "courseChainAssignments",
+      200,
+      64
+    ),
     electiveCreditAssignments: cleanElectiveCreditAssignmentRecord(source.electiveCreditAssignments),
     roboticsMinorEnabled: cleanBoolean(source.roboticsMinorEnabled, "roboticsMinorEnabled"),
     entrepreneurshipMinorEnabled: cleanBoolean(
       source.entrepreneurshipMinorEnabled,
       "entrepreneurshipMinorEnabled"
     ),
+    initializedTracks: cleanStringArray(source.initializedTracks, "initializedTracks", 20),
+    targetGraduationSemesterId: cleanNullableInteger(
+      source.targetGraduationSemesterId,
+      "targetGraduationSemesterId",
+      1,
+      MAX_SEMESTERS
+    ),
+    loadProfile: cleanLoadProfile(source.loadProfile),
   };
 
   if (allowSavedTracks) {

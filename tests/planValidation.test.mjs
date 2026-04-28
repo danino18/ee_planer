@@ -44,6 +44,7 @@ function createPlanPayload() {
     hasEnglishExemption: false,
     manualSapAverages: {},
     binaryPass: {},
+    explicitSportCompletions: ['39480001'],
     completedInstances: [],
     savedTracks: {
       cs: {
@@ -65,13 +66,18 @@ function createPlanPayload() {
         hasEnglishExemption: false,
         manualSapAverages: {},
         binaryPass: {},
+        explicitSportCompletions: ['39480001'],
         completedInstances: [],
         dismissedRecommendedCourses: {},
         facultyColorOverrides: {},
         coreToChainOverrides: ['02340117'],
+        courseChainAssignments: { '02340117': 'chain-a' },
         electiveCreditAssignments: { '01160210': 'physics' },
         roboticsMinorEnabled: true,
         entrepreneurshipMinorEnabled: false,
+        initializedTracks: ['cs'],
+        targetGraduationSemesterId: 8,
+        loadProfile: 'working',
       },
     },
     miluimCredits: 2,
@@ -80,9 +86,13 @@ function createPlanPayload() {
     dismissedRecommendedCourses: {},
     facultyColorOverrides: {},
     coreToChainOverrides: ['02340117'],
+    courseChainAssignments: { '02340117': 'chain-a' },
     electiveCreditAssignments: { '01160210': 'physics' },
     roboticsMinorEnabled: true,
     entrepreneurshipMinorEnabled: true,
+    initializedTracks: ['ce'],
+    targetGraduationSemesterId: 8,
+    loadProfile: 'working',
   };
 }
 
@@ -92,12 +102,20 @@ test('client sanitizer accepts current StudentPlan fields in plan and savedTrack
   assert.ok(sanitized, 'expected payload to sanitize successfully');
   assert.deepEqual(sanitized.coreToChainOverrides, ['02340117']);
   assert.deepEqual(sanitized.savedTracks.cs.coreToChainOverrides, ['02340117']);
+  assert.deepEqual(sanitized.explicitSportCompletions, ['39480001']);
+  assert.deepEqual(sanitized.savedTracks.cs.explicitSportCompletions, ['39480001']);
+  assert.deepEqual(sanitized.courseChainAssignments, { '02340117': 'chain-a' });
+  assert.deepEqual(sanitized.savedTracks.cs.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(sanitized.electiveCreditAssignments, { '01160210': 'physics' });
   assert.deepEqual(sanitized.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
   assert.equal(sanitized.roboticsMinorEnabled, true);
   assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
   assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
   assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
+  assert.equal(sanitized.targetGraduationSemesterId, 8);
+  assert.equal(sanitized.savedTracks.cs.targetGraduationSemesterId, 8);
+  assert.equal(sanitized.loadProfile, 'working');
+  assert.equal(sanitized.savedTracks.cs.loadProfile, 'working');
 });
 
 test('client sanitizer accepts nested savedTracks (real-world multi-track-switch data)', () => {
@@ -129,13 +147,18 @@ test('client sanitizer accepts nested savedTracks (real-world multi-track-switch
             hasEnglishExemption: false,
             manualSapAverages: {},
             binaryPass: {},
+            explicitSportCompletions: [],
             completedInstances: [],
             dismissedRecommendedCourses: {},
             facultyColorOverrides: {},
             coreToChainOverrides: [],
+            courseChainAssignments: {},
             electiveCreditAssignments: {},
             roboticsMinorEnabled: false,
             entrepreneurshipMinorEnabled: false,
+            initializedTracks: ['ce'],
+            targetGraduationSemesterId: null,
+            loadProfile: 'fulltime',
           },
         },
       },
@@ -158,26 +181,42 @@ test('server security validator accepts current StudentPlan fields in plan and s
 
   assert.deepEqual(validated.value.coreToChainOverrides, ['02340117']);
   assert.deepEqual(validated.value.savedTracks.cs.coreToChainOverrides, ['02340117']);
+  assert.deepEqual(validated.value.explicitSportCompletions, ['39480001']);
+  assert.deepEqual(validated.value.savedTracks.cs.explicitSportCompletions, ['39480001']);
+  assert.deepEqual(validated.value.courseChainAssignments, { '02340117': 'chain-a' });
+  assert.deepEqual(validated.value.savedTracks.cs.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(validated.value.electiveCreditAssignments, { '01160210': 'physics' });
   assert.deepEqual(validated.value.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
   assert.equal(validated.value.roboticsMinorEnabled, true);
   assert.equal(validated.value.entrepreneurshipMinorEnabled, true);
   assert.equal(validated.value.savedTracks.cs.roboticsMinorEnabled, true);
   assert.equal(validated.value.savedTracks.cs.entrepreneurshipMinorEnabled, false);
+  assert.equal(validated.value.targetGraduationSemesterId, 8);
+  assert.equal(validated.value.savedTracks.cs.targetGraduationSemesterId, 8);
+  assert.equal(validated.value.loadProfile, 'working');
+  assert.equal(validated.value.savedTracks.cs.loadProfile, 'working');
 });
 
-test('server service sanitizer accepts minor flags in plan and savedTracks payloads', () => {
+test('server service sanitizer accepts current StudentPlan fields in plan and savedTracks payloads', () => {
   const sanitized = sanitizePlanPayload(createPlanPayload());
 
   assert.equal(sanitized.roboticsMinorEnabled, true);
   assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
+  assert.deepEqual(sanitized.explicitSportCompletions, ['39480001']);
+  assert.deepEqual(sanitized.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(sanitized.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(sanitized.savedTracks.cs.explicitSportCompletions, ['39480001']);
+  assert.deepEqual(sanitized.savedTracks.cs.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(sanitized.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
   assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
   assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
+  assert.equal(sanitized.targetGraduationSemesterId, 8);
+  assert.equal(sanitized.savedTracks.cs.targetGraduationSemesterId, 8);
+  assert.equal(sanitized.loadProfile, 'working');
+  assert.equal(sanitized.savedTracks.cs.loadProfile, 'working');
 });
 
-test('cloud sync schema stays aligned for minor flags', () => {
+test('cloud sync schema stays aligned for serialized StudentPlan fields', () => {
   const serializerSource = readFileSync(join(repoRoot, 'src/services/planStateSerialization.ts'), 'utf8');
   const clientValidatorSource = readFileSync(join(repoRoot, 'src/services/planValidation.ts'), 'utf8');
   const securityValidatorSource = readFileSync(join(repoRoot, 'functions/src/security/planValidation.ts'), 'utf8');
@@ -188,6 +227,13 @@ test('cloud sync schema stays aligned for minor flags', () => {
     assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
     assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
     assert.match(serviceValidatorSource, new RegExp(`${key}: cleanBoolean`), `service sanitizer must clean ${key}`);
+  }
+
+  for (const key of ['explicitSportCompletions', 'coreToChainOverrides', 'initializedTracks']) {
+    assert.match(serializerSource, new RegExp(`${key}: \\[\\.\\.\\.`), `serializePlanState must include ${key}`);
+    assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
+    assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
+    assert.match(serviceValidatorSource, new RegExp(`${key}: cleanStringArray`), `service sanitizer must clean ${key}`);
   }
 
   assert.match(
@@ -210,4 +256,11 @@ test('cloud sync schema stays aligned for minor flags', () => {
     /electiveCreditAssignments: cleanElectiveCreditAssignmentRecord/,
     'service sanitizer must clean electiveCreditAssignments',
   );
+
+  for (const key of ['courseChainAssignments', 'targetGraduationSemesterId', 'loadProfile']) {
+    assert.match(serializerSource, new RegExp(`${key}:`), `serializePlanState must include ${key}`);
+    assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
+    assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
+    assert.match(serviceValidatorSource, new RegExp(`${key}:`), `service sanitizer must clean ${key}`);
+  }
 });
