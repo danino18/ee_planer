@@ -230,7 +230,7 @@ export function computeRequirementsProgress(
     ]);
 
     // Core-locked courses: placed core courses NOT released to chain.
-    // These are excluded from specialization evaluation (can't double-count).
+    // They affect only core progress; specialization groups may count the same course too.
     const coreLockedSet = new Set<string>();
     if (trackDef.coreRequirement) {
       const { courses: coreCourseIds, orGroups = [] } = trackDef.coreRequirement;
@@ -251,9 +251,6 @@ export function computeRequirementsProgress(
         if (!blockedOrIds.has(id)) coreLockedSet.add(id);
       }
     }
-    // Courses available for specialization: allPlaced minus core-locked ones
-    const specializationPlaced = new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
-
     const orderedLabPool: string[] = [];
     if (trackDef.labPool) {
       const labSet = new Set(trackDef.labPool.courses);
@@ -397,7 +394,7 @@ export function computeRequirementsProgress(
       const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
         ? 'double'
         : 'single';
-      const evaluation = evaluateSpecializationGroup(group, specializationPlaced, mode, courseChainAssignments);
+      const evaluation = evaluateSpecializationGroup(group, allPlaced, mode, courseChainAssignments);
       return {
         group,
         mode,

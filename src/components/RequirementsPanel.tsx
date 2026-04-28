@@ -35,6 +35,7 @@ const SEM_LABELS = [
 const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4';
 const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
 const CREDIT_ASSIGNMENT_LABEL = '\u05e9\u05d9\u05d5\u05da \u05e0\u05e7"\u05d6';
+const SPORT_REQUIREMENT_HELP = 'כדי שקורס ספורט ייכנס לספירה, יש ללחוץ על כרטיס הקורס ולסמן אותו כהושלם או כעובר.';
 
 function formatCredits(value: number): string {
   return value % 1 === 0 ? String(value) : value.toFixed(1);
@@ -208,6 +209,7 @@ function CompactRequirementRow({
   onSetEnglishScore,
   englishRequirementItems,
 }: CompactRequirementRowProps) {
+  const [sportHelpOpen, setSportHelpOpen] = useState(false);
   const pct = Math.min(100, targetValue > 0 ? (req.completedValue / targetValue) * 100 : 0);
   const isDone = req.completedValue >= targetValue;
   const missingText = missingValue > 0
@@ -220,6 +222,28 @@ function CompactRequirementRow({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
+            {req.requirementId === 'sport' && (
+              <span className="group relative inline-flex">
+                <button
+                  type="button"
+                  onClick={() => setSportHelpOpen((open) => !open)}
+                  onBlur={() => setSportHelpOpen(false)}
+                  className="w-4 h-4 rounded-full border border-blue-200 bg-blue-50 text-[10px] font-bold leading-none text-blue-600 hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                  aria-label={SPORT_REQUIREMENT_HELP}
+                  aria-expanded={sportHelpOpen}
+                >
+                  i
+                </button>
+                <span
+                  role="tooltip"
+                  className={`absolute right-0 top-5 z-20 w-56 rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs leading-snug text-gray-700 shadow-lg ${
+                    sportHelpOpen ? 'block' : 'hidden'
+                  } group-hover:block`}
+                >
+                  {SPORT_REQUIREMENT_HELP}
+                </span>
+              </span>
+            )}
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">{missingText}</p>

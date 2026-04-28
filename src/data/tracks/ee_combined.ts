@@ -8,7 +8,7 @@ export const eeCombinedTrack: TrackDefinition = {
   mandatoryCredits: 136,
   electiveCreditsRequired: 30,
   generalCreditsRequired: 12,
-  specializationGroupsRequired: 3,
+  specializationGroupsRequired: 2,
   electivePolicy: {
     facultyCourseAreas: ['ee'],
     areaRequirements: [

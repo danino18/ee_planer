@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -66,11 +66,23 @@ function loadTranspiledModule(relativePath) {
 }
 
 const { computeRequirementsProgress } = await loadTranspiledModule('src/hooks/usePlan.ts');
+const { buildTrackSpecializationCatalogs } = await loadTranspiledModule('src/domain/specializations/engine.ts');
 const { eeTrack } = await loadTranspiledModule('src/data/tracks/ee.ts');
+const { csTrack } = await loadTranspiledModule('src/data/tracks/cs.ts');
 const { eePhysicsTrack } = await loadTranspiledModule('src/data/tracks/ee_physics.ts');
 const { eeCombinedTrack } = await loadTranspiledModule('src/data/tracks/ee_combined.ts');
 const { eeMathTrack } = await loadTranspiledModule('src/data/tracks/ee_math.ts');
 const { sanitizeStudentPlan } = await loadTranspiledModule('src/services/planValidation.ts');
+
+const filesRoot = join(repoRoot, 'files', 'קבוצות התמחות');
+const TRACK_SPECIALIZATION_FOLDERS = {
+  ee: 'מסלול הנדסת חשמל',
+  cs: 'מסלול הנדסת מחשבים ותוכנה',
+  ee_math: 'מסלול הנדסת חשמל ומתמטיקה',
+  ee_physics: 'מסלול הנדסת חשמל ופיזיקה',
+  ee_combined: 'מסלול משולב-חשמל-פיסיקה(178 נקז)',
+  ce: 'מסלול הנדסת מחשבים',
+};
 
 function course(id, credits, faculty = '') {
   return {
@@ -85,12 +97,35 @@ function course(id, credits, faculty = '') {
 const courses = new Map([
   ['00460001', course('00460001', 18)],
   ['00460002', course('00460002', 22)],
+  ['00460010', course('00460010', 3)],
+  ['00460195', course('00460195', 3)],
+  ['00460202', course('00460202', 3)],
   ['01040000', course('01040000', 3.5)],
   ['01040293', course('01040293', 5)],
   ['01160210', course('01160210', 5)],
   ['00214119', course('00214119', 2)],
   ['03940810', course('03940810', 1.5)],
 ]);
+
+function buildSpecializationCatalogsFromFiles() {
+  return buildTrackSpecializationCatalogs(
+    Object.fromEntries(
+      Object.entries(TRACK_SPECIALIZATION_FOLDERS).map(([trackId, folder]) => {
+        const dir = join(filesRoot, folder);
+        const files = readdirSync(dir, { withFileTypes: true })
+          .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+          .map((entry) => {
+            const path = join(dir, entry.name);
+            return {
+              path,
+              content: readFileSync(path, 'utf8'),
+            };
+          });
+        return [trackId, files];
+      }),
+    ),
+  );
+}
 
 function emptyCatalog(trackId) {
   return {
@@ -179,11 +214,50 @@ test('ee_combined applies the 22 electrical / 5 physics / 30 total policy', () =
   const progress = progressFor(eeCombinedTrack, ['00460002', '01160210']);
 
   assert.equal(progress.elective.required, 30);
+  assert.equal(eeCombinedTrack.specializationGroupsRequired, 2);
   assert.equal(progress.elective.earned, 27);
   assert.equal(area(progress, 'ee')?.earned, 22);
   assert.equal(area(progress, 'ee')?.required, 22);
   assert.equal(area(progress, 'physics')?.earned, 5);
   assert.equal(area(progress, 'physics')?.required, 5);
+});
+
+test('cs specialization progress counts core courses toward selected specialization groups', () => {
+  const catalogs = buildSpecializationCatalogsFromFiles();
+  const machineLearning = catalogs.cs.groups.find((group) => group.name.includes('למידת מכונה'));
+  assert.ok(machineLearning, 'Expected CS machine learning specialization group');
+
+  const progress = computeRequirementsProgress(
+    {
+      semesters: { 0: ['00460195', '00460202', '00460010'] },
+      completedCourses: [],
+      explicitSportCompletions: [],
+      completedInstances: [],
+      grades: {},
+      binaryPass: {},
+      selectedSpecializations: [machineLearning.id],
+      doubleSpecializations: [],
+      hasEnglishExemption: false,
+      miluimCredits: 0,
+      englishScore: undefined,
+      englishTaughtCourses: [],
+      semesterOrder: [1],
+      coreToChainOverrides: [],
+      courseChainAssignments: {},
+      electiveCreditAssignments: {},
+      roboticsMinorEnabled: false,
+      entrepreneurshipMinorEnabled: false,
+    },
+    courses,
+    csTrack,
+    catalogs.cs,
+    null,
+  );
+
+  assert.equal(progress.specializationGroups.completed, 1);
+  assert.equal(progress.groupDetails[0]?.done, 3);
+  assert.equal(progress.groupDetails[0]?.min, 3);
+  assert.equal(progress.groupDetails[0]?.complete, true);
 });
 
 test('ee_math separates electrical and math elective credits', () => {

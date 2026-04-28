@@ -214,7 +214,7 @@ export const CourseCard = memo(function CourseCard({
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              removeCourseFromSemester(course.id, semester);
+              removeCourseFromSemester(course.id, semester, instanceKey);
             }}
             className="absolute bottom-0 left-0 w-10 h-10 md:w-8 md:h-8 flex items-center justify-center text-gray-300 hover:text-red-500 text-sm transition-colors"
             title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
@@ -236,6 +236,7 @@ export const CourseCard = memo(function CourseCard({
             course={course}
             courses={courses}
             semester={semester}
+            instanceKey={instanceKey}
             onClose={() => setModalOpen(false)}
           />
         </Suspense>

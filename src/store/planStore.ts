@@ -40,7 +40,7 @@ interface PlanState extends StudentPlan {
   beginTrackSwitch: () => void;
   finishTrackSwitch: () => void;
   addCourseToSemester: (courseId: string, semester: number) => void;
-  removeCourseFromSemester: (courseId: string, semester: number) => void;
+  removeCourseFromSemester: (courseId: string, semester: number, instanceKey?: string) => void;
   moveCourse: (courseId: string, fromSemester: number, toSemester: number) => void;
   toggleCompleted: (courseId: string) => void;
   toggleCompletedInstance: (instanceKey: string) => void;
@@ -299,7 +299,54 @@ function removeExplicitSportCompletion(
 }
 
 function hasRecordedGradeForCourse(grades: Record<string, number>, courseId: string): boolean {
-  return Object.keys(grades).some((key) => key === courseId || key.startsWith(`${courseId}__`));
+  return Object.keys(grades).some((key) => key === courseId || key.startsWith(`${courseId}_`));
+}
+
+function parseInstanceKey(instanceKey: string | undefined): { courseId: string; semester: number; index: number } | null {
+  if (!instanceKey) return null;
+  const parts = instanceKey.split('__');
+  if (parts.length < 3) return null;
+  const semester = Number(parts[1]);
+  const index = Number(parts[2]);
+  if (!parts[0] || Number.isNaN(semester) || Number.isNaN(index)) return null;
+  return { courseId: parts[0], semester, index };
+}
+
+function removeCourseOccurrence(list: string[], courseId: string, instanceKey?: string): string[] {
+  const parsed = parseInstanceKey(instanceKey);
+  const explicitIndex = parsed?.courseId === courseId ? parsed.index : -1;
+  const index = explicitIndex >= 0 && list[explicitIndex] === courseId
+    ? explicitIndex
+    : list.indexOf(courseId);
+
+  return index >= 0 ? [...list.slice(0, index), ...list.slice(index + 1)] : list;
+}
+
+function clearCourseGrades(grades: Record<string, number>, courseId: string): Record<string, number> {
+  const next = { ...grades };
+  for (const key of Object.keys(next)) {
+    if (key === courseId || key.startsWith(`${courseId}_`)) {
+      delete next[key];
+    }
+  }
+  return next;
+}
+
+function omitCourseKey<T>(record: Record<string, T> | undefined, courseId: string): Record<string, T> {
+  const next = { ...(record ?? {}) };
+  delete next[courseId];
+  return next;
+}
+
+function sanitizeCompletedInstances(
+  semesters: Record<number, string[]>,
+  completedInstances: string[] | undefined,
+): string[] {
+  return (completedInstances ?? []).filter((instanceKey) => {
+    const parsed = parseInstanceKey(instanceKey);
+    if (!parsed) return false;
+    return semesters[parsed.semester]?.[parsed.index] === parsed.courseId;
+  });
 }
 
 /** Shallow snapshot of all plan fields for undo history */
@@ -434,27 +481,49 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
-      removeCourseFromSemester: (courseId, semester) =>
+      removeCourseFromSemester: (courseId, semester, instanceKey) =>
         set((state) => {
           const history = pushHistory(state);
           const list = state.semesters[semester] ?? [];
           let newList: string[];
           if (REPEATABLE_COURSES.has(courseId)) {
-            const idx = list.indexOf(courseId);
-            newList = idx >= 0 ? [...list.slice(0, idx), ...list.slice(idx + 1)] : list;
+            newList = removeCourseOccurrence(list, courseId, instanceKey);
           } else {
             newList = list.filter((id) => id !== courseId);
           }
           const nextSemesters = { ...state.semesters, [semester]: newList };
           const stillPlaced = Object.values(nextSemesters).some((ids) => ids.includes(courseId));
-          const nextGrades = sanitizeRepeatableCourseGrades(
-            nextSemesters,
-            clearRepeatableCourseSemesterGrade(state.grades, courseId, semester),
-          );
+          const nextGrades = stillPlaced
+            ? sanitizeRepeatableCourseGrades(
+              nextSemesters,
+              clearRepeatableCourseSemesterGrade(state.grades, courseId, semester),
+            )
+            : clearCourseGrades(state.grades, courseId);
+          const nextBinaryPass = { ...(state.binaryPass ?? {}) };
+          if (!stillPlaced) delete nextBinaryPass[courseId];
           return {
             semesters: nextSemesters,
             grades: nextGrades,
-            completedCourses: state.completedCourses.filter((id) => id !== courseId),
+            binaryPass: nextBinaryPass,
+            completedInstances: sanitizeCompletedInstances(nextSemesters, state.completedInstances),
+            completedCourses: stillPlaced
+              ? state.completedCourses
+              : state.completedCourses.filter((id) => id !== courseId),
+            explicitSportCompletions: stillPlaced
+              ? state.explicitSportCompletions ?? []
+              : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
+            courseChainAssignments: stillPlaced
+              ? state.courseChainAssignments ?? {}
+              : omitCourseKey(state.courseChainAssignments, courseId),
+            electiveCreditAssignments: stillPlaced
+              ? state.electiveCreditAssignments ?? {}
+              : omitCourseKey(state.electiveCreditAssignments, courseId),
+            selectedPrereqGroups: stillPlaced
+              ? state.selectedPrereqGroups
+              : omitCourseKey(state.selectedPrereqGroups, courseId),
+            englishTaughtCourses: stillPlaced
+              ? state.englishTaughtCourses ?? []
+              : (state.englishTaughtCourses ?? []).filter((id) => id !== courseId),
             dismissedRecommendedCourses: stillPlaced
               ? state.dismissedRecommendedCourses ?? {}
               : markDismissedCourse(
