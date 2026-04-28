@@ -127,7 +127,7 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleFavorite(course.id);
             }}
-            className={`w-11 h-11 flex items-center justify-center text-sm leading-none ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
+            className={`w-11 h-11 flex items-center justify-center text-xl leading-none font-semibold transition-colors ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
             title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
           >
             {isFavorite ? '★' : '☆'}
