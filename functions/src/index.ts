@@ -30,6 +30,7 @@ app.get("/health", (_req, res) => {
 export const api = functions.onRequest(
   {
     region: "us-central1",
+    invoker: "public",
     // Uncomment when secrets are configured:
     // secrets: ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ADMIN_UIDS"],
   },

@@ -25,8 +25,8 @@ export class ApiRequestError extends Error {
 
 /**
  * Base URL for the Firebase Cloud Functions API.
- * In development with the emulator, set VITE_FUNCTIONS_EMULATOR_URL in .env.local
- * e.g.: VITE_FUNCTIONS_EMULATOR_URL=http://127.0.0.1:5001/YOUR_PROJECT_ID/us-central1/api
+ * In development with the emulator, set VITE_FUNCTIONS_BASE_URL in .env.local
+ * e.g.: VITE_FUNCTIONS_BASE_URL=http://127.0.0.1:5001/YOUR_PROJECT_ID/us-central1/api
  *
  * In production this is automatically derived from the Firebase project.
  */
@@ -34,10 +34,35 @@ function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
+let warnedAboutCloudRunBaseUrl = false;
+
+function isCloudRunServiceUrl(baseUrl: string): boolean {
+  try {
+    return new URL(baseUrl).hostname.endsWith('.run.app');
+  } catch {
+    return false;
+  }
+}
+
+function shouldUseConfiguredBaseUrl(baseUrl: string): boolean {
+  if (!isCloudRunServiceUrl(baseUrl)) {
+    return true;
+  }
+
+  if (!warnedAboutCloudRunBaseUrl) {
+    warnedAboutCloudRunBaseUrl = true;
+    console.warn(
+      'Ignoring VITE_FUNCTIONS_BASE_URL because it points to a *.run.app service URL. ' +
+        'Use Firebase Hosting /api, the cloudfunctions.net URL, or the local emulator URL instead.',
+    );
+  }
+  return false;
+}
+
 function getBaseUrls(): string[] {
   const urls: string[] = [];
   const configuredBaseUrl = import.meta.env.VITE_FUNCTIONS_BASE_URL;
-  if (configuredBaseUrl) {
+  if (configuredBaseUrl && shouldUseConfiguredBaseUrl(configuredBaseUrl)) {
     urls.push(normalizeBaseUrl(configuredBaseUrl));
   }
 
@@ -96,7 +121,7 @@ async function sendRequest<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (error) {
-    throw new ApiRequestError('Failed to reach sync service', {
+    throw new ApiRequestError('שירות הסנכרון לא זמין או חסום ב-CORS', {
       isNetworkError: true,
       url,
       cause: error,
@@ -160,7 +185,7 @@ async function request<T>(
     }
   }
 
-  throw lastNetworkError ?? new ApiRequestError('Sync service is unavailable', {
+  throw lastNetworkError ?? new ApiRequestError('שירות הסנכרון לא זמין או חסום ב-CORS', {
     isNetworkError: true,
     url: path,
   });
