@@ -482,6 +482,8 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
               isMandatory={mandatoryIds.has(activeCourseId)}
               isCompleted={completedSet.has(activeCourseId)}
               missingPrereqGroups={prereqStatus.get(activeCourseId) ?? []}
+              draggable={false}
+              showActions={false}
             />
           </div>
         )}

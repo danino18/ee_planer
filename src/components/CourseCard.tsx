@@ -19,6 +19,8 @@ interface Props {
   instanceKey?: string;
   wrongSemesterType?: boolean;
   chainName?: string;
+  draggable?: boolean;
+  showActions?: boolean;
 }
 
 const LazyCourseDetailModal = lazy(async () => {
@@ -38,11 +40,14 @@ export const CourseCard = memo(function CourseCard({
   instanceKey,
   wrongSemesterType,
   chainName,
+  draggable = true,
+  showActions = true,
 }: Props) {
   const draggableId = instanceKey ?? course.id;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: draggableId,
     data: { course },
+    disabled: !draggable,
   });
   const {
     toggleFavorite,
@@ -74,10 +79,11 @@ export const CourseCard = memo(function CourseCard({
   const [modalOpen, setModalOpen] = useState(false);
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
   const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id);
+  const showCardActions = showActions && !isDragging;
 
   const style: React.CSSProperties = {
-    touchAction: 'none',
-    ...(transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
+    ...(draggable ? { touchAction: 'none' } : {}),
+    ...(draggable && transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
   };
 
   let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
@@ -104,20 +110,23 @@ export const CourseCard = memo(function CourseCard({
   return (
     <>
       <div
-        ref={setNodeRef}
+        ref={draggable ? setNodeRef : undefined}
         style={style}
-        {...listeners}
-        {...attributes}
-        onClick={() => setModalOpen(true)}
+        {...(draggable ? listeners : {})}
+        {...(draggable ? attributes : {})}
+        onClick={() => {
+          if (draggable) setModalOpen(true);
+        }}
         className={`
           ${colorClass} border rounded-lg p-2.5 relative
-          cursor-grab active:cursor-grabbing select-none
-          ${isDragging ? 'opacity-50 shadow-2xl scale-105' : 'hover:shadow-sm active:scale-95'}
+          ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} select-none
+          ${isDragging ? 'opacity-50 shadow-2xl scale-105' : draggable ? 'hover:shadow-sm active:scale-95' : ''}
           ${isPlanned && !isDragging ? 'opacity-60' : ''}
           transition-all duration-100
         `}
       >
-        <div className="absolute top-0 left-0 z-10 flex items-center">
+        {showCardActions && (
+          <div className="absolute top-0 left-0 z-10 flex items-center">
           <button
             onPointerDown={(e) => {
               e.preventDefault();
@@ -149,9 +158,10 @@ export const CourseCard = memo(function CourseCard({
               ×
             </button>
           )}
-        </div>
+          </div>
+        )}
 
-        {semester !== undefined && (
+        {showCardActions && semester !== undefined && (
           <button
             onPointerDown={(e) => {
               e.preventDefault();
@@ -172,7 +182,7 @@ export const CourseCard = memo(function CourseCard({
           </button>
         )}
 
-        <p className="text-xs font-medium text-gray-900 leading-snug pr-11 pl-[5.5rem] pt-0.5">{course.name}</p>
+        <p className={`text-xs font-medium text-gray-900 leading-snug pt-0.5 ${showCardActions ? 'pr-11 pl-[5.5rem]' : ''}`}>{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">
