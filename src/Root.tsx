@@ -1,8 +1,23 @@
-import { useEffect, useState } from 'react'
-import App from './App'
-import { AuthProvider } from './context/AuthContext'
-import { SharedPlanView } from './components/SharedPlanView'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { parseShareHash } from './services/shareRouting'
+
+const App = lazy(() => import('./App'));
+
+const SharedPlanView = lazy(async () => {
+  const [{ AuthProvider }, mod] = await Promise.all([
+    import('./context/AuthContext'),
+    import('./components/SharedPlanView'),
+  ]);
+  return {
+    default: function WrappedSharedPlanView({ shareId }: { shareId: string }) {
+      return (
+        <AuthProvider>
+          <mod.SharedPlanView shareId={shareId} />
+        </AuthProvider>
+      );
+    },
+  };
+});
 
 export default function Root() {
   const [shareRoute, setShareRoute] = useState(() => parseShareHash());
@@ -15,13 +30,9 @@ export default function Root() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  if (shareRoute) {
-    return (
-      <AuthProvider>
-        <SharedPlanView shareId={shareRoute.shareId} />
-      </AuthProvider>
-    );
-  }
-
-  return <App />;
+  return (
+    <Suspense fallback={null}>
+      {shareRoute ? <SharedPlanView shareId={shareRoute.shareId} /> : <App />}
+    </Suspense>
+  );
 }
