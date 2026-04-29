@@ -17,5 +17,12 @@ service cloud.firestore {
     match /plans/{uid} {
       allow read, write: if isSignedInOwner(uid);
     }
+
+    // Shares are managed exclusively through Cloud Functions (Admin SDK).
+    // Clients must not access shares/* directly — public/restricted access is
+    // enforced server-side after token-based email checks.
+    match /shares/{shareId} {
+      allow read, write: if false;
+    }
   }
 }

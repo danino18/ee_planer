@@ -5,6 +5,7 @@ import express from "express";
 import { plansRouter } from "./routes/plans";
 import { adminRouter } from "./routes/admin";
 import { aiRouter } from "./routes/ai";
+import { sharesRouter } from "./routes/shares";
 import { corsMiddleware, securityHeadersMiddleware } from "./security/http";
 
 admin.initializeApp();
@@ -20,6 +21,7 @@ app.use(corsMiddleware);
 app.use("/plans", plansRouter);
 app.use("/admin", adminRouter);
 app.use("/ai", aiRouter);
+app.use("/shares", sharesRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

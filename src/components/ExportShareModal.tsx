@@ -14,6 +14,10 @@ import {
   envelopeToJsonString,
   parseImportedEnvelope,
 } from '../services/planExport';
+import { useAuth } from '../context/AuthContext';
+import { createShare, buildShareUrl } from '../services/shareApi';
+import type { ShareAccess, SharePermission } from '../types/share';
+import { ApiRequestError } from '../services/apiClient';
 
 interface Props {
   onClose: () => void;
@@ -23,13 +27,16 @@ interface Props {
   catalog: TrackSpecializationCatalog | null;
 }
 
-type Tab = 'export' | 'import';
+type Tab = 'export' | 'import' | 'share';
 type VersionScope = 'current' | 'all' | 'select';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog }: Props) {
   const versions = usePlanStore((s) => s.versions);
   const activeVersionId = usePlanStore((s) => s.activeVersionId);
   const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
+  const { user, signInWithGoogle } = useAuth();
 
   const [tab, setTab] = useState<Tab>('export');
   const [includeGrades, setIncludeGrades] = useState(false);
@@ -42,6 +49,15 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
   const [importPreview, setImportPreview] = useState<VersionedPlanEnvelope | null>(null);
   const [importFileName, setImportFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [shareAccess, setShareAccess] = useState<ShareAccess>('public');
+  const [sharePermission, setSharePermission] = useState<SharePermission>('view');
+  const [shareIncludeGrades, setShareIncludeGrades] = useState(true);
+  const [shareEmailsRaw, setShareEmailsRaw] = useState('');
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -138,6 +154,82 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
     );
   }
 
+  function parseEmailList(raw: string): { emails: string[]; invalid: string[] } {
+    const tokens = raw
+      .split(/[\s,;\n]+/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const emails: string[] = [];
+    const invalid: string[] = [];
+    for (const token of tokens) {
+      const lower = token.toLowerCase();
+      if (EMAIL_REGEX.test(lower) && lower.length <= 254) {
+        if (!emails.includes(lower)) emails.push(lower);
+      } else {
+        invalid.push(token);
+      }
+    }
+    return { emails, invalid };
+  }
+
+  async function handleCreateShare() {
+    setShareError(null);
+    setShareCopied(false);
+
+    if (!user) {
+      setShareError('יש להתחבר כדי ליצור קישור שיתוף');
+      return;
+    }
+
+    let allowedEmails: string[] = [];
+    if (shareAccess === 'restricted') {
+      const { emails, invalid } = parseEmailList(shareEmailsRaw);
+      if (invalid.length > 0) {
+        setShareError(`כתובות מייל לא תקינות: ${invalid.join(', ')}`);
+        return;
+      }
+      if (emails.length === 0) {
+        setShareError('הזן לפחות כתובת מייל אחת או בחר "כולם עם הקישור"');
+        return;
+      }
+      allowedEmails = emails;
+    }
+
+    const envelope = buildExportEnvelope(usePlanStore.getState(), {
+      includeGrades: shareIncludeGrades,
+      versionIds: versions.map((v) => v.id),
+    });
+
+    setShareLoading(true);
+    try {
+      const { shareId } = await createShare({
+        envelope,
+        access: shareAccess,
+        permission: sharePermission,
+        allowedEmails,
+      });
+      setShareUrl(buildShareUrl(shareId));
+    } catch (err) {
+      const message = err instanceof ApiRequestError
+        ? err.message
+        : 'יצירת הקישור נכשלה. נסה שנית.';
+      setShareError(message);
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  async function handleCopyShareUrl() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      setShareError('העתקה נכשלה. סמן את הקישור והעתק ידנית.');
+    }
+  }
+
   const importedPlanSummary = useMemo(() => {
     if (!importPreview) return null;
     const active = importPreview.versions.find((v) => v.id === importPreview.activeVersionId);
@@ -197,6 +289,14 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >ייבוא</button>
+          <button
+            onClick={() => setTab('share')}
+            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              tab === 'share'
+                ? 'border-blue-500 text-blue-700'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >שיתוף קישור</button>
         </div>
 
         {tab === 'export' && (
@@ -356,6 +456,158 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
                 className="text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
               >ייבא והחלף תוכנית</button>
             </div>
+          </div>
+        )}
+
+        {tab === 'share' && (
+          <div className="space-y-4">
+            {!user && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <p className="text-sm text-amber-800 font-medium">נדרשת התחברות</p>
+                <p className="text-xs text-amber-700 mt-0.5 mb-2">
+                  כדי ליצור קישור שיתוף, יש להתחבר עם חשבון Google.
+                </p>
+                <button
+                  onClick={() => signInWithGoogle()}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >התחבר</button>
+              </div>
+            )}
+
+            <div className="border border-gray-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-700 mb-2">מי יכול לגשת לקישור</p>
+              <div className="space-y-1.5">
+                <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={shareAccess === 'public'}
+                    onChange={() => setShareAccess('public')}
+                    className="mt-0.5 w-4 h-4"
+                  />
+                  <div>
+                    <span>כולם עם הקישור</span>
+                    <p className="text-xs text-gray-500">כל מי שמקבל את הקישור יוכל לגשת ללא התחברות.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={shareAccess === 'restricted'}
+                    onChange={() => setShareAccess('restricted')}
+                    className="mt-0.5 w-4 h-4"
+                  />
+                  <div className="flex-1">
+                    <span>אנשים ספציפיים</span>
+                    <p className="text-xs text-gray-500">רק כתובות המייל שתזין יוכלו לגשת (לאחר התחברות).</p>
+                  </div>
+                </label>
+
+                {shareAccess === 'restricted' && (
+                  <div className="pr-6 pt-2">
+                    <textarea
+                      value={shareEmailsRaw}
+                      onChange={(e) => setShareEmailsRaw(e.target.value)}
+                      placeholder="name@example.com, friend@technion.ac.il"
+                      rows={3}
+                      dir="ltr"
+                      className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      ניתן להפריד בפסיקים, רווחים או שורות חדשות.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-700 mb-2">רמת הרשאה</p>
+              <div className="space-y-1.5">
+                <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={sharePermission === 'view'}
+                    onChange={() => setSharePermission('view')}
+                    className="mt-0.5 w-4 h-4"
+                  />
+                  <div>
+                    <span>צפייה בלבד</span>
+                    <p className="text-xs text-gray-500">המקבלים יוכלו לראות את התוכנית, ללא אפשרות לערוך.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={sharePermission === 'edit'}
+                    onChange={() => setSharePermission('edit')}
+                    className="mt-0.5 w-4 h-4"
+                  />
+                  <div>
+                    <span>צפייה ועריכה</span>
+                    <p className="text-xs text-gray-500">המקבלים יוכלו לערוך את העותק המשותף. השינויים לא משפיעים על התוכנית האישית שלך.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <label className="flex items-start gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={shareIncludeGrades}
+                onChange={(e) => setShareIncludeGrades(e.target.checked)}
+                className="mt-0.5 w-4 h-4"
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-gray-800">כלול ציונים בעותק המשותף</span>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  ללא סימון — הציונים לא יישלחו עם הקישור.
+                </p>
+              </div>
+            </label>
+
+            {shareError && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                <p className="text-xs text-red-700">{shareError}</p>
+              </div>
+            )}
+
+            {shareUrl ? (
+              <div className="border border-emerald-200 bg-emerald-50 rounded-lg p-3">
+                <p className="text-sm font-semibold text-emerald-800 mb-1">הקישור מוכן</p>
+                <div className="flex gap-2 items-stretch">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    dir="ltr"
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="flex-1 text-xs bg-white border border-emerald-200 rounded px-2 py-1.5 focus:outline-none focus:border-emerald-400"
+                  />
+                  <button
+                    onClick={handleCopyShareUrl}
+                    className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded transition-colors whitespace-nowrap"
+                  >{shareCopied ? '✓ הועתק' : 'העתק'}</button>
+                </div>
+                <p className="text-xs text-emerald-700 mt-2">
+                  שלח את הקישור הזה למי שתרצה לשתף איתו. ניתן ליצור קישור חדש בכל עת.
+                </p>
+                <button
+                  onClick={() => { setShareUrl(null); setShareCopied(false); }}
+                  className="text-xs text-emerald-700 hover:text-emerald-900 underline mt-2"
+                >צור קישור נוסף</button>
+              </div>
+            ) : (
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={onClose}
+                  className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-400 px-3 py-2 rounded-lg transition-colors"
+                >ביטול</button>
+                <button
+                  onClick={handleCreateShare}
+                  disabled={!user || shareLoading}
+                  className="text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+                >{shareLoading ? 'יוצר קישור...' : 'צור קישור'}</button>
+              </div>
+            )}
           </div>
         )}
       </div>
