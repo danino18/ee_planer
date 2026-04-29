@@ -13,19 +13,23 @@ admin.initializeApp();
 const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", true);
+const apiRouter = express.Router();
 
 app.use(express.json({ limit: "256kb" }));
 app.use(securityHeadersMiddleware);
 app.use(corsMiddleware);
 
-app.use("/plans", plansRouter);
-app.use("/admin", adminRouter);
-app.use("/ai", aiRouter);
-app.use("/shares", sharesRouter);
+apiRouter.use("/plans", plansRouter);
+apiRouter.use("/admin", adminRouter);
+apiRouter.use("/ai", aiRouter);
+apiRouter.use("/shares", sharesRouter);
 
-app.get("/health", (_req, res) => {
+apiRouter.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
+
+app.use(apiRouter);
+app.use("/api", apiRouter);
 
 export const api = functions.onRequest(
   {
