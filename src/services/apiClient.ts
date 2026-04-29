@@ -67,23 +67,32 @@ async function getIdToken(forceRefresh = false): Promise<string> {
   return user.getIdToken(forceRefresh);
 }
 
+async function getOptionalIdToken(forceRefresh = false): Promise<string | null> {
+  const user = auth.currentUser;
+  if (!user) return null;
+  return user.getIdToken(forceRefresh);
+}
+
 async function sendRequest<T>(
   baseUrl: string,
-  token: string,
-  method: 'GET' | 'POST' | 'DELETE',
+  token: string | null,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<T> {
   const url = `${baseUrl}${path}`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   let response: Response;
 
   try {
     response = await fetch(url, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch (error) {
@@ -106,9 +115,10 @@ async function sendRequest<T>(
 }
 
 async function request<T>(
-  method: 'GET' | 'POST' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
-  body?: unknown
+  body?: unknown,
+  options: { authMode?: 'required' | 'optional' } = {},
 ): Promise<T> {
   const baseUrls = getBaseUrls();
   if (baseUrls.length === 0) {
@@ -117,7 +127,13 @@ async function request<T>(
     });
   }
 
-  let token = await getIdToken();
+  const authMode = options.authMode ?? 'required';
+  let token: string | null;
+  if (authMode === 'required') {
+    token = await getIdToken();
+  } else {
+    token = await getOptionalIdToken();
+  }
   let lastNetworkError: ApiRequestError | null = null;
 
   for (const baseUrl of baseUrls) {
@@ -128,8 +144,10 @@ async function request<T>(
         throw error;
       }
 
-      if (error.status === 401) {
-        token = await getIdToken(true);
+      if (error.status === 401 && token) {
+        token = authMode === 'required'
+          ? await getIdToken(true)
+          : await getOptionalIdToken(true);
         return sendRequest<T>(baseUrl, token, method, path, body);
       }
 
@@ -151,5 +169,11 @@ async function request<T>(
 export const apiClient = {
   get: <T>(path: string) => request<T>('GET', path),
   post: <T>(path: string, body: unknown) => request<T>('POST', path, body),
+  put: <T>(path: string, body: unknown) => request<T>('PUT', path, body),
+  patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
   delete: <T>(path: string) => request<T>('DELETE', path),
+
+  // Variants that send the auth header only when a user is signed in.
+  getPublic: <T>(path: string) => request<T>('GET', path, undefined, { authMode: 'optional' }),
+  putPublic: <T>(path: string, body: unknown) => request<T>('PUT', path, body, { authMode: 'optional' }),
 };
