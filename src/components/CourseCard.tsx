@@ -118,7 +118,7 @@ export const CourseCard = memo(function CourseCard({
           if (draggable) setModalOpen(true);
         }}
         className={`
-          ${colorClass} border rounded-lg p-2.5 relative
+          ${colorClass} border rounded-lg p-2.5 relative overflow-hidden
           ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} select-none
           ${isDragging ? 'opacity-50 shadow-2xl scale-105' : draggable ? 'hover:shadow-sm active:scale-95' : ''}
           ${isPlanned && !isDragging ? 'opacity-60' : ''}
@@ -126,7 +126,7 @@ export const CourseCard = memo(function CourseCard({
         `}
       >
         {showCardActions && (
-          <div className="absolute top-0 left-0 z-10 flex items-center">
+          <div className="absolute top-0 left-0 flex items-center">
           <button
             onPointerDown={(e) => {
               e.preventDefault();
