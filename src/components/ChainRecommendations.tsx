@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import type { SapCourse, TrackSpecializationCatalog } from '../types';
+import type { SapCourse, TrackDefinition, TrackSpecializationCatalog } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { useChainRecommendations } from '../hooks/usePlan';
 
 interface Props {
   catalog: TrackSpecializationCatalog;
   courses: Map<string, SapCourse>;
+  trackDef: TrackDefinition | null;
 }
 
-export function ChainRecommendations({ catalog, courses }: Props) {
+export function ChainRecommendations({ catalog, courses, trackDef }: Props) {
   const {
     toggleSpecialization,
     selectedSpecializations,
@@ -22,7 +23,7 @@ export function ChainRecommendations({ catalog, courses }: Props) {
     completedCourses: state.completedCourses,
   })));
   const allPlaced = new Set([...completedCourses, ...Object.values(semesters).flat()]);
-  const recommendations = useChainRecommendations(courses, catalog);
+  const recommendations = useChainRecommendations(courses, catalog, trackDef);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
 
   if (catalog.interactionDisabled) {

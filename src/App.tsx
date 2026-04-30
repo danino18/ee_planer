@@ -575,14 +575,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           <aside className="hidden md:flex md:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
-            <ChainRecommendations catalog={specializationCatalog} courses={courses} />
+            <ChainRecommendations catalog={specializationCatalog} courses={courses} trackDef={trackDef} />
           </aside>
 
           {/* Mobile drawer — md:hidden enforced inside component */}
           <MobileSidebarDrawer open={sidebarOpen} onClose={() => setSidebarOpen(false)}>
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
-            <ChainRecommendations catalog={specializationCatalog} courses={courses} />
+            <ChainRecommendations catalog={specializationCatalog} courses={courses} trackDef={trackDef} />
           </MobileSidebarDrawer>
 
           <div className="flex-1 min-w-0">

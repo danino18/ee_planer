@@ -11,11 +11,11 @@ const transpiledModuleUrls = new Map();
 function resolveTypeScriptModule(fromDir, specifier) {
   const basePath = resolve(fromDir, specifier);
   const candidates = [
-    basePath,
     `${basePath}.ts`,
     `${basePath}.tsx`,
     join(basePath, 'index.ts'),
     join(basePath, 'index.tsx'),
+    basePath,
   ];
 
   const resolvedPath = candidates.find((candidate) => existsSync(candidate));
@@ -65,9 +65,11 @@ const {
   buildPreciseMandatorySet,
   buildLabSets,
   buildCoreLockedSet,
+  buildChainEligibleCourseSet,
   buildCourseAssignments,
   buildRequirementChecks,
 } = await loadTranspiledModule('src/domain/degreeCompletion/helpers.ts');
+const { evaluateSpecializationGroup } = await loadTranspiledModule('src/domain/specializations/engine.ts');
 
 const { eeTrack } = await loadTranspiledModule('src/data/tracks/ee.ts');
 const { csTrack } = await loadTranspiledModule('src/data/tracks/cs.ts');
@@ -120,6 +122,74 @@ function makeCourses(entries) {
 }
 
 const emptyCatalog = { groups: [], trackId: 'ee' };
+
+function makeChoiceRule(courseIds) {
+  return {
+    kind: 'choice_rule',
+    type: 'choose_1_from',
+    count: 1,
+    options: courseIds.map((id) => ({
+      kind: 'course',
+      courseNumber: id,
+      courseName: id,
+    })),
+  };
+}
+
+function makeSpecializationGroup({ id, name, mandatoryCourses, mandatoryChoiceCourses, additionalCourses }) {
+  const courseIds = [...new Set([
+    ...mandatoryCourses,
+    ...mandatoryChoiceCourses,
+    ...additionalCourses,
+  ])];
+  return {
+    id,
+    trackId: 'cs',
+    title: name,
+    name,
+    sourceFile: `${id}.json`,
+    courses: courseIds.map((courseNumber) => ({ courseNumber, courseName: courseNumber })),
+    mandatoryCourses,
+    mandatoryOptions: [mandatoryChoiceCourses],
+    electiveCourses: additionalCourses,
+    minCoursesToComplete: 3,
+    notes: [],
+    modeState: 'single_only',
+    supportedModes: ['single'],
+    canBeDouble: false,
+    requirementsByMode: {
+      single: {
+        totalCoursesRequiredForGroup: 3,
+        mandatoryCourses: mandatoryCourses.map((courseNumber) => ({ courseNumber, courseName: courseNumber })),
+        mandatoryChoiceRules: [makeChoiceRule(mandatoryChoiceCourses)],
+        selectionRule: null,
+        additionalCoursesRequired: 1,
+        additionalCourseSelectionRule: makeChoiceRule(additionalCourses),
+        logicalExpression: null,
+      },
+      double: null,
+    },
+    mutualExclusionRules: [],
+    replacementRules: [],
+    diagnostics: [],
+  };
+}
+
+const csMachineLearningGroup = makeSpecializationGroup({
+  id: 'cs-ml',
+  name: 'למידת מכונה ומערכות נבונות',
+  mandatoryCourses: ['00460195'],
+  mandatoryChoiceCourses: ['00460202'],
+  additionalCourses: ['00440191', '00460010'],
+});
+
+const csControlRoboticsGroup = makeSpecializationGroup({
+  id: 'cs-control',
+  name: 'בקרה ורובוטיקה',
+  mandatoryCourses: ['00440191'],
+  mandatoryChoiceCourses: ['00460212'],
+  additionalCourses: ['00460195', '00440139'],
+});
 
 // ── buildLabSets ──────────────────────────────────────────────────────────────
 
@@ -262,6 +332,56 @@ test('buildCoreLockedSet: coreToChainOverride releases a course from the locked 
   });
   const result = buildCoreLockedSet(input, csTrack);
   assert.ok(!result.has(CS_CORE_ID));
+});
+
+test('buildChainEligibleCourseSet: CS core-locked courses do not complete specialization chains', () => {
+  const input = makeInput({
+    semesters: {
+      1: [
+        '00460195',
+        '00440191',
+        '00440140',
+        '00440198',
+        '00460202',
+        '00460212',
+      ],
+    },
+    semesterOrder: [1],
+    selectedSpecializations: [csMachineLearningGroup.id, csControlRoboticsGroup.id],
+  });
+  const coreLockedSet = buildCoreLockedSet(input, csTrack);
+  const chainEligibleCourseIds = buildChainEligibleCourseSet(input, csTrack);
+  const ml = evaluateSpecializationGroup(csMachineLearningGroup, chainEligibleCourseIds);
+  const control = evaluateSpecializationGroup(csControlRoboticsGroup, chainEligibleCourseIds);
+
+  assert.deepEqual([...coreLockedSet].sort(), ['00440140', '00440191', '00440198', '00460195'].sort());
+  assert.equal(ml.complete, false, 'Machine-learning chain should not complete from locked core courses');
+  assert.equal(control.complete, false, 'Control chain should not complete from locked core courses');
+});
+
+test('buildChainEligibleCourseSet: released CS core course can satisfy a specialization chain instead of core', () => {
+  const input = makeInput({
+    semesters: {
+      1: [
+        '00460195',
+        '00440191',
+        '00440140',
+        '00440198',
+        '00460202',
+        '00460010',
+      ],
+    },
+    semesterOrder: [1],
+    selectedSpecializations: [csMachineLearningGroup.id],
+    coreToChainOverrides: ['00460195'],
+  });
+  const coreLockedSet = buildCoreLockedSet(input, csTrack);
+  const chainEligibleCourseIds = buildChainEligibleCourseSet(input, csTrack);
+  const ml = evaluateSpecializationGroup(csMachineLearningGroup, chainEligibleCourseIds);
+
+  assert.equal(coreLockedSet.size, 3);
+  assert.equal(coreLockedSet.has('00460195'), false);
+  assert.equal(ml.complete, true, 'Released machine-learning core course should satisfy the chain');
 });
 
 test('buildCoreLockedSet: CE orGroup — only first placed member is locked, second is blocked', () => {

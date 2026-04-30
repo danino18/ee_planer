@@ -16,6 +16,8 @@ import type {
   DegreeRequirementStatus,
 } from './types';
 
+type CoreLockInput = Pick<RequirementsInput, 'completedCourses' | 'semesters' | 'coreToChainOverrides'>;
+
 /**
  * Structural shape of `computeRequirementsProgress` output that
  * `buildRequirementChecks` consumes. Defined locally so this module
@@ -44,7 +46,7 @@ export interface DegreeProgressShape {
   isReady: boolean;
 }
 
-function buildAllPlaced(input: RequirementsInput): Set<string> {
+function buildAllPlaced(input: Pick<RequirementsInput, 'completedCourses' | 'semesters'>): Set<string> {
   const all = new Set<string>(input.completedCourses);
   for (const ids of Object.values(input.semesters)) {
     for (const id of ids) all.add(id);
@@ -167,7 +169,7 @@ export function buildLabSets(
  * locked — siblings are blocked even if also placed.
  */
 export function buildCoreLockedSet(
-  input: RequirementsInput,
+  input: CoreLockInput,
   trackDef: TrackDefinition,
 ): Set<string> {
   if (!trackDef.coreRequirement) return new Set();
@@ -193,6 +195,17 @@ export function buildCoreLockedSet(
     if (!blockedOrIds.has(id)) result.add(id);
   }
   return result;
+}
+
+export function buildChainEligibleCourseSet(
+  input: CoreLockInput,
+  trackDef: TrackDefinition,
+): Set<string> {
+  const allPlaced = buildAllPlaced(input);
+  if (!trackDef.coreRequirement) return allPlaced;
+
+  const coreLockedSet = buildCoreLockedSet(input, trackDef);
+  return new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
 }
 
 /**

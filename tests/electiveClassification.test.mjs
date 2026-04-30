@@ -222,7 +222,7 @@ test('ee_combined applies the 22 electrical / 5 physics / 30 total policy', () =
   assert.equal(area(progress, 'physics')?.required, 5);
 });
 
-test('cs specialization progress counts core courses toward selected specialization groups', () => {
+test('cs specialization progress excludes core-locked courses from selected specialization groups', () => {
   const catalogs = buildSpecializationCatalogsFromFiles();
   const machineLearning = catalogs.cs.groups.find((group) => group.name.includes('למידת מכונה'));
   assert.ok(machineLearning, 'Expected CS machine learning specialization group');
@@ -254,10 +254,42 @@ test('cs specialization progress counts core courses toward selected specializat
     null,
   );
 
-  assert.equal(progress.specializationGroups.completed, 1);
-  assert.equal(progress.groupDetails[0]?.done, 3);
+  assert.equal(progress.specializationGroups.completed, 0);
+  assert.equal(progress.groupDetails[0]?.done, 2);
   assert.equal(progress.groupDetails[0]?.min, 3);
-  assert.equal(progress.groupDetails[0]?.complete, true);
+  assert.equal(progress.groupDetails[0]?.complete, false);
+
+  const releasedProgress = computeRequirementsProgress(
+    {
+      semesters: { 0: ['00460195', '00460202', '00460010'] },
+      completedCourses: [],
+      explicitSportCompletions: [],
+      completedInstances: [],
+      grades: {},
+      binaryPass: {},
+      selectedSpecializations: [machineLearning.id],
+      doubleSpecializations: [],
+      hasEnglishExemption: false,
+      miluimCredits: 0,
+      englishScore: undefined,
+      englishTaughtCourses: [],
+      semesterOrder: [1],
+      coreToChainOverrides: ['00460195'],
+      courseChainAssignments: {},
+      electiveCreditAssignments: {},
+      roboticsMinorEnabled: false,
+      entrepreneurshipMinorEnabled: false,
+    },
+    courses,
+    csTrack,
+    catalogs.cs,
+    null,
+  );
+
+  assert.equal(releasedProgress.specializationGroups.completed, 1);
+  assert.equal(releasedProgress.groupDetails[0]?.done, 3);
+  assert.equal(releasedProgress.groupDetails[0]?.min, 3);
+  assert.equal(releasedProgress.groupDetails[0]?.complete, true);
 });
 
 test('ee_math separates electrical and math elective credits', () => {

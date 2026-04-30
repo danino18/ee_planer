@@ -70,6 +70,8 @@ export function useDegreeCompletionCheck(
       selectedSpecializations: input.selectedSpecializations,
       courseChainAssignments: input.courseChainAssignments,
       doubleSpecializations: input.doubleSpecializations,
+      coreToChainOverrides: input.coreToChainOverrides,
+      trackDef,
     };
 
     // Build semester labels map

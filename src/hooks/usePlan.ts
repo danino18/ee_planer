@@ -34,6 +34,7 @@ import {
   getElectiveCreditAssignmentOptions,
   resolveElectiveCreditArea,
 } from '../domain/electives';
+import { buildChainEligibleCourseSet, buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 
 const PREREQ_EQUIVALENCES: string[][] = [
   ['01040064', '01040065', '01040016'],
@@ -229,28 +230,10 @@ export function computeRequirementsProgress(
       ...Object.values(semesters).flat(),
     ]);
 
-    // Core-locked courses: placed core courses NOT released to chain.
-    // They affect only core progress; specialization groups may count the same course too.
-    const coreLockedSet = new Set<string>();
-    if (trackDef.coreRequirement) {
-      const { courses: coreCourseIds, orGroups = [] } = trackDef.coreRequirement;
-      const corePlaced = coreCourseIds.filter((id) => allPlaced.has(id));
-      const coreLocked = corePlaced.filter((id) => !coreToChainOverrides.includes(id));
-      // For OR groups: only the first found member is "active" (locked); block the rest
-      const blockedOrIds = new Set<string>();
-      for (const g of orGroups) {
-        let foundActive = false;
-        for (const id of g) {
-          if (coreLocked.includes(id)) {
-            if (!foundActive) { foundActive = true; }
-            else { blockedOrIds.add(id); }
-          }
-        }
-      }
-      for (const id of coreLocked) {
-        if (!blockedOrIds.has(id)) coreLockedSet.add(id);
-      }
-    }
+    // Core-locked courses count toward core only. Released core courses are
+    // removed from this set by buildCoreLockedSet and may count toward chains.
+    const coreLockedSet = buildCoreLockedSet(input, trackDef);
+    const chainEligibleCourseIds = buildChainEligibleCourseSet(input, trackDef);
     const orderedLabPool: string[] = [];
     if (trackDef.labPool) {
       const labSet = new Set(trackDef.labPool.courses);
@@ -394,7 +377,7 @@ export function computeRequirementsProgress(
       const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
         ? 'double'
         : 'single';
-      const evaluation = evaluateSpecializationGroup(group, allPlaced, mode, courseChainAssignments);
+      const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, courseChainAssignments);
       return {
         group,
         mode,
@@ -725,26 +708,31 @@ export function useRequirementsProgress(
 
 export function useChainRecommendations(
   courses: Map<string, SapCourse>,
-  specializationCatalog: TrackSpecializationCatalog
+  specializationCatalog: TrackSpecializationCatalog,
+  trackDef: TrackDefinition | null,
 ): RecommendedChain[] {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
   const selectedSpecializations = usePlanStore((s) => s.selectedSpecializations);
   const courseChainAssignments = usePlanStore((s) => s.courseChainAssignments);
+  const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
 
   return useMemo(() => {
     const allPlaced = new Set<string>([
       ...completedCourses,
       ...Object.values(semesters).flat(),
     ]);
+    const chainEligibleCourseIds = trackDef
+      ? buildChainEligibleCourseSet({ completedCourses, semesters, coreToChainOverrides }, trackDef)
+      : allPlaced;
 
     if (specializationCatalog.interactionDisabled) return [];
 
     const scored = specializationCatalog.groups
       .filter((group) => !selectedSpecializations.includes(group.id))
       .map((group) => {
-        const evaluation = evaluateSpecializationGroup(group, allPlaced, 'single', courseChainAssignments);
-        const mandatory = group.mandatoryCourses.filter((id) => allPlaced.has(id));
+        const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, 'single', courseChainAssignments);
+        const mandatory = group.mandatoryCourses.filter((id) => chainEligibleCourseIds.has(id));
         const score = evaluation.doneCount * 2 + mandatory.length * 3;
         return { group, score, matchingCourses: evaluation.matchedCourseNumbers };
       })
@@ -755,5 +743,5 @@ export function useChainRecommendations(
       ...result,
       matchingCourses: result.matchingCourses.map((id) => courses.get(id)?.name ?? id),
     }));
-  }, [semesters, completedCourses, specializationCatalog, selectedSpecializations, courseChainAssignments, courses]);
+  }, [semesters, completedCourses, specializationCatalog, selectedSpecializations, courseChainAssignments, courses, trackDef, coreToChainOverrides]);
 }

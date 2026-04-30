@@ -7,6 +7,7 @@ import type {
 } from '../../types';
 import { evaluateSpecializationGroup } from '../specializations';
 import { getAllScheduledCourseIds } from '../../data/tracks/semesterSchedule';
+import { buildChainEligibleCourseSet } from './helpers';
 
 export interface OptimizerInput {
   completedCourses: string[];
@@ -14,6 +15,8 @@ export interface OptimizerInput {
   selectedSpecializations: string[];
   courseChainAssignments?: Record<string, string>;
   doubleSpecializations: string[];
+  coreToChainOverrides: string[];
+  trackDef?: TrackDefinition | null;
 }
 
 export interface SchedulingContext {
@@ -57,6 +60,17 @@ function buildAllPlaced(input: OptimizerInput): Set<string> {
   ]);
 }
 
+function buildChainEligibleCourseIds(input: OptimizerInput): Set<string> {
+  const allPlaced = buildAllPlaced(input);
+  if (!input.trackDef?.coreRequirement) return allPlaced;
+
+  return buildChainEligibleCourseSet({
+    completedCourses: input.completedCourses,
+    semesters: input.semesters,
+    coreToChainOverrides: input.coreToChainOverrides,
+  }, input.trackDef);
+}
+
 function getMode(group: SpecializationGroup, doubleSpecializations: string[]): SpecializationMode {
   return group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
 }
@@ -66,7 +80,7 @@ export function suggestChainAssignments(
   courses: Map<string, SapCourse>,
   catalog: TrackSpecializationCatalog,
 ): ChainAssignmentSuggestion[] {
-  const allPlaced = buildAllPlaced(input);
+  const chainEligibleCourseIds = buildChainEligibleCourseIds(input);
   const selectedGroups = catalog.groups.filter(
     (g) => input.selectedSpecializations.includes(g.id),
   );
@@ -77,7 +91,7 @@ export function suggestChainAssignments(
   const courseToGroups = new Map<string, string[]>();
   for (const group of selectedGroups) {
     for (const course of group.courses) {
-      if (!allPlaced.has(course.courseNumber)) continue;
+      if (!chainEligibleCourseIds.has(course.courseNumber)) continue;
       if (!courseToGroups.has(course.courseNumber)) courseToGroups.set(course.courseNumber, []);
       courseToGroups.get(course.courseNumber)!.push(group.id);
     }
@@ -95,7 +109,7 @@ export function suggestChainAssignments(
     let bestEvalRequired = 1;
 
     // Remove course from placed set to evaluate "without" it
-    const allPlacedWithout = new Set([...allPlaced].filter((id) => id !== courseId));
+    const chainEligibleWithout = new Set([...chainEligibleCourseIds].filter((id) => id !== courseId));
 
     for (const gid of groupIds) {
       const group = selectedGroups.find((g) => g.id === gid);
@@ -104,13 +118,13 @@ export function suggestChainAssignments(
 
       const evWith = evaluateSpecializationGroup(
         group,
-        allPlaced,
+        chainEligibleCourseIds,
         mode,
         { ...(input.courseChainAssignments ?? {}), [courseId]: gid },
       );
       const evWithout = evaluateSpecializationGroup(
         group,
-        allPlacedWithout,
+        chainEligibleWithout,
         mode,
         input.courseChainAssignments,
       );
@@ -264,7 +278,7 @@ export function suggestMissingCourses(
   catalog: TrackSpecializationCatalog,
   context: SchedulingContext,
 ): CourseRecommendation[] {
-  const allPlaced = buildAllPlaced(input);
+  const chainEligibleCourseIds = buildChainEligibleCourseIds(input);
   const selectedGroups = catalog.groups.filter(
     (g) => input.selectedSpecializations.includes(g.id),
   );
@@ -277,7 +291,7 @@ export function suggestMissingCourses(
 
   for (const group of selectedGroups) {
     const mode = getMode(group, input.doubleSpecializations);
-    const evaluation = evaluateSpecializationGroup(group, allPlaced, mode, input.courseChainAssignments);
+    const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, input.courseChainAssignments);
 
     if (evaluation.complete) continue;
 
@@ -298,7 +312,7 @@ export function suggestMissingCourses(
       for (const option of block.options) {
         if (added >= needed || groupRecommendations >= 5) break;
         const courseId = option.courseNumber;
-        if (allPlaced.has(courseId) || addedCourseIds.has(courseId)) continue;
+        if (chainEligibleCourseIds.has(courseId) || addedCourseIds.has(courseId)) continue;
 
         const courseData = courses.get(courseId);
         const sem = findBestSemester(courseId, courseData, context, courses, coursesBeforeSemester);
