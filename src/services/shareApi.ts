@@ -9,7 +9,10 @@ import type {
 import type { VersionedPlanEnvelope } from '../types';
 
 export async function createShare(payload: CreateSharePayload): Promise<CreateShareResponse> {
-  return apiClient.post<CreateShareResponse>('/shares', payload);
+  return apiClient.post<CreateShareResponse>('/shares', {
+    ...payload,
+    expiresAt: payload.expiresAt ?? null,
+  });
 }
 
 export async function fetchShare(shareId: string): Promise<GetShareResponse> {

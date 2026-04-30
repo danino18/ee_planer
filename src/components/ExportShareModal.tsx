@@ -54,6 +54,7 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
   const [sharePermission, setSharePermission] = useState<SharePermission>('view');
   const [shareIncludeGrades, setShareIncludeGrades] = useState(true);
   const [shareEmailsRaw, setShareEmailsRaw] = useState('');
+  const [shareTtlMs, setShareTtlMs] = useState<number | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -200,6 +201,8 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
       versionIds: versions.map((v) => v.id),
     });
 
+    const expiresAt = shareTtlMs !== null ? Date.now() + shareTtlMs : null;
+
     setShareLoading(true);
     try {
       const { shareId } = await createShare({
@@ -207,6 +210,7 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
         access: shareAccess,
         permission: sharePermission,
         allowedEmails,
+        expiresAt,
       });
       setShareUrl(buildShareUrl(shareId));
     } catch (err) {
@@ -544,7 +548,7 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
                   />
                   <div>
                     <span>צפייה ועריכה</span>
-                    <p className="text-xs text-gray-500">המקבלים יוכלו לערוך את העותק המשותף. השינויים לא משפיעים על התוכנית האישית שלך.</p>
+                    <p className="text-xs text-gray-500">המקבלים יוכלו לערוך את התוכנית המשותפת. מומלץ להם לפתוח עותק נפרד במתכנן שלהם כדי שהעריכה לא תתבצע על הגרסה המשותפת.</p>
                   </div>
                 </label>
               </div>
@@ -564,6 +568,29 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
                 </p>
               </div>
             </label>
+
+            <div className="border border-gray-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-gray-700 mb-2">תוקף הקישור</p>
+              <select
+                value={shareTtlMs === null ? '' : String(shareTtlMs)}
+                onChange={(e) => setShareTtlMs(e.target.value === '' ? null : Number(e.target.value))}
+                className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-blue-400 bg-white"
+                dir="rtl"
+              >
+                <option value="">ללא הגבלה</option>
+                <option value="86400000">יום אחד</option>
+                <option value="259200000">3 ימים</option>
+                <option value="604800000">שבוע</option>
+                <option value="2592000000">חודש</option>
+                <option value="10368000000">4 חודשים</option>
+                <option value="31536000000">שנה</option>
+              </select>
+              {shareTtlMs !== null && (
+                <p className="text-xs text-amber-700 mt-1.5">
+                  הקישור יפוג ב-{new Date(Date.now() + shareTtlMs).toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' })}.
+                </p>
+              )}
+            </div>
 
             {shareError && (
               <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">

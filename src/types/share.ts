@@ -14,6 +14,7 @@ export interface ShareDoc {
   createdAt: number;
   updatedAt: number;
   revoked: boolean;
+  expiresAt: number | null;
 }
 
 export interface CreateSharePayload {
@@ -21,6 +22,7 @@ export interface CreateSharePayload {
   access: ShareAccess;
   permission: SharePermission;
   allowedEmails: string[];
+  expiresAt: number | null;
 }
 
 export interface CreateShareResponse {
@@ -29,4 +31,4 @@ export interface CreateShareResponse {
 
 export type GetShareResponse =
   | { ok: true; share: ShareDoc; canEdit: boolean }
-  | { ok: false; reason: 'not_found' | 'revoked' | 'auth_required' | 'forbidden' };
+  | { ok: false; reason: 'not_found' | 'revoked' | 'expired' | 'auth_required' | 'forbidden' };
