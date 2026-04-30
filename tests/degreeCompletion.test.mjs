@@ -69,6 +69,7 @@ const {
   buildCourseAssignments,
   buildRequirementChecks,
 } = await loadTranspiledModule('src/domain/degreeCompletion/helpers.ts');
+const { buildGeneralRequirementsProgress } = await loadTranspiledModule('src/domain/generalRequirements/progressBuilder.ts');
 const { evaluateSpecializationGroup } = await loadTranspiledModule('src/domain/specializations/engine.ts');
 
 const { eeTrack } = await loadTranspiledModule('src/data/tracks/ee.ts');
@@ -88,6 +89,8 @@ const EE_LAB_IDS = [
 const EE_MANDATORY_ID = '00440102';
 // Sport course in the 03940800-03940820 range
 const SPORT_ID = '03940810';
+const SPORTS_TEAM_ID = '03940902';
+const CHOIR_ID = '03940587';
 // MELAG (free elective) course
 const MELAG_ID = '00214119';
 // CS core course
@@ -117,8 +120,31 @@ function makeInput(overrides = {}) {
 
 function makeCourses(entries) {
   return new Map(
-    Object.entries(entries).map(([id, credits]) => [id, { id, credits, name: id }]),
+    Object.entries(entries).map(([id, credits]) => [id, {
+      id,
+      credits,
+      name: id,
+      faculty: id.startsWith('004') ? 'הנדסת חשמל ומחשבים' : '',
+      prerequisites: [],
+    }]),
   );
+}
+
+function buildGeneralProgress(input, courses, trackDef = eeTrack) {
+  const progress = buildGeneralRequirementsProgress({
+    courses,
+    trackDef,
+    semesters: input.semesters,
+    completedCourses: input.completedCourses,
+    explicitSportCompletions: input.explicitSportCompletions,
+    completedInstances: input.completedInstances,
+    grades: input.grades,
+    binaryPass: input.binaryPass,
+    englishTaughtCourses: input.englishTaughtCourses,
+    miluimCredits: input.miluimCredits,
+    englishScore: input.englishScore,
+  });
+  return Object.fromEntries(progress.map((requirement) => [requirement.requirementId, requirement]));
 }
 
 const emptyCatalog = { groups: [], trackId: 'ee' };
@@ -473,8 +499,8 @@ test('buildCourseAssignments: free elective (MELAG) course gets melag bucket', (
   assert.equal(result.find((a) => a.courseId === MELAG_ID)?.bucket, 'melag');
 });
 
-test('buildCourseAssignments: non-mandatory non-special course gets faculty_elective bucket', () => {
-  const ELECTIVE_ID = 'ELECTIVE123';
+test('buildCourseAssignments: non-mandatory electrical course gets faculty_elective bucket', () => {
+  const ELECTIVE_ID = '00460999';
   const input = makeInput({
     semesters: { 1: [ELECTIVE_ID] },
     semesterOrder: [1],
@@ -482,6 +508,48 @@ test('buildCourseAssignments: non-mandatory non-special course gets faculty_elec
   const courses = makeCourses({ [ELECTIVE_ID]: 3 });
   const result = buildCourseAssignments(input, courses, eeTrack, emptyCatalog);
   assert.equal(result.find((a) => a.courseId === ELECTIVE_ID)?.bucket, 'faculty_elective');
+});
+
+test('buildCourseAssignments: recognized external faculty elective splits overflow into general bucket', () => {
+  const EXTERNAL_A = '00940312';
+  const EXTERNAL_B = '00960570';
+  const EXTERNAL_C = '00970317';
+  const input = makeInput({
+    semesters: { 1: [EXTERNAL_A, EXTERNAL_B, EXTERNAL_C] },
+    semesterOrder: [1],
+  });
+  const courses = makeCourses({ [EXTERNAL_A]: 4, [EXTERNAL_B]: 4, [EXTERNAL_C]: 4 });
+  const result = buildCourseAssignments(input, courses, eeTrack, emptyCatalog);
+
+  assert.equal(result.find((a) => a.courseId === EXTERNAL_A)?.bucket, 'faculty_elective');
+  assert.equal(result.find((a) => a.courseId === EXTERNAL_B)?.bucket, 'faculty_elective');
+  assert.deepEqual(
+    result
+      .filter((a) => a.courseId === EXTERNAL_C)
+      .map((a) => [a.bucket, a.credits]),
+    [
+      ['faculty_elective', 1],
+      ['general_elective', 3],
+    ],
+  );
+});
+
+test('buildCourseAssignments: 01240120 uses only 3 faculty elective credits', () => {
+  const SPLIT_ID = '01240120';
+  const input = makeInput({
+    semesters: { 1: [SPLIT_ID] },
+    semesterOrder: [1],
+  });
+  const courses = makeCourses({ [SPLIT_ID]: 5 });
+  const result = buildCourseAssignments(input, courses, eeTrack, emptyCatalog);
+
+  assert.deepEqual(
+    result.map((a) => [a.bucket, a.credits]),
+    [
+      ['faculty_elective', 3],
+      ['general_elective', 2],
+    ],
+  );
 });
 
 test('buildCourseAssignments: core course gets core bucket', () => {
@@ -647,4 +715,76 @@ test('buildRequirementChecks: countedCourseIds for mandatory_credits includes ma
   assert.ok(mandatory?.countedCourseIds.includes(EE_MANDATORY_ID));
   assert.ok(mandatory?.countedCourseIds.includes(l1));
   assert.ok(!mandatory?.countedCourseIds.includes(MELAG_ID));
+});
+
+test('computeRequirementsProgress: 1.5 sports-team credits still require 1 regular PE credit', () => {
+  const input = makeInput({
+    semesters: { 1: [SPORTS_TEAM_ID] },
+    semesterOrder: [1],
+    completedInstances: [`${SPORTS_TEAM_ID}__1__0`],
+  });
+  const courses = makeCourses({ [SPORTS_TEAM_ID]: 1.5 });
+
+  const progress = buildGeneralProgress(input, courses);
+
+  assert.equal(progress.sport.targetValue, 1);
+  assert.equal(progress.sport.completedValue, 0);
+  assert.equal(progress.general_electives.completedValue, 1.5);
+});
+
+test('computeRequirementsProgress: 3 sports-team credits complete PE without regular sport', () => {
+  const input = makeInput({
+    semesters: { 1: [SPORTS_TEAM_ID], 2: [SPORTS_TEAM_ID] },
+    semesterOrder: [1, 2],
+    completedInstances: [`${SPORTS_TEAM_ID}__1__0`, `${SPORTS_TEAM_ID}__2__0`],
+  });
+  const courses = makeCourses({ [SPORTS_TEAM_ID]: 1.5 });
+
+  const progress = buildGeneralProgress(input, courses);
+
+  assert.equal(progress.sport.targetValue, 0);
+  assert.equal(progress.sport.completedValue, 0);
+  assert.equal(progress.general_electives.completedValue, 3);
+});
+
+test('computeRequirementsProgress: choir/orchestra never satisfies sport', () => {
+  const input = makeInput({
+    semesters: { 1: [CHOIR_ID, CHOIR_ID, CHOIR_ID, CHOIR_ID] },
+    semesterOrder: [1],
+  });
+  const courses = makeCourses({ [CHOIR_ID]: 2 });
+
+  const progress = buildGeneralProgress(input, courses);
+
+  assert.equal(progress.sport.targetValue, 2);
+  assert.equal(progress.sport.completedValue, 0);
+  assert.equal(progress.free_elective.targetValue, 2);
+  assert.equal(progress.general_electives.completedValue, 8);
+});
+
+test('computeRequirementsProgress: special enrichment minimum does not drop below 2', () => {
+  const input = makeInput({
+    semesters: { 1: [CHOIR_ID, CHOIR_ID, CHOIR_ID, CHOIR_ID, CHOIR_ID, CHOIR_ID] },
+    semesterOrder: [1],
+  });
+  const courses = makeCourses({ [CHOIR_ID]: 2 });
+
+  const progress = buildGeneralProgress(input, courses);
+
+  assert.equal(progress.free_elective.targetValue, 2);
+  assert.equal(progress.general_electives.completedValue, 8);
+});
+
+test('buildCourseAssignments: recognized special credits use the special_general bucket', () => {
+  const input = makeInput({
+    semesters: { 1: [SPORTS_TEAM_ID], 2: [SPORTS_TEAM_ID] },
+    semesterOrder: [1, 2],
+    completedInstances: [`${SPORTS_TEAM_ID}__1__0`, `${SPORTS_TEAM_ID}__2__0`],
+  });
+  const courses = makeCourses({ [SPORTS_TEAM_ID]: 1.5 });
+  const result = buildCourseAssignments(input, courses, eeTrack, emptyCatalog);
+  const assignment = result.find((a) => a.courseId === SPORTS_TEAM_ID);
+
+  assert.equal(assignment?.bucket, 'special_general');
+  assert.equal(assignment?.credits, 3);
 });

@@ -37,6 +37,8 @@ export interface GeneralRequirementRule {
     predicate?: (course: CourseRef) => boolean;
   };
 
+  valueGetter?: (course: CourseRef) => number;
+
   allowManualOverride?: boolean;
 }
 

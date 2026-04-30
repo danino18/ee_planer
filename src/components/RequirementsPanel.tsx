@@ -79,20 +79,44 @@ function ProgressRow({ label, earned, required, color }: ProgressRowProps) {
 interface ElectiveBreakdownProps {
   areaRequirements: ElectiveAreaProgress[];
   assignmentChoices: ElectiveAssignmentChoice[];
+  externalFaculty: {
+    earned: number;
+    limit: number;
+    courseIds: string[];
+  };
   onSelectAssignment: (courseId: string, area: ElectiveCreditArea) => void;
 }
 
 function ElectiveBreakdown({
   areaRequirements,
   assignmentChoices,
+  externalFaculty,
   onSelectAssignment,
 }: ElectiveBreakdownProps) {
-  if (areaRequirements.length === 0 && assignmentChoices.length === 0) {
+  const showExternalFaculty = externalFaculty.limit > 0 && (externalFaculty.earned > 0 || externalFaculty.courseIds.length > 0);
+  if (areaRequirements.length === 0 && assignmentChoices.length === 0 && !showExternalFaculty) {
     return null;
   }
 
   return (
     <div className="mb-3 rounded-lg border border-purple-100 bg-purple-50/60 px-3 py-2.5 space-y-2.5">
+      {showExternalFaculty && (
+        <div>
+          <div className="flex justify-between items-center gap-3 mb-1">
+            <span className="text-xs font-medium text-gray-700">קורסים מוכרים מפקולטות אחרות</span>
+            <span className="text-xs font-semibold shrink-0 text-gray-600">
+              {formatCredits(externalFaculty.earned)} / {formatCredits(externalFaculty.limit)}
+            </span>
+          </div>
+          <div className="w-full bg-purple-100 rounded-full h-1.5">
+            <div
+              className="h-1.5 rounded-full transition-all bg-purple-500"
+              style={{ width: `${Math.min(100, (externalFaculty.earned / externalFaculty.limit) * 100)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {areaRequirements.length > 0 && (
         <div className="space-y-2">
           {areaRequirements.map((requirement) => {
@@ -441,6 +465,12 @@ interface Props {
       areaRequirements: ElectiveAreaProgress[];
       assignmentChoices: ElectiveAssignmentChoice[];
       generalCourseIds: string[];
+      generalCreditsByCourseId?: Record<string, number>;
+      externalFaculty: {
+        earned: number;
+        limit: number;
+        courseIds: string[];
+      };
     };
     total: { earned: number; required: number };
     specializationGroups: {
@@ -651,6 +681,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
       <ElectiveBreakdown
         areaRequirements={progress.electiveBreakdown.areaRequirements}
         assignmentChoices={progress.electiveBreakdown.assignmentChoices}
+        externalFaculty={progress.electiveBreakdown.externalFaculty}
         onSelectAssignment={setElectiveCreditAssignment}
       />
       {progress.coreRequirementProgress && (() => {

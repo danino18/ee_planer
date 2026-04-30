@@ -29,6 +29,8 @@ export type DegreeBucket =
   | 'core'
   | 'sport'
   | 'melag'
+  | 'special_general'
+  | 'general_elective'
   | 'faculty_elective'
   | 'uncounted';
 

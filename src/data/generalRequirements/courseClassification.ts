@@ -8,6 +8,8 @@ import {
 
 const SPORT_RANGE_START = '03940800';
 const SPORT_RANGE_END = '03940820';
+const CHOIR_ORCHESTRA_COURSE_IDS = new Set(['03940587', '03940582']);
+const SPORTS_TEAM_COURSE_IDS = new Set(['03940902', '03940800']);
 const TECHNICAL_ENGLISH_NAME = '\u05d0\u05e0\u05d2\u05dc\u05d9\u05ea \u05d8\u05db\u05e0\u05d9\u05ea';
 const ADVANCED_A_NAME = '\u05de\u05ea\u05e7\u05d3\u05de\u05d9\u05dd \u05d0';
 const ADVANCED_B_NAME = '\u05de\u05ea\u05e7\u05d3\u05de\u05d9\u05dd \u05d1';
@@ -64,9 +66,21 @@ export function isFreeElectiveCourseId(courseId: string): boolean {
   return isMelagCourseId(courseId) || isHumanitiesFreeElectiveCourseId(courseId);
 }
 
+export function isChoirOrOrchestraCourseId(courseId: string): boolean {
+  return CHOIR_ORCHESTRA_COURSE_IDS.has(courseId);
+}
+
+export function isSportsTeamCourseId(courseId: string): boolean {
+  return SPORTS_TEAM_COURSE_IDS.has(courseId);
+}
+
 export function isSportCourseId(courseId: string): boolean {
   const isSportRangeCourse = isCourseIdInInclusiveRange(courseId, SPORT_RANGE_START, SPORT_RANGE_END);
   return (isSportRangeCourse || /^039409/.test(courseId)) && !isHumanitiesFreeElectiveCourseId(courseId);
+}
+
+export function isRegularSportCourseId(courseId: string): boolean {
+  return isSportCourseId(courseId) && !isSportsTeamCourseId(courseId);
 }
 
 export { humanitiesFreeElectiveCourses };

@@ -1,9 +1,17 @@
 import type { SapCourse, TrackDefinition } from '../../types';
 import { GENERAL_REQUIREMENTS_RULES } from '../../data/generalRequirements/generalRules';
-import { isCourseTaughtInEnglish, isSportCourseId } from '../../data/generalRequirements/courseClassification';
+import {
+  isChoirOrOrchestraCourseId,
+  isCourseTaughtInEnglish,
+  isFreeElectiveCourseId,
+  isRegularSportCourseId,
+  isSportCourseId,
+  isSportsTeamCourseId,
+} from '../../data/generalRequirements/courseClassification';
 import { gradeKey, REPEATABLE_COURSES } from '../../utils/courseGrades';
 import { calculateGeneralRequirements } from './rulesEngine';
 import type { CourseRef, GeneralRequirementRule, GeneralRequirementProgress } from './types';
+import { calculateSpecialEnrichmentAllocation } from './specialAllocation';
 
 export interface BuildGeneralRequirementsParams {
   courses: Map<string, SapCourse>;
@@ -18,6 +26,7 @@ export interface BuildGeneralRequirementsParams {
   miluimCredits: number;
   englishScore?: number;
   generalElectiveCourseIds?: Iterable<string>;
+  generalElectiveCredits?: Iterable<[string, number]>;
 }
 
 function shouldCountCourseForGeneralRequirements(
@@ -26,6 +35,24 @@ function shouldCountCourseForGeneralRequirements(
 ): boolean {
   if (!isSportCourseId(courseId)) return true;
   return explicitSportCompletionSet.has(courseId);
+}
+
+function buildCourseRef(
+  id: string,
+  credits: number,
+  courses: Map<string, SapCourse>,
+  englishTaughtCourses: string[],
+  labPoolSet: Set<string>,
+): CourseRef | null {
+  const sap = courses.get(id);
+  if (!sap) return null;
+  return {
+    courseId: id,
+    name: sap.name,
+    credits,
+    language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
+    isLab: labPoolSet.has(id),
+  };
 }
 
 export function buildGeneralRequirementsProgress({
@@ -41,26 +68,33 @@ export function buildGeneralRequirementsProgress({
   miluimCredits,
   englishScore,
   generalElectiveCourseIds = [],
+  generalElectiveCredits = [],
 }: BuildGeneralRequirementsParams): GeneralRequirementProgress[] {
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
   const explicitSportCompletionSet = new Set(explicitSportCompletions);
   const completedInstanceSet = new Set(completedInstances);
   const generalElectiveCourseIdSet = new Set(generalElectiveCourseIds);
+  const generalElectiveCreditsByCourseId = new Map(generalElectiveCredits);
   const courseRefs: CourseRef[] = [];
+  const specialCourseRefs: CourseRef[] = [];
   const nonRepeatableSeen = new Set<string>([...completedCourses]);
+
+  const pushCourseRef = (id: string, credits: number): void => {
+    const courseRef = buildCourseRef(id, credits, courses, englishTaughtCourses, labPoolSet);
+    if (!courseRef) return;
+    if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) {
+      specialCourseRefs.push(courseRef);
+    } else {
+      courseRefs.push(courseRef);
+    }
+  };
 
   for (const id of nonRepeatableSeen) {
     if (REPEATABLE_COURSES.has(id) && isSportCourseId(id)) continue;
     if (!shouldCountCourseForGeneralRequirements(id, explicitSportCompletionSet)) continue;
     const sap = courses.get(id);
     if (!sap) continue;
-    courseRefs.push({
-      courseId: id,
-      name: sap.name,
-      credits: sap.credits,
-      language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
-      isLab: labPoolSet.has(id),
-    });
+    pushCourseRef(id, sap.credits);
   }
 
   for (const [semesterKey, semCourses] of Object.entries(semesters)) {
@@ -80,27 +114,46 @@ export function buildGeneralRequirementsProgress({
         } else if (!shouldCountCourseForGeneralRequirements(id, explicitSportCompletionSet)) {
           continue;
         }
-        courseRefs.push({
-          courseId: id,
-          name: sap.name,
-          credits: sap.credits,
-          language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
-          isLab: labPoolSet.has(id),
-        });
+        pushCourseRef(id, sap.credits);
       } else {
         if (!shouldCountCourseForGeneralRequirements(id, explicitSportCompletionSet)) continue;
-        if (nonRepeatableSeen.has(id)) continue;
-        nonRepeatableSeen.add(id);
-        courseRefs.push({
-          courseId: id,
-          name: sap.name,
-          credits: sap.credits,
-          language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
-          isLab: labPoolSet.has(id),
-        });
+        if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) {
+          if (nonRepeatableSeen.has(id)) continue;
+          nonRepeatableSeen.add(id);
+        }
+        pushCourseRef(id, sap.credits);
       }
     }
   }
+
+  const choirOrOrchestraCredits = specialCourseRefs.reduce(
+    (sum, course) => sum + (isChoirOrOrchestraCourseId(course.courseId) ? course.credits : 0),
+    0,
+  );
+  const sportsTeamCredits = specialCourseRefs.reduce(
+    (sum, course) => sum + (isSportsTeamCourseId(course.courseId) ? course.credits : 0),
+    0,
+  );
+  const specialAllocation = calculateSpecialEnrichmentAllocation({
+    choirOrOrchestraCredits,
+    sportsTeamCredits,
+  });
+  let remainingRecognizedChoirOrOrchestraCredits =
+    specialAllocation.recognizedChoirOrOrchestraCredits;
+  let remainingRecognizedSportsTeamCredits = specialAllocation.recognizedSportsTeamCredits;
+  const recognizedSpecialRefs: CourseRef[] = [];
+  for (const courseRef of specialCourseRefs) {
+    if (isChoirOrOrchestraCourseId(courseRef.courseId)) {
+      const credits = Math.min(courseRef.credits, remainingRecognizedChoirOrOrchestraCredits);
+      remainingRecognizedChoirOrOrchestraCredits -= credits;
+      if (credits > 0) recognizedSpecialRefs.push({ ...courseRef, credits });
+    } else if (isSportsTeamCourseId(courseRef.courseId)) {
+      const credits = Math.min(courseRef.credits, remainingRecognizedSportsTeamCredits);
+      remainingRecognizedSportsTeamCredits -= credits;
+      if (credits > 0) recognizedSpecialRefs.push({ ...courseRef, credits });
+    }
+  }
+  const requirementCourseRefs = [...courseRefs, ...recognizedSpecialRefs];
 
   const rules: GeneralRequirementRule[] = GENERAL_REQUIREMENTS_RULES.map((rule) => {
     if (rule.id === 'labs' && trackDef.labPool) {
@@ -119,8 +172,36 @@ export function buildGeneralRequirementsProgress({
         targetValue: Math.max(0, trackDef.generalCreditsRequired - miluimCredits),
         courseMatcher: {
           predicate: (course) =>
+            generalElectiveCreditsByCourseId.has(course.courseId) ||
             generalElectiveCourseIdSet.has(course.courseId) ||
-            rule.courseMatcher.predicate?.(course) === true,
+            isFreeElectiveCourseId(course.courseId) ||
+            isRegularSportCourseId(course.courseId) ||
+            isChoirOrOrchestraCourseId(course.courseId) ||
+            isSportsTeamCourseId(course.courseId),
+        },
+        valueGetter: (course) => generalElectiveCreditsByCourseId.get(course.courseId) ?? course.credits,
+      };
+    }
+
+    if (rule.id === 'free_elective') {
+      return {
+        ...rule,
+        targetValue: specialAllocation.enrichmentRequired,
+        courseMatcher: {
+          predicate: (course) =>
+            isFreeElectiveCourseId(course.courseId) &&
+            !isChoirOrOrchestraCourseId(course.courseId) &&
+            !isSportsTeamCourseId(course.courseId),
+        },
+      };
+    }
+
+    if (rule.id === 'sport') {
+      return {
+        ...rule,
+        targetValue: specialAllocation.sportRequired,
+        courseMatcher: {
+          predicate: (course) => isRegularSportCourseId(course.courseId),
         },
       };
     }
@@ -164,5 +245,5 @@ export function buildGeneralRequirementsProgress({
     (rule) => rule.id !== 'labs' || trackDef.labPool !== undefined,
   );
 
-  return calculateGeneralRequirements(courseRefs, activeRules);
+  return calculateGeneralRequirements(requirementCourseRefs, activeRules);
 }

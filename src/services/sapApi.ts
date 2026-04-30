@@ -124,6 +124,8 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '03940901': { name: 'חינוך גופני', credits: 1 },
     '03940902': { name: 'נבחרות ספורט', credits: 1.5 },
     '03940800': { name: 'ספורט נבחרות', credits: 1.5 },
+    '03940587': { name: 'מקהלה 3', credits: 2 },
+    '03940582': { name: 'תיזמורת סימפונית', credits: 2 },
   };
   for (const [id, info] of Object.entries(LEGACY_COURSES)) {
     if (!merged.has(id)) {

@@ -103,6 +103,11 @@ const courses = new Map([
   ['01040000', course('01040000', 3.5)],
   ['01040293', course('01040293', 5)],
   ['01160210', course('01160210', 5)],
+  ['00940312', course('00940312', 4)],
+  ['00960570', course('00960570', 4)],
+  ['00970317', course('00970317', 4)],
+  ['01240120', course('01240120', 5)],
+  ['03360504', course('03360504', 3.5)],
   ['00214119', course('00214119', 2)],
   ['03940810', course('03940810', 1.5)],
 ]);
@@ -197,6 +202,74 @@ test('free elective and sport courses stay out of faculty elective counting', ()
   assert.equal(progress.elective.earned, 0);
   assert.equal(progress.freeElective.earned, 2);
   assert.equal(progress.sport.earned, 1.5);
+});
+
+test('recognized external faculty electives count toward faculty elective up to 9 credits', () => {
+  const progress = progressFor(eeTrack, ['00940312', '00960570', '00970317']);
+
+  assert.equal(progress.elective.earned, 9);
+  assert.equal(progress.general.earned, 3);
+  assert.equal(progress.electiveBreakdown.externalFaculty.earned, 9);
+  assert.deepEqual(
+    progress.electiveBreakdown.externalFaculty.courseIds,
+    ['00940312', '00960570', '00970317'],
+  );
+});
+
+test('external faculty elective partial-credit exception splits 01240120', () => {
+  const progress = progressFor(eeTrack, ['01240120']);
+
+  assert.equal(progress.elective.earned, 3);
+  assert.equal(progress.general.earned, 2);
+  assert.equal(progress.electiveBreakdown.externalFaculty.earned, 3);
+  assert.equal(progress.electiveBreakdown.generalCreditsByCourseId['01240120'], 2);
+});
+
+test('external specialization course counts fully outside the 9 credit cap', () => {
+  const catalogs = buildSpecializationCatalogsFromFiles();
+  const progress = computeRequirementsProgress(
+    {
+      semesters: { 0: ['03360504', '00940312', '00960570', '00970317'] },
+      completedCourses: [],
+      explicitSportCompletions: [],
+      completedInstances: [],
+      grades: {},
+      binaryPass: {},
+      selectedSpecializations: [],
+      doubleSpecializations: [],
+      hasEnglishExemption: false,
+      miluimCredits: 0,
+      englishScore: undefined,
+      englishTaughtCourses: [],
+      semesterOrder: [1],
+      coreToChainOverrides: [],
+      courseChainAssignments: {},
+      electiveCreditAssignments: {},
+      roboticsMinorEnabled: false,
+      entrepreneurshipMinorEnabled: false,
+    },
+    courses,
+    eeTrack,
+    catalogs.ee,
+    null,
+  );
+
+  assert.equal(progress.elective.earned, 12.5);
+  assert.equal(progress.general.earned, 3);
+  assert.equal(progress.electiveBreakdown.externalFaculty.earned, 9);
+});
+
+test('external faculty electives do not satisfy track-specific area minimums', () => {
+  const physicsProgress = progressFor(eePhysicsTrack, ['00940312']);
+  const mathProgress = progressFor(eeMathTrack, ['00940312']);
+
+  assert.equal(physicsProgress.elective.earned, 4);
+  assert.equal(area(physicsProgress, 'ee')?.earned, 0);
+  assert.equal(area(physicsProgress, 'physics')?.earned, 0);
+
+  assert.equal(mathProgress.elective.earned, 4);
+  assert.equal(area(mathProgress, 'ee')?.earned, 0);
+  assert.equal(area(mathProgress, 'math')?.earned, 0);
 });
 
 test('ee_physics separates electrical and physics elective credits and required physics course condition', () => {

@@ -16,7 +16,7 @@ export function calculateRequirement(
 
   for (const course of courses) {
     if (matchCourse(course, rule.courseMatcher)) {
-      const value = rule.targetUnit === 'credits' ? course.credits : 1;
+      const value = rule.valueGetter?.(course) ?? (rule.targetUnit === 'credits' ? course.credits : 1);
       total += value;
       countedCourses.push({
         courseId: course.courseId,

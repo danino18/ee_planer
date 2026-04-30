@@ -20,20 +20,25 @@ import type { EntrepreneurshipMinorProgress } from './useEntrepreneurshipMinor';
 import { ENTREPRENEURSHIP_MINOR_EXTRA_CREDITS } from '../data/entrepreneurshipMinor';
 import {
   isCourseTaughtInEnglish,
+  isChoirOrOrchestraCourseId,
   isFreeElectiveCourseId,
   isSportCourseId,
+  isSportsTeamCourseId,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
 import {
   getSatisfiedAlternativeCourseId,
   getVisibleMandatoryCourseIds,
 } from '../data/tracks/semesterSchedule';
-import { computeWeightedAverage } from '../utils/courseGrades';
+import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
 import {
+  allocateElectiveCredits,
   ELECTIVE_AREA_LABELS,
+  EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
   getElectiveCreditAssignmentOptions,
   resolveElectiveCreditArea,
 } from '../domain/electives';
+import { calculateSpecialEnrichmentAllocation } from '../domain/generalRequirements/specialAllocation';
 import { buildChainEligibleCourseSet, buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 
 const PREREQ_EQUIVALENCES: string[][] = [
@@ -64,6 +69,98 @@ function getRequirement(
   requirementId: string
 ): GeneralRequirementProgress | undefined {
   return requirements.find((requirement) => requirement.requirementId === requirementId);
+}
+
+function getCountedTotalCredits(
+  completedCourses: string[],
+  semesters: Record<number, string[]>,
+  explicitSportCompletions: string[],
+  completedInstances: string[],
+  grades: Record<string, number>,
+  binaryPass: Record<string, boolean>,
+  courses: Map<string, SapCourse>,
+): number {
+  const seenRegularCourseIds = new Set<string>();
+  const completedInstanceSet = new Set(completedInstances);
+  const explicitSportCompletionSet = new Set(explicitSportCompletions);
+  let regularCredits = 0;
+  let choirOrOrchestraCredits = 0;
+  let sportsTeamCredits = 0;
+
+  const visit = (id: string, semester?: number, index?: number): void => {
+    const credits = courses.get(id)?.credits ?? 0;
+    if (isChoirOrOrchestraCourseId(id)) {
+      choirOrOrchestraCredits += credits;
+      return;
+    }
+    if (isSportsTeamCourseId(id)) {
+      if (semester === undefined || index === undefined) return;
+      const instanceKey = `${id}__${semester}__${index}`;
+      const hasExplicitCompletion =
+        completedInstanceSet.has(instanceKey) ||
+        grades[gradeKey(id, semester)] !== undefined ||
+        !!binaryPass[id] ||
+        explicitSportCompletionSet.has(id);
+      if (!hasExplicitCompletion) return;
+      sportsTeamCredits += credits;
+      return;
+    }
+    if (seenRegularCourseIds.has(id)) return;
+    seenRegularCourseIds.add(id);
+    regularCredits += credits;
+  };
+
+  for (const id of completedCourses) {
+    if (isSportsTeamCourseId(id)) continue;
+    visit(id);
+  }
+  for (const [semesterKey, ids] of Object.entries(semesters)) {
+    const semester = Number(semesterKey);
+    for (const [index, id] of ids.entries()) {
+      visit(id, semester, index);
+    }
+  }
+
+  const allocation = calculateSpecialEnrichmentAllocation({
+    choirOrOrchestraCredits,
+    sportsTeamCredits,
+  });
+  return regularCredits + allocation.recognizedSpecialCredits;
+}
+
+function iteratePlacedCourseIds(
+  completedCourses: string[],
+  semesters: Record<number, string[]>,
+  semesterOrder: number[],
+): string[] {
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  const visit = (id: string): void => {
+    if (seen.has(id)) return;
+    seen.add(id);
+    ordered.push(id);
+  };
+
+  for (const id of completedCourses) visit(id);
+  for (const semester of semesterOrder) {
+    for (const id of semesters[semester] ?? []) visit(id);
+  }
+  for (const [semesterKey, ids] of Object.entries(semesters)) {
+    if (semesterOrder.includes(Number(semesterKey))) continue;
+    for (const id of ids) visit(id);
+  }
+
+  return ordered;
+}
+
+function buildSpecializationCourseIds(catalog: TrackSpecializationCatalog): Set<string> {
+  const result = new Set<string>();
+  for (const group of catalog.groups) {
+    for (const course of group.courses) {
+      result.add(course.courseNumber);
+    }
+  }
+  return result;
 }
 
 export function usePrerequisiteStatus(
@@ -301,6 +398,10 @@ export function computeRequirementsProgress(
     let electiveCredits = 0;
     const counted = new Set<string>();
     const generalElectiveCourseIds = new Set<string>();
+    const generalElectiveCredits = new Map<string, number>();
+    const externalFacultyElectiveCourseIds = new Set<string>();
+    const specializationCourseIds = buildSpecializationCourseIds(specializationCatalog);
+    let externalFacultyElectiveCredits = 0;
     const electiveAreaCredits = new Map<Exclude<ElectiveCreditArea, 'general'>, number>();
     const electiveAreaCourseIds = new Map<Exclude<ElectiveCreditArea, 'general'>, Set<string>>();
     const electiveAssignmentChoices: ElectiveAssignmentChoice[] = [];
@@ -312,7 +413,13 @@ export function computeRequirementsProgress(
       electiveAreaCourseIds.set(area, ids);
     };
 
-    for (const id of allPlaced) {
+    const addGeneralCredit = (id: string, credits: number) => {
+      if (credits <= 0) return;
+      generalElectiveCourseIds.add(id);
+      generalElectiveCredits.set(id, (generalElectiveCredits.get(id) ?? 0) + credits);
+    };
+
+    for (const id of iteratePlacedCourseIds(completedCourses, semesters, semesterOrder)) {
       if (
         !mandatoryIds.has(id) &&
         !mandatoryLabIdSet.has(id) &&
@@ -335,11 +442,22 @@ export function computeRequirementsProgress(
           });
         }
 
-        if (selectedArea === 'general') {
-          generalElectiveCourseIds.add(id);
-        } else {
-          electiveCredits += course.credits;
-          addAreaCredit(selectedArea, id, course.credits);
+        const split = allocateElectiveCredits(
+          course,
+          selectedArea,
+          specializationCourseIds.has(id),
+          EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS - externalFacultyElectiveCredits,
+        );
+        electiveCredits += split.facultyCredits;
+        addGeneralCredit(id, split.generalCredits);
+
+        if (split.externalFacultyCredits > 0) {
+          externalFacultyElectiveCredits += split.externalFacultyCredits;
+          externalFacultyElectiveCourseIds.add(id);
+        }
+
+        for (const [area, credits] of Object.entries(split.areaCredits ?? {}) as [Exclude<ElectiveCreditArea, 'general'>, number][]) {
+          addAreaCredit(area, id, credits);
         }
         counted.add(id);
       }
@@ -392,9 +510,15 @@ export function computeRequirementsProgress(
         0,
       );
 
-    const totalCredits = [...allPlaced].reduce((sum, id) => {
-      return sum + (courses.get(id)?.credits ?? 0);
-    }, 0);
+    const totalCredits = getCountedTotalCredits(
+      completedCourses,
+      semesters,
+      explicitSportCompletions,
+      completedInstances,
+      grades,
+      binaryPass,
+      courses,
+    );
 
     const roboticsMinorProgress: RoboticsMinorProgress | null = roboticsMinorEnabled
       ? computeRoboticsMinorProgress(allPlaced, courses, weightedAverage, totalCredits)
@@ -441,6 +565,7 @@ export function computeRequirementsProgress(
       englishTaughtCourses,
       englishScore,
       generalElectiveCourseIds,
+      generalElectiveCredits,
     });
     const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
@@ -595,6 +720,12 @@ export function computeRequirementsProgress(
         areaRequirements: electiveAreaRequirements,
         assignmentChoices: electiveAssignmentChoices,
         generalCourseIds: [...generalElectiveCourseIds],
+        generalCreditsByCourseId: Object.fromEntries(generalElectiveCredits),
+        externalFaculty: {
+          earned: externalFacultyElectiveCredits,
+          limit: EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
+          courseIds: [...externalFacultyElectiveCourseIds],
+        },
       },
       total: { earned: totalCredits, required: trackDef.totalCreditsRequired + (roboticsMinorEnabled ? ROBOTICS_MINOR_EXTRA_CREDITS : 0) + (entrepreneurshipMinorEnabled ? ENTREPRENEURSHIP_MINOR_EXTRA_CREDITS : 0) },
       specializationGroups: {

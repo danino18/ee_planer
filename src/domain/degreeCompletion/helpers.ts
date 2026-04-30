@@ -5,10 +5,19 @@ import {
   getVisibleMandatoryCourseIds,
 } from '../../data/tracks/semesterSchedule';
 import {
+  isChoirOrOrchestraCourseId,
   isFreeElectiveCourseId,
+  isRegularSportCourseId,
   isSportCourseId,
+  isSportsTeamCourseId,
 } from '../../data/generalRequirements/courseClassification';
-import { REPEATABLE_COURSES } from '../../utils/courseGrades';
+import {
+  allocateElectiveCredits,
+  EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
+  resolveElectiveCreditArea,
+} from '../electives';
+import { gradeKey, REPEATABLE_COURSES } from '../../utils/courseGrades';
+import { calculateSpecialEnrichmentAllocation } from '../generalRequirements/specialAllocation';
 import type {
   CourseAssignment,
   DegreeBucket,
@@ -263,6 +272,87 @@ function buildCourseToSpecGroups(
   return map;
 }
 
+function normalizeCourse(course: SapCourse): SapCourse {
+  return {
+    ...course,
+    faculty: course.faculty ?? '',
+    prerequisites: course.prerequisites ?? [],
+  };
+}
+
+function buildSpecialRecognizedCreditsByCourseId(
+  input: RequirementsInput,
+  courses: Map<string, SapCourse>,
+): Map<string, number> {
+  const specialOccurrences: Array<{ id: string; credits: number }> = [];
+  const visit = (id: string, semester?: number, index?: number): void => {
+    if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) return;
+    if (isSportsTeamCourseId(id)) {
+      if (semester === undefined || index === undefined) return;
+      const instanceKey = `${id}__${semester}__${index}`;
+      const hasExplicitCompletion =
+        input.completedInstances.includes(instanceKey) ||
+        input.grades[gradeKey(id, semester)] !== undefined ||
+        !!input.binaryPass[id] ||
+        input.explicitSportCompletions.includes(id);
+      if (!hasExplicitCompletion) return;
+    }
+    specialOccurrences.push({ id, credits: courses.get(id)?.credits ?? 0 });
+  };
+
+  for (const id of input.completedCourses) {
+    if (isSportsTeamCourseId(id)) continue;
+    visit(id);
+  }
+  for (const sem of input.semesterOrder) {
+    for (const [index, id] of (input.semesters[sem] ?? []).entries()) {
+      visit(id, sem, index);
+    }
+  }
+  for (const [key, ids] of Object.entries(input.semesters)) {
+    const sem = Number(key);
+    if (input.semesterOrder.includes(sem)) continue;
+    for (const [index, id] of ids.entries()) {
+      visit(id, sem, index);
+    }
+  }
+
+  const choirOrOrchestraCredits = specialOccurrences.reduce(
+    (sum, occurrence) =>
+      sum + (isChoirOrOrchestraCourseId(occurrence.id) ? occurrence.credits : 0),
+    0,
+  );
+  const sportsTeamCredits = specialOccurrences.reduce(
+    (sum, occurrence) => sum + (isSportsTeamCourseId(occurrence.id) ? occurrence.credits : 0),
+    0,
+  );
+  const allocation = calculateSpecialEnrichmentAllocation({
+    choirOrOrchestraCredits,
+    sportsTeamCredits,
+  });
+
+  let remainingChoirOrOrchestra = allocation.recognizedChoirOrOrchestraCredits;
+  let remainingSportsTeam = allocation.recognizedSportsTeamCredits;
+  const result = new Map<string, number>();
+
+  for (const occurrence of specialOccurrences) {
+    let recognizedCredits = 0;
+    if (isChoirOrOrchestraCourseId(occurrence.id)) {
+      recognizedCredits = Math.min(occurrence.credits, remainingChoirOrOrchestra);
+      remainingChoirOrOrchestra -= recognizedCredits;
+    } else if (isSportsTeamCourseId(occurrence.id)) {
+      recognizedCredits = Math.min(occurrence.credits, remainingSportsTeam);
+      remainingSportsTeam -= recognizedCredits;
+    }
+
+    if (recognizedCredits > 0) {
+      result.set(occurrence.id, (result.get(occurrence.id) ?? 0) + recognizedCredits);
+    }
+  }
+
+  return result;
+}
+
 /**
  * Assigns each placed course to exactly one bucket (highest-priority match
  * wins). Buckets mirror the credit-counting buckets used inside
@@ -286,11 +376,17 @@ export function buildCourseAssignments(
   );
   const explicitSportSet = new Set(input.explicitSportCompletions);
   const courseToSpecGroups = buildCourseToSpecGroups(catalog);
+  const specialRecognizedCreditsByCourseId = buildSpecialRecognizedCreditsByCourseId(
+    input,
+    courses,
+  );
 
   const assignments: CourseAssignment[] = [];
+  let externalFacultyElectiveCredits = 0;
 
   for (const id of iterateAllPlacedOrdered(input)) {
     let bucket: DegreeBucket;
+    let credits = courses.get(id)?.credits ?? 0;
 
     if (preciseMandatorySet.has(id)) {
       bucket = 'mandatory';
@@ -302,8 +398,12 @@ export function buildCourseAssignments(
       bucket = 'optional_lab';
     } else if (coreLockedSet.has(id)) {
       bucket = 'core';
+    } else if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) {
+      const recognizedCredits = specialRecognizedCreditsByCourseId.get(id) ?? 0;
+      bucket = recognizedCredits > 0 ? 'special_general' : 'uncounted';
+      credits = recognizedCredits;
     } else if (isSportCourseId(id)) {
-      bucket = explicitSportSet.has(id) ? 'sport' : 'uncounted';
+      bucket = explicitSportSet.has(id) && isRegularSportCourseId(id) ? 'sport' : 'uncounted';
     } else if (isFreeElectiveCourseId(id)) {
       bucket = 'melag';
     } else if (visibleMandatoryIds.has(id)) {
@@ -312,10 +412,48 @@ export function buildCourseAssignments(
       // contribute to neither mandatory nor elective credits.
       bucket = 'uncounted';
     } else {
-      bucket = 'faculty_elective';
+      const course = courses.get(id);
+      if (!course) {
+        bucket = 'uncounted';
+      } else {
+        const normalizedCourse = normalizeCourse(course);
+        const selectedArea = resolveElectiveCreditArea(
+          normalizedCourse,
+          trackDef,
+          input.electiveCreditAssignments,
+        );
+        const split = allocateElectiveCredits(
+          normalizedCourse,
+          selectedArea,
+          courseToSpecGroups.has(id),
+          EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS - externalFacultyElectiveCredits,
+        );
+        externalFacultyElectiveCredits += split.externalFacultyCredits;
+        const specializationGroupIds = courseToSpecGroups.get(id) ?? [];
+
+        if (split.facultyCredits > 0) {
+          assignments.push({
+            courseId: id,
+            bucket: 'faculty_elective',
+            credits: split.facultyCredits,
+            specializationGroupIds,
+          });
+        }
+        if (split.generalCredits > 0) {
+          assignments.push({
+            courseId: id,
+            bucket: 'general_elective',
+            credits: split.generalCredits,
+            specializationGroupIds,
+          });
+        }
+        if (split.facultyCredits > 0 || split.generalCredits > 0) continue;
+
+        bucket = 'uncounted';
+        credits = 0;
+      }
     }
 
-    const credits = courses.get(id)?.credits ?? 0;
     const specializationGroupIds = courseToSpecGroups.get(id) ?? [];
 
     assignments.push({ courseId: id, bucket, credits, specializationGroupIds });
@@ -414,7 +552,7 @@ export function buildRequirementChecks(
     unit: 'credits',
     status: deriveStatus(progress.general.earned, progress.general.required),
     missingValue: Math.max(0, progress.general.required - progress.general.earned),
-    countedCourseIds: idsForBuckets(assignments, ['sport', 'melag']),
+    countedCourseIds: idsForBuckets(assignments, ['sport', 'melag', 'special_general', 'general_elective']),
   });
 
   checks.push({

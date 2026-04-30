@@ -2,10 +2,15 @@ import type {
   CourseFacultyArea,
   ElectiveAreaRequirement,
   ElectiveCreditArea,
+  ElectiveCreditSplit,
   SapCourse,
   TrackDefinition,
   TrackElectivePolicy,
 } from '../types';
+import {
+  EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
+  getExternalFacultyElectiveCourse,
+} from '../data/externalFacultyElectives';
 
 export const ELECTIVE_AREA_LABELS: Record<ElectiveCreditArea, string> = {
   ee: '\u05d1\u05d7\u05d9\u05e8\u05d4 \u05d1\u05d4\u05e0\u05d3\u05e1\u05ea \u05d7\u05e9\u05de\u05dc',
@@ -149,3 +154,53 @@ export function resolveElectiveCreditArea(
     ? selected
     : getAutomaticElectiveCreditArea(course, trackDef);
 }
+
+export function allocateElectiveCredits(
+  course: Pick<SapCourse, 'id' | 'credits'>,
+  selectedArea: ElectiveCreditArea,
+  isSpecializationCourse: boolean,
+  remainingExternalFacultyCredits: number,
+): ElectiveCreditSplit {
+  if (selectedArea !== 'general') {
+    return {
+      facultyCredits: course.credits,
+      generalCredits: 0,
+      areaCredits: { [selectedArea]: course.credits },
+      externalFacultyCredits: 0,
+    };
+  }
+
+  if (isSpecializationCourse) {
+    return {
+      facultyCredits: course.credits,
+      generalCredits: 0,
+      externalFacultyCredits: 0,
+    };
+  }
+
+  const externalCourse = getExternalFacultyElectiveCourse(course.id);
+  if (!externalCourse) {
+    return {
+      facultyCredits: 0,
+      generalCredits: course.credits,
+      externalFacultyCredits: 0,
+    };
+  }
+
+  const eligibleFacultyCredits = Math.min(
+    course.credits,
+    externalCourse.facultyCreditLimit ?? course.credits,
+  );
+  const externalFacultyCredits = Math.min(
+    eligibleFacultyCredits,
+    Math.max(0, remainingExternalFacultyCredits),
+  );
+
+  return {
+    facultyCredits: externalFacultyCredits,
+    generalCredits: Math.max(0, course.credits - externalFacultyCredits),
+    externalFacultyCredits,
+  };
+}
+
+export { EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS };

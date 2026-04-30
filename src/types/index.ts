@@ -18,6 +18,13 @@ export interface ElectiveAreaRequirement {
   requiredAnyOfCourseIds?: string[];
 }
 
+export interface ElectiveCreditSplit {
+  facultyCredits: number;
+  generalCredits: number;
+  areaCredits?: Partial<Record<Exclude<ElectiveCreditArea, 'general'>, number>>;
+  externalFacultyCredits: number;
+}
+
 export interface TrackElectivePolicy {
   facultyCourseAreas: CourseFacultyArea[];
   areaRequirements?: ElectiveAreaRequirement[];
