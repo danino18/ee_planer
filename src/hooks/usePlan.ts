@@ -308,6 +308,48 @@ export interface ElectiveAssignmentChoice {
   options: ElectiveCreditArea[];
 }
 
+const EE_COMBINED_ELECTRODYNAMICS_ID = '01140246';
+const EE_COMBINED_FIELDS_ID = '00440140';
+const EE_COMBINED_FIELDS_PHYSICS_CREDIT_DELTA = 1.5;
+
+function shouldApplyEeCombinedFieldsAdjustment(
+  trackDef: TrackDefinition,
+  allPlaced: ReadonlySet<string>,
+): boolean {
+  return (
+    trackDef.id === 'ee_combined' &&
+    allPlaced.has(EE_COMBINED_FIELDS_ID) &&
+    !allPlaced.has(EE_COMBINED_ELECTRODYNAMICS_ID)
+  );
+}
+
+function getEffectiveMandatoryCreditsRequired(
+  trackDef: TrackDefinition,
+  allPlaced: ReadonlySet<string>,
+): number {
+  if (shouldApplyEeCombinedFieldsAdjustment(trackDef, allPlaced)) {
+    return trackDef.mandatoryCredits - EE_COMBINED_FIELDS_PHYSICS_CREDIT_DELTA;
+  }
+
+  return trackDef.mandatoryCredits;
+}
+
+function getEffectiveAreaRequirementCredits(
+  trackDef: TrackDefinition,
+  allPlaced: ReadonlySet<string>,
+  area: Exclude<ElectiveCreditArea, 'general'>,
+  minCredits: number,
+): number {
+  if (
+    area === 'physics' &&
+    shouldApplyEeCombinedFieldsAdjustment(trackDef, allPlaced)
+  ) {
+    return minCredits + EE_COMBINED_FIELDS_PHYSICS_CREDIT_DELTA;
+  }
+
+  return minCredits;
+}
+
 
 export function computeRequirementsProgress(
   input: RequirementsInput,
@@ -344,6 +386,7 @@ export function computeRequirementsProgress(
       ...completedCourses,
       ...Object.values(semesters).flat(),
     ]);
+    const mandatoryCreditsRequired = getEffectiveMandatoryCreditsRequired(trackDef, allPlaced);
     const noAdditionalCreditConflicts = computeNoAdditionalCreditConflicts(courses, {
       completedCourses,
       semesters,
@@ -503,7 +546,12 @@ export function computeRequirementsProgress(
           area: requirement.area,
           label: ELECTIVE_AREA_LABELS[requirement.area],
           earned: electiveAreaCredits.get(requirement.area) ?? 0,
-          required: requirement.minCredits,
+          required: getEffectiveAreaRequirementCredits(
+            trackDef,
+            allPlaced,
+            requirement.area,
+            requirement.minCredits,
+          ),
           courseIds,
           requiredAnyOfCourseIds: requirement.requiredAnyOfCourseIds,
           requiredAnyOfCourseNames: requirement.requiredAnyOfCourseIds?.map((courseId) =>
@@ -745,7 +793,7 @@ export function computeRequirementsProgress(
     }
 
     return {
-      mandatory: { earned: mandatoryDone, required: trackDef.mandatoryCredits },
+      mandatory: { earned: mandatoryDone, required: mandatoryCreditsRequired },
       elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
       electiveBreakdown: {
         areaRequirements: electiveAreaRequirements,
@@ -800,7 +848,7 @@ export function computeRequirementsProgress(
       roboticsMinorProgress,
       entrepreneurshipMinorProgress,
       isReady:
-        mandatoryDone >= trackDef.mandatoryCredits &&
+        mandatoryDone >= mandatoryCreditsRequired &&
         electiveCredits >= trackDef.electiveCreditsRequired &&
         electiveAreaRequirementsSatisfied &&
         (specializationCatalog.interactionDisabled
