@@ -18,6 +18,7 @@ export interface ShareDoc {
   createdAt: number;
   updatedAt: number;
   revoked: boolean;
+  expiresAt: number | null;
 }
 
 function generateShareId(): string {
@@ -31,6 +32,7 @@ export async function createShare(input: {
   access: ShareAccess;
   permission: SharePermission;
   allowedEmails: string[];
+  expiresAt: number | null;
 }): Promise<ShareDoc> {
   const id = generateShareId();
   const now = Date.now();
@@ -45,6 +47,7 @@ export async function createShare(input: {
     createdAt: now,
     updatedAt: now,
     revoked: false,
+    expiresAt: input.expiresAt,
   };
   await db().collection(COLLECTION).doc(id).set(doc);
   return doc;

@@ -23,6 +23,22 @@ sharesRouter.use(createRateLimitMiddleware({
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_ALLOWED_EMAILS = 50;
 
+const VALID_TTL_MS = new Set([
+  86_400_000,        // 1 day
+  259_200_000,       // 3 days
+  604_800_000,       // 1 week
+  2_592_000_000,     // 30 days (~1 month)
+  10_368_000_000,    // 120 days (~4 months)
+  31_536_000_000,    // 365 days (~1 year)
+]);
+
+function parseExpiresAt(value: unknown): number | null | undefined {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== 'number') return undefined;
+  if (!VALID_TTL_MS.has(value)) return undefined;
+  return Date.now() + value;
+}
+
 function parseAccess(value: unknown): ShareAccess | null {
   return value === "public" || value === "restricted" ? value : null;
 }
@@ -79,6 +95,12 @@ sharesRouter.post("/", verifyAuth, async (req: Request, res: Response): Promise<
     return;
   }
 
+  const expiresAt = parseExpiresAt(body.expiresAt);
+  if (expiresAt === undefined) {
+    res.status(400).json({ error: "Invalid expiresAt value" });
+    return;
+  }
+
   let ownerEmail: string | null = null;
   try {
     const userRecord = await import("firebase-admin").then((m) =>
@@ -97,6 +119,7 @@ sharesRouter.post("/", verifyAuth, async (req: Request, res: Response): Promise<
       access,
       permission,
       allowedEmails,
+      expiresAt,
     });
     res.json({ shareId: doc.id });
   } catch (err) {
@@ -122,6 +145,11 @@ sharesRouter.get("/:id", optionalAuth, async (req: Request, res: Response): Prom
 
     if (share.revoked) {
       res.json({ ok: false, reason: "revoked" });
+      return;
+    }
+
+    if (share.expiresAt !== null && share.expiresAt !== undefined && Date.now() > share.expiresAt) {
+      res.json({ ok: false, reason: "expired" });
       return;
     }
 

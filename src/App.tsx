@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { fetchCourses } from './services/sapApi';
 import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
+import { updateSharedEnvelope } from './services/shareApi';
 import { usePlanStore } from './store/planStore';
 import { buildEnvelopeFromState, getPlanSignature, shouldApplyCloudEnvelope } from './services/planSync';
 import { VersionTabs } from './components/VersionTabs';
@@ -33,6 +34,7 @@ import {
   getTrackSpecializationCatalog,
   reportTrackSpecializationDiagnostics,
 } from './domain/specializations';
+import { useShareMode } from './context/ShareModeContext';
 
 // UI timing constants
 const TOAST_DURATION_MS = 2500;
@@ -101,6 +103,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const progress = useRequirementsProgress(courses, trackDef, specializationCatalog, weightedAverage);
   const degreeCompletion = useDegreeCompletionCheck(courses, trackDef, specializationCatalog, weightedAverage);
 
+  const shareMode = useShareMode();
   const initialized = useRef<Set<string>>(new Set());
   const { user } = useAuth();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +117,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const lastSaveTime = useRef(0);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'pending' | 'saving' | 'saved' | 'error'>('idle');
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
+  const [shareSaveStatus, setShareSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -179,6 +184,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
 
   useEffect(() => {
+    // In share mode, don't mark cloud sync pending — changes sync to share API instead
+    if (shareMode) return;
+
     const unsubscribe = usePlanStore.subscribe((state, previousState) => {
       if (applyingCloudPlan.current) return;
       if (suppressAutoInitCloudPending.current) return;
@@ -196,9 +204,43 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     });
 
     return unsubscribe;
-  }, [markCloudSyncPending, user]);
+  }, [shareMode, markCloudSyncPending, user]);
+
+  // Share edit sync: when in edit-permission share mode, sync store changes to share API
+  useEffect(() => {
+    if (!shareMode?.canEdit) return;
+    const { shareId } = shareMode;
+
+    const unsubscribe = usePlanStore.subscribe((state, previousState) => {
+      if (applyingCloudPlan.current) return;
+      const currentSig = getPlanSignature(extractEnvelope(state));
+      const prevSig = getPlanSignature(extractEnvelope(previousState));
+      if (currentSig === prevSig) return;
+
+      if (shareTimer.current) clearTimeout(shareTimer.current);
+      setShareSaveStatus('saving');
+      shareTimer.current = window.setTimeout(async () => {
+        try {
+          const envelope = extractEnvelope(usePlanStore.getState());
+          await updateSharedEnvelope(shareId, envelope);
+          setShareSaveStatus('saved');
+          window.setTimeout(() => setShareSaveStatus('idle'), 2000);
+        } catch {
+          setShareSaveStatus('error');
+        }
+      }, SAVE_DEBOUNCE_MS);
+    });
+
+    return () => {
+      unsubscribe();
+      if (shareTimer.current) clearTimeout(shareTimer.current);
+    };
+  }, [shareMode]);
 
   useEffect(() => {
+    // In share mode, all Firestore cloud sync is skipped
+    if (shareMode) return;
+
     const clearSyncTimers = () => {
       if (saveTimer.current) {
         clearTimeout(saveTimer.current);
@@ -390,7 +432,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       window.removeEventListener('online', handleOnline);
       clearSyncTimers();
     };
-  }, [user, trackId, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack, markCloudSyncSettled]);
+  }, [shareMode, user, trackId, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack, markCloudSyncSettled]);
 
   const [showCompare, setShowCompare] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -433,6 +475,35 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           catalog={specializationCatalog}
         />
       )}
+      {shareMode && (
+        <div
+          className={`sticky top-0 z-20 px-4 py-2 text-xs text-center flex flex-wrap items-center justify-center gap-3 ${
+            shareMode.canEdit
+              ? 'bg-amber-50 border-b border-amber-200 text-amber-800'
+              : 'bg-blue-50 border-b border-blue-200 text-blue-800'
+          }`}
+          dir="rtl"
+        >
+          <span>
+            {shareMode.canEdit
+              ? '⚠ אתה צופה בתוכנית משותפת במצב עריכה. שינויים ישמרו ישירות על הגרסה המשותפת.'
+              : '👁 אתה צופה בתוכנית משותפת (צפייה בלבד). שינויים שתבצע לא יישמרו.'}
+            {shareMode.share.ownerEmail && ` שותפה על ידי ${shareMode.share.ownerEmail}.`}
+          </span>
+          {shareMode.canEdit && shareSaveStatus !== 'idle' && (
+            <span className={shareSaveStatus === 'error' ? 'text-red-600' : shareSaveStatus === 'saved' ? 'text-emerald-700' : 'text-amber-600'}>
+              {shareSaveStatus === 'saving' ? 'שומר...' : shareSaveStatus === 'saved' ? '✓ נשמר' : 'שגיאה בשמירה'}
+            </span>
+          )}
+          {shareMode.canEdit && (
+            <span className="text-amber-600">
+              כדי לעבוד על עותק נפרד,{' '}
+              <a href={window.location.origin} className="underline hover:text-amber-900">פתח את המתכנן שלך</a>.
+            </span>
+          )}
+          <a href={window.location.origin} className="underline font-medium hover:opacity-80">עבור לתוכנית שלי</a>
+        </div>
+      )}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-5 py-3 flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -448,7 +519,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                 aria-expanded={sidebarOpen}
                 aria-controls="sidebar-drawer"
               >☰</button>
-              <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />
+              {!shareMode && <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />}
               <button
                 onClick={() => setShowExport(true)}
                 className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
