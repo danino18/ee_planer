@@ -54,7 +54,6 @@ function VersionColumn({
       {
         semesters: plan.semesters,
         completedCourses: plan.completedCourses,
-        explicitSportCompletions: plan.explicitSportCompletions ?? [],
         completedInstances: plan.completedInstances ?? [],
         grades: plan.grades ?? {},
         binaryPass: plan.binaryPass ?? {},

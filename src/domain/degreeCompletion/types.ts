@@ -3,7 +3,6 @@ import type { ElectiveCreditArea } from '../../types';
 export interface RequirementsInput {
   semesters: Record<number, string[]>;
   completedCourses: string[];
-  explicitSportCompletions: string[];
   completedInstances: string[];
   grades: Record<string, number>;
   binaryPass: Record<string, boolean>;

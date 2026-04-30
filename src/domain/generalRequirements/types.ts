@@ -66,3 +66,26 @@ export interface GeneralRequirementProgress {
 
   explanation?: string;
 }
+
+export interface GeneralElectivesBreakdown {
+  total: { recognized: number; target: number };
+  sportFloor: { recognized: number; target: number };
+  enrichmentFloor: { recognized: number; target: number };
+  freeChoice: { recognized: number; target: number };
+  contributors: {
+    regularSportToFloor: number;
+    regularSportToFreeChoice: number;
+    melagToFloor: number;
+    melagToFreeChoice: number;
+    externalFacultyToFreeChoice: number;
+    choirRecognized: number;
+    sportsTeamRecognized: number;
+    unrecognizedSpecialCredits: number;
+    surplusBeyond12: number;
+  };
+}
+
+export interface GeneralRequirementsResult {
+  progress: GeneralRequirementProgress[];
+  generalElectivesBreakdown: GeneralElectivesBreakdown;
+}

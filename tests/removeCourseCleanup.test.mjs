@@ -82,7 +82,6 @@ test('removing the last unassigned course occurrence clears related course metad
     currentSemester: null,
     semesterOrder: [1],
     binaryPass: { '03940810': true },
-    explicitSportCompletions: ['03940810'],
     completedInstances: ['03940810__0__0'],
     englishTaughtCourses: ['03940810'],
     courseChainAssignments: { '03940810': 'chain-a' },
@@ -96,7 +95,6 @@ test('removing the last unassigned course occurrence clears related course metad
   assert.deepEqual(state.completedCourses, []);
   assert.deepEqual(state.grades, {});
   assert.deepEqual(state.binaryPass, {});
-  assert.deepEqual(state.explicitSportCompletions, []);
   assert.deepEqual(state.completedInstances, []);
   assert.deepEqual(state.englishTaughtCourses, []);
   assert.deepEqual(state.courseChainAssignments, {});
@@ -118,7 +116,6 @@ test('removing a repeatable course instance from a regular semester removes that
     summerSemesters: [],
     currentSemester: null,
     semesterOrder: [1],
-    explicitSportCompletions: ['03940810'],
     completedInstances: ['03940810__1__0', '03940810__1__1'],
   });
 
@@ -127,6 +124,5 @@ test('removing a repeatable course instance from a regular semester removes that
   const state = usePlanStore.getState();
   assert.deepEqual(state.semesters[1], ['03940810']);
   assert.deepEqual(state.completedCourses, ['03940810']);
-  assert.deepEqual(state.explicitSportCompletions, ['03940810']);
   assert.deepEqual(state.completedInstances, ['03940810__1__0']);
 });

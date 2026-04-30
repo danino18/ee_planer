@@ -74,7 +74,6 @@ function getRequirement(
 function getCountedTotalCredits(
   completedCourses: string[],
   semesters: Record<number, string[]>,
-  explicitSportCompletions: string[],
   completedInstances: string[],
   grades: Record<string, number>,
   binaryPass: Record<string, boolean>,
@@ -82,7 +81,6 @@ function getCountedTotalCredits(
 ): number {
   const seenRegularCourseIds = new Set<string>();
   const completedInstanceSet = new Set(completedInstances);
-  const explicitSportCompletionSet = new Set(explicitSportCompletions);
   let regularCredits = 0;
   let choirOrOrchestraCredits = 0;
   let sportsTeamCredits = 0;
@@ -96,12 +94,11 @@ function getCountedTotalCredits(
     if (isSportsTeamCourseId(id)) {
       if (semester === undefined || index === undefined) return;
       const instanceKey = `${id}__${semester}__${index}`;
-      const hasExplicitCompletion =
+      const hasInstanceSignal =
         completedInstanceSet.has(instanceKey) ||
         grades[gradeKey(id, semester)] !== undefined ||
-        !!binaryPass[id] ||
-        explicitSportCompletionSet.has(id);
-      if (!hasExplicitCompletion) return;
+        !!binaryPass[id];
+      if (!hasInstanceSignal) return;
       sportsTeamCredits += credits;
       return;
     }
@@ -302,7 +299,6 @@ export function computeRequirementsProgress(
   const {
     semesters,
     completedCourses,
-    explicitSportCompletions,
     completedInstances,
     grades,
     binaryPass,
@@ -513,7 +509,6 @@ export function computeRequirementsProgress(
     const totalCredits = getCountedTotalCredits(
       completedCourses,
       semesters,
-      explicitSportCompletions,
       completedInstances,
       grades,
       binaryPass,
@@ -552,12 +547,11 @@ export function computeRequirementsProgress(
       };
     });
 
-    const generalRequirements = buildGeneralRequirementsProgress({
+    const { progress: generalRequirements, generalElectivesBreakdown } = buildGeneralRequirementsProgress({
       courses,
       trackDef,
       semesters,
       completedCourses,
-      explicitSportCompletions,
       completedInstances,
       grades,
       binaryPass,
@@ -567,10 +561,8 @@ export function computeRequirementsProgress(
       generalElectiveCourseIds,
       generalElectiveCredits,
     });
-    const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
     const englishRequirement = getRequirement(generalRequirements, 'english');
-    const sportRequirement = getRequirement(generalRequirements, 'sport');
     const labsRequirement = getRequirement(generalRequirements, 'labs');
 
     const englishPlaced: { id: string; name: string }[] = [];
@@ -736,19 +728,12 @@ export function computeRequirementsProgress(
         diagnostics: specializationCatalog.diagnostics,
       },
       groupDetails,
-      sport: {
-        earned: sportRequirement?.completedValue ?? 0,
-        required: sportRequirement?.targetValue ?? 2,
-      },
       general: {
         earned: generalElectivesRequirement?.completedValue ?? 0,
         required: generalElectivesRequirement?.targetValue ?? generalRequired,
       },
-      freeElective: {
-        earned: freeElectiveRequirement?.completedValue ?? 0,
-        required: freeElectiveRequirement?.targetValue ?? 6,
-      },
       generalRequirements,
+      generalElectivesBreakdown,
       labPoolProgress: trackDef.labPool && labsRequirement
         ? {
             earned: labsRequirement.completedValue,
@@ -788,7 +773,6 @@ export function useRequirementsProgress(
 ) {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
-  const explicitSportCompletions = usePlanStore((s) => s.explicitSportCompletions ?? []);
   const completedInstances = usePlanStore((s) => s.completedInstances ?? []);
   const grades = usePlanStore((s) => s.grades);
   const binaryPass = usePlanStore((s) => s.binaryPass ?? {});
@@ -811,7 +795,6 @@ export function useRequirementsProgress(
         {
           semesters,
           completedCourses,
-          explicitSportCompletions,
           completedInstances,
           grades,
           binaryPass,
@@ -833,7 +816,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
   );
 }
 

@@ -37,7 +37,6 @@ export function useDegreeCompletionCheck(
   const input = usePlanStore(useShallow((s) => ({
     semesters: s.semesters,
     completedCourses: s.completedCourses,
-    explicitSportCompletions: s.explicitSportCompletions ?? [],
     completedInstances: s.completedInstances ?? [],
     grades: s.grades,
     binaryPass: s.binaryPass ?? {},

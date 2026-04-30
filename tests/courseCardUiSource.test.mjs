@@ -17,11 +17,18 @@ test('course card exposes the remove action in the top action group', () => {
   assert.doesNotMatch(source, /absolute bottom-0 left-0/);
 });
 
-test('sport requirement help renders through a fixed portal tooltip', () => {
+test('requirements panel no longer renders the sport-completion help tooltip', () => {
   const source = readFileSync(join(repoRoot, 'src', 'components', 'RequirementsPanel.tsx'), 'utf8');
 
-  assert.match(source, /createPortal/);
-  assert.match(source, /document\.body/);
-  assert.match(source, /className="fixed z-\[200\]/);
-  assert.match(source, /getBoundingClientRect\(\)/);
+  assert.doesNotMatch(source, /SPORT_REQUIREMENT_HELP/);
+  assert.doesNotMatch(source, /createPortal/);
+});
+
+test('requirements panel renders the unified general electives row with nested floors', () => {
+  const source = readFileSync(join(repoRoot, 'src', 'components', 'RequirementsPanel.tsx'), 'utf8');
+
+  assert.match(source, /GeneralElectivesRow/);
+  assert.match(source, /breakdown\.sportFloor/);
+  assert.match(source, /breakdown\.enrichmentFloor/);
+  assert.match(source, /breakdown\.freeChoice/);
 });

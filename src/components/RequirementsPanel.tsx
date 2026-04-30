@@ -1,8 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
-import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
+import type {
+  GeneralElectivesBreakdown,
+  GeneralRequirementProgress,
+} from '../domain/generalRequirements/types';
 import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
 import type { ElectiveCreditArea, SpecializationDiagnostic } from '../types';
 import type {
@@ -36,16 +38,6 @@ const SEM_LABELS = [
 const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4';
 const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
 const CREDIT_ASSIGNMENT_LABEL = '\u05e9\u05d9\u05d5\u05da \u05e0\u05e7"\u05d6';
-const SPORT_REQUIREMENT_HELP = 'כדי שקורס ספורט ייכנס לספירה, יש ללחוץ על כרטיס הקורס ולסמן אותו כהושלם או כעובר.';
-const SPORT_TOOLTIP_WIDTH = 224;
-const SPORT_TOOLTIP_MARGIN = 12;
-const SPORT_TOOLTIP_GAP = 8;
-
-type TooltipPosition = {
-  top: number;
-  left: number;
-};
-
 function formatCredits(value: number): string {
   return value % 1 === 0 ? String(value) : value.toFixed(1);
 }
@@ -192,14 +184,10 @@ interface CompactRequirementRowProps {
 
 function getRequirementDisplayLabel(req: GeneralRequirementProgress): string {
   switch (req.requirementId) {
-    case 'free_elective':
-      return 'בחירה חופשית';
     case 'general_electives':
-      return 'קורסי בחירה כלל טכניונים';
+      return 'קורסי בחירה כלל טכניוניים';
     case 'english':
       return 'קורסים באנגלית';
-    case 'sport':
-      return 'ספורט / חינוך גופני';
     case 'labs':
       return 'מעבדות';
     default:
@@ -211,6 +199,186 @@ function formatRequirementValue(req: GeneralRequirementProgress, targetValue: nu
   const unit = req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים';
   const completed = req.completedValue % 1 === 0 ? req.completedValue : req.completedValue.toFixed(1);
   return `${completed} / ${targetValue} ${unit}`;
+}
+
+interface SubBarProps {
+  label: string;
+  recognized: number;
+  target: number;
+}
+
+function SubBar({ label, recognized, target }: SubBarProps) {
+  const pct = target > 0 ? Math.min(100, (recognized / target) * 100) : recognized > 0 ? 100 : 0;
+  const done = target > 0 && recognized >= target;
+  const muted = target === 0;
+  return (
+    <div>
+      <div className="flex justify-between items-center gap-3 mb-0.5">
+        <span className={`text-[11px] ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
+        <span className={`text-[11px] font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600'}`}>
+          {formatCredits(recognized)} / {formatCredits(target)}
+        </span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-1">
+        <div
+          className={`h-1 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-gray-400'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface GeneralElectivesRowProps {
+  req: GeneralRequirementProgress;
+  breakdown: GeneralElectivesBreakdown;
+  manualEnglishCourseIds: string[];
+  englishTaughtCourses: string[];
+  onToggleEnglishCourse: (courseId: string) => void;
+}
+
+function GeneralElectivesRow({
+  req,
+  breakdown,
+  manualEnglishCourseIds,
+  englishTaughtCourses,
+  onToggleEnglishCourse,
+}: GeneralElectivesRowProps) {
+  const [showDetails, setShowDetails] = useState(false);
+  const total = breakdown.total;
+  const pct = total.target > 0 ? Math.min(100, (total.recognized / total.target) * 100) : 0;
+  const isDone = total.target > 0 && total.recognized >= total.target;
+  const missing = Math.max(0, total.target - total.recognized);
+  const missingText = missing > 0
+    ? `${formatCredits(missing)} נק"ז חסרים`
+    : 'הושלם';
+
+  const c = breakdown.contributors;
+  const hasAnyDetail =
+    c.regularSportToFloor > 0 ||
+    c.regularSportToFreeChoice > 0 ||
+    c.melagToFloor > 0 ||
+    c.melagToFreeChoice > 0 ||
+    c.externalFacultyToFreeChoice > 0 ||
+    c.choirRecognized > 0 ||
+    c.sportsTeamRecognized > 0 ||
+    c.unrecognizedSpecialCredits > 0 ||
+    c.surplusBeyond12 > 0;
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
+            {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
+          </div>
+          <p className="text-xs text-gray-500 mt-0.5">{missingText}</p>
+        </div>
+        <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600'}`}>
+          {formatCredits(total.recognized)} / {formatCredits(total.target)} נק"ז
+        </span>
+      </div>
+
+      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+        <div
+          className={`h-1.5 rounded-full transition-all ${isDone ? 'bg-green-500' : 'bg-gray-400'}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <div className="mt-2.5 ms-2 space-y-1.5 border-s-2 border-gray-200 ps-2.5">
+        <SubBar label='ספורט (חובה)' recognized={breakdown.sportFloor.recognized} target={breakdown.sportFloor.target} />
+        <SubBar label='מקצועות העשרה / מל"ג' recognized={breakdown.enrichmentFloor.recognized} target={breakdown.enrichmentFloor.target} />
+        <SubBar label='בחירה חופשית' recognized={breakdown.freeChoice.recognized} target={breakdown.freeChoice.target} />
+      </div>
+
+      {hasAnyDetail && (
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => setShowDetails((v) => !v)}
+            className="text-[11px] text-gray-500 hover:text-gray-700"
+          >
+            {showDetails ? '▲ הסתר פירוט' : '▼ פירוט מקורות'}
+          </button>
+          {showDetails && (
+            <div className="mt-1.5 space-y-1 text-[11px] text-gray-600">
+              {c.regularSportToFloor > 0 && (
+                <p>ספורט רגיל ← רצפת ספורט: {formatCredits(c.regularSportToFloor)} נק"ז</p>
+              )}
+              {c.regularSportToFreeChoice > 0 && (
+                <p>ספורט רגיל (עודף) ← בחירה חופשית: {formatCredits(c.regularSportToFreeChoice)} נק"ז</p>
+              )}
+              {c.melagToFloor > 0 && (
+                <p>מל"ג ← רצפת העשרה: {formatCredits(c.melagToFloor)} נק"ז</p>
+              )}
+              {c.melagToFreeChoice > 0 && (
+                <p>מל"ג (עודף) ← בחירה חופשית: {formatCredits(c.melagToFreeChoice)} נק"ז</p>
+              )}
+              {c.externalFacultyToFreeChoice > 0 && (
+                <p>קורסי בחירה מפקולטות אחרות ← בחירה חופשית: {formatCredits(c.externalFacultyToFreeChoice)} נק"ז</p>
+              )}
+              {c.choirRecognized > 0 && (
+                <p>מקהלה / תזמורת — הוכרו לפי הטבלה: {formatCredits(c.choirRecognized)} נק"ז</p>
+              )}
+              {c.sportsTeamRecognized > 0 && (
+                <p>נבחרת ספורט — הוכרו לפי הטבלה: {formatCredits(c.sportsTeamRecognized)} נק"ז</p>
+              )}
+              {c.unrecognizedSpecialCredits > 0 && (
+                <p className="text-amber-700">
+                  לא הוכרו (מעבר לתקרת מקהלה/תזמורת/נבחרת): {formatCredits(c.unrecognizedSpecialCredits)} נק"ז
+                </p>
+              )}
+              {c.surplusBeyond12 > 0 && (
+                <p className="text-amber-700">
+                  עודף מעבר ל-{formatCredits(total.target)} נק"ז שלא נספר: {formatCredits(c.surplusBeyond12)} נק"ז
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {req.countedCourses.length > 0 && (() => {
+        const grouped = new Map<string, { name: string; count: number }>();
+        for (const course of req.countedCourses) {
+          const entry = grouped.get(course.courseId);
+          if (entry) entry.count++;
+          else grouped.set(course.courseId, { name: course.name, count: 1 });
+        }
+        return (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {Array.from(grouped.values()).map(({ name, count }) => (
+              <span key={`general-electives-${name}`} className="text-[11px] rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+                {count > 1 ? `${name} ×${count}` : name}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
+
+      {manualEnglishCourseIds.length > 0 && (
+        <div className="mt-2 space-y-1.5">
+          {manualEnglishCourseIds.map((courseId) => {
+            const course = req.countedCourses.find((item) => item.courseId === courseId);
+            if (!course) return null;
+            return (
+              <label key={`general-electives-toggle-${courseId}`} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={englishTaughtCourses.includes(courseId)}
+                  onChange={() => onToggleEnglishCourse(courseId)}
+                  className="rounded"
+                />
+                <span>{course.name} נלמד באנגלית</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function renderEnglishRequirementText(requirement: EnglishRequirementItem): string {
@@ -242,73 +410,11 @@ function CompactRequirementRow({
   onSetEnglishScore,
   englishRequirementItems,
 }: CompactRequirementRowProps) {
-  const [sportHelpOpen, setSportHelpOpen] = useState(false);
-  const [sportHelpPinned, setSportHelpPinned] = useState(false);
-  const [sportTooltipPosition, setSportTooltipPosition] = useState<TooltipPosition | null>(null);
-  const sportHelpButtonRef = useRef<HTMLButtonElement>(null);
-  const sportTooltipRef = useRef<HTMLDivElement>(null);
   const pct = Math.min(100, targetValue > 0 ? (req.completedValue / targetValue) * 100 : 0);
   const isDone = req.completedValue >= targetValue;
   const missingText = missingValue > 0
     ? `${missingValue % 1 === 0 ? missingValue : missingValue.toFixed(1)} ${req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים'} חסרים`
     : 'הושלם';
-
-  useEffect(() => {
-    if (!sportHelpOpen || req.requirementId !== 'sport') return undefined;
-
-    function updatePosition() {
-      const button = sportHelpButtonRef.current;
-      if (!button) return;
-
-      const rect = button.getBoundingClientRect();
-      const tooltipHeight = sportTooltipRef.current?.offsetHeight ?? 72;
-      const left = Math.min(
-        window.innerWidth - SPORT_TOOLTIP_MARGIN - SPORT_TOOLTIP_WIDTH,
-        Math.max(
-          SPORT_TOOLTIP_MARGIN,
-          rect.left + (rect.width / 2) - (SPORT_TOOLTIP_WIDTH / 2),
-        ),
-      );
-      const hasRoomBelow = rect.bottom + SPORT_TOOLTIP_GAP + tooltipHeight + SPORT_TOOLTIP_MARGIN <= window.innerHeight;
-      const top = hasRoomBelow
-        ? rect.bottom + SPORT_TOOLTIP_GAP
-        : Math.max(SPORT_TOOLTIP_MARGIN, rect.top - SPORT_TOOLTIP_GAP - tooltipHeight);
-
-      setSportTooltipPosition({ top, left });
-    }
-
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target as Node;
-      if (
-        sportHelpButtonRef.current?.contains(target) ||
-        sportTooltipRef.current?.contains(target)
-      ) {
-        return;
-      }
-      setSportHelpOpen(false);
-      setSportHelpPinned(false);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setSportHelpOpen(false);
-        setSportHelpPinned(false);
-      }
-    }
-
-    updatePosition();
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('resize', updatePosition);
-    window.addEventListener('scroll', updatePosition, true);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('resize', updatePosition);
-      window.removeEventListener('scroll', updatePosition, true);
-    };
-  }, [req.requirementId, sportHelpOpen]);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
@@ -316,35 +422,6 @@ function CompactRequirementRow({
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
-            {req.requirementId === 'sport' && (
-              <span className="inline-flex">
-                <button
-                  ref={sportHelpButtonRef}
-                  type="button"
-                  onMouseEnter={() => setSportHelpOpen(true)}
-                  onMouseLeave={() => {
-                    if (!sportHelpPinned) setSportHelpOpen(false);
-                  }}
-                  onFocus={() => setSportHelpOpen(true)}
-                  onBlur={() => {
-                    if (!sportHelpPinned) setSportHelpOpen(false);
-                  }}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setSportHelpPinned((pinned) => {
-                      const nextPinned = !pinned;
-                      setSportHelpOpen(nextPinned);
-                      return nextPinned;
-                    });
-                  }}
-                  className="w-4 h-4 rounded-full border border-blue-200 bg-blue-50 text-[10px] font-bold leading-none text-blue-600 hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  aria-label={SPORT_REQUIREMENT_HELP}
-                  aria-expanded={sportHelpOpen}
-                >
-                  i
-                </button>
-              </span>
-            )}
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
           <p className="text-xs text-gray-500 mt-0.5">{missingText}</p>
@@ -360,22 +437,6 @@ function CompactRequirementRow({
           style={{ width: `${pct}%` }}
         />
       </div>
-
-      {req.requirementId === 'sport' && sportHelpOpen && sportTooltipPosition && createPortal(
-        <div
-          ref={sportTooltipRef}
-          role="tooltip"
-          className="fixed z-[200] rounded-lg border border-gray-200 bg-white px-2.5 py-2 text-xs leading-snug text-gray-700 shadow-lg"
-          style={{
-            top: `${sportTooltipPosition.top}px`,
-            left: `${sportTooltipPosition.left}px`,
-            width: `${SPORT_TOOLTIP_WIDTH}px`,
-          }}
-        >
-          {SPORT_REQUIREMENT_HELP}
-        </div>,
-        document.body,
-      )}
 
       {req.requirementId === 'english' && onSetEnglishScore && (
         <div className="mt-3 flex items-center gap-2">
@@ -490,10 +551,9 @@ interface Props {
       issues?: string[];
       summaries?: { id: string; label: string; done: number; required: number }[];
     }[];
-    sport: { earned: number; required: number };
     general: { earned: number; required: number };
-    freeElective: { earned: number; required: number };
     generalRequirements: GeneralRequirementProgress[];
+    generalElectivesBreakdown: GeneralElectivesBreakdown;
     labPoolProgress: { earned: number; required: number; mandatory: boolean; max?: number } | null;
     coreRequirementProgress: {
       completed: number;
@@ -600,27 +660,18 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
   const compactRequirements = useMemo(() => (
     (progress?.generalRequirements ?? []).filter((req) => (
-      req.requirementId === 'free_elective' ||
       req.requirementId === 'general_electives' ||
       req.requirementId === 'english' ||
-      req.requirementId === 'sport' ||
       req.requirementId === 'labs'
     ))
   ), [progress?.generalRequirements]);
 
-  const manualEnglishCourseIdsByRequirement = useMemo(() => {
-    const idsByRequirement = new Map<string, string[]>();
-    for (const requirement of compactRequirements) {
-      if (requirement.requirementId !== 'free_elective') continue;
-
-      idsByRequirement.set(
-        requirement.requirementId,
-        requirement.countedCourses
-          .filter((course) => isManualEnglishEligible(course.courseId))
-          .map((course) => course.courseId),
-      );
-    }
-    return idsByRequirement;
+  const generalElectivesManualEnglishCourseIds = useMemo(() => {
+    const generalElectives = compactRequirements.find((req) => req.requirementId === 'general_electives');
+    if (!generalElectives) return [];
+    return generalElectives.countedCourses
+      .filter((course) => isManualEnglishEligible(course.courseId))
+      .map((course) => course.courseId);
   }, [compactRequirements]);
 
   if (!progress) return null;
@@ -1032,31 +1083,26 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
         <div className="space-y-2 pt-1">
           {compactRequirements.map((req) => {
-            const manualEnglishCourseIds = manualEnglishCourseIdsByRequirement.get(req.requirementId) ?? [];
+            if (req.requirementId === 'general_electives') {
+              return (
+                <GeneralElectivesRow
+                  key={req.requirementId}
+                  req={req}
+                  breakdown={progress.generalElectivesBreakdown}
+                  manualEnglishCourseIds={generalElectivesManualEnglishCourseIds}
+                  englishTaughtCourses={englishTaughtCourses}
+                  onToggleEnglishCourse={toggleEnglishTaughtCourse}
+                />
+              );
+            }
 
             return (
               <CompactRequirementRow
                 key={req.requirementId}
                 req={req}
-                targetValue={
-                  req.requirementId === 'free_elective'
-                    ? progress.freeElective.required
-                    : req.requirementId === 'general_electives'
-                    ? progress.general.required
-                    : req.requirementId === 'english'
-                      ? req.targetValue
-                      : undefined
-                }
-                missingValue={
-                  req.requirementId === 'free_elective'
-                    ? Math.max(0, progress.freeElective.required - req.completedValue)
-                    : req.requirementId === 'general_electives'
-                    ? Math.max(0, progress.general.required - req.completedValue)
-                    : req.requirementId === 'english'
-                      ? Math.max(0, req.targetValue - req.completedValue)
-                      : undefined
-                }
-                manualEnglishCourseIds={manualEnglishCourseIds}
+                targetValue={req.requirementId === 'english' ? req.targetValue : undefined}
+                missingValue={req.requirementId === 'english' ? Math.max(0, req.targetValue - req.completedValue) : undefined}
+                manualEnglishCourseIds={[]}
                 englishTaughtCourses={englishTaughtCourses}
                 onToggleEnglishCourse={toggleEnglishTaughtCourse}
                 englishScore={req.requirementId === 'english' ? progress.english.score : undefined}
