@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
+import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { CheeseForkInfo } from './CheeseForkInfo';
@@ -10,11 +11,12 @@ interface Props {
   courses: Map<string, SapCourse>;
   semester?: number;
   instanceKey?: string;
+  noAdditionalCreditConflicts?: NoAdditionalCreditConflict[];
   elevated?: boolean;
   onClose: () => void;
 }
 
-export function CourseDetailModal({ course, courses, semester, instanceKey, elevated, onClose }: Props) {
+export function CourseDetailModal({ course, courses, semester, instanceKey, noAdditionalCreditConflicts = [], elevated, onClose }: Props) {
   const {
     grades, setGrade,
     substitutions, setSubstitution,
@@ -24,6 +26,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, elev
     binaryPass, setBinaryPass,
     removeCourseFromSemester,
     courseChainAssignments, setCourseChainAssignment,
+    setNoAdditionalCreditOverride,
   } = usePlanStore(useShallow((state) => ({
     grades: state.grades,
     setGrade: state.setGrade,
@@ -39,6 +42,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, elev
     removeCourseFromSemester: state.removeCourseFromSemester,
     courseChainAssignments: state.courseChainAssignments,
     setCourseChainAssignment: state.setCourseChainAssignment,
+    setNoAdditionalCreditOverride: state.setNoAdditionalCreditOverride,
   })));
 
   const chainMemberships = useMemo(() => {
@@ -326,6 +330,50 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, elev
             </div>
           )}
         </div>
+
+        {noAdditionalCreditConflicts.length > 0 && (
+          <div className="mb-4 border border-orange-200 bg-orange-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-orange-800 mb-2">ללא זיכוי נוסף</p>
+            <div className="space-y-3">
+              {noAdditionalCreditConflicts.map((conflict) => {
+                const otherCourse = courses.get(conflict.conflictingCourseId);
+                const otherName = otherCourse?.name ?? conflict.conflictingCourseId;
+                const setUncredited = (courseId: string) => {
+                  setNoAdditionalCreditOverride(
+                    conflict.pairKey,
+                    courseId === conflict.defaultUncreditedCourseId ? null : courseId,
+                  );
+                };
+                return (
+                  <div key={conflict.pairKey} className="space-y-1.5">
+                    <p className="text-xs text-orange-700 leading-relaxed">
+                      הקורס מתנגש בזיכוי עם {otherName}.
+                    </p>
+                    <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={conflict.uncreditedCourseId === course.id}
+                        onChange={() => setUncredited(course.id)}
+                      />
+                      <span>קורס זה ללא זיכוי</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-xs text-gray-700 cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={conflict.uncreditedCourseId === conflict.conflictingCourseId}
+                        onChange={() => setUncredited(conflict.conflictingCourseId)}
+                      />
+                      <span>הקורס השני ללא זיכוי</span>
+                    </label>
+                    <p className="text-[11px] text-orange-600">
+                      ברירת המחדל היא שהקורס המאוחר יותר בתוכנית לא יקבל נק"ז.
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Substitution section */}
         <div className="mb-4 border border-gray-200 rounded-lg p-3">

@@ -3,6 +3,11 @@ import { usePlanStore } from '../store/planStore';
 import type { SapCourse, StudentPlan, TrackDefinition, TrackSpecializationCatalog } from '../types';
 import { getFacultyStyle } from '../utils/faculty';
 import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
+import {
+  computeNoAdditionalCreditConflicts,
+  getNoAdditionalCreditCourseIds,
+  getRecognizedCredits,
+} from '../domain/noAdditionalCredit';
 
 interface Props {
   courses: Map<string, SapCourse>;
@@ -37,9 +42,10 @@ interface CourseRowProps {
   isCompleted: boolean;
   facultyOverrides: Record<string, string> | undefined;
   includeGrades: boolean;
+  recognizedCredits?: number;
 }
 
-function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides, includeGrades }: CourseRowProps) {
+function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides, includeGrades, recognizedCredits = course.credits }: CourseRowProps) {
   const style = getFacultyStyle(course.faculty, course.id, facultyOverrides);
   return (
     <div className="print-course">
@@ -48,7 +54,7 @@ function PrintCourseRow({ course, grade, isBinary, isCompleted, facultyOverrides
         <div className="print-course-name">{course.name}</div>
         <div className="print-course-meta">
           <span className="print-course-id">{course.id}</span>
-          <span className="print-course-credits">{course.credits} נ״ז</span>
+          <span className="print-course-credits">{recognizedCredits} נ״ז</span>
           {isCompleted && <span className="print-completed">✓</span>}
           {includeGrades && isBinary && <span className="print-binary">עובר</span>}
           {includeGrades && grade !== undefined && !isBinary && (
@@ -84,19 +90,27 @@ function PrintPlanSection({ plan, courses, trackDef, catalog, includeGrades, ver
     doubleSpecializations,
   } = plan;
 
-  const { totalCredits, weightedAvg, completedSet } = useMemo(() => {
+  const { totalCredits, weightedAvg, completedSet, noAdditionalCreditCourseIds } = useMemo(() => {
     const completedSet = new Set(completedCourses);
     const placed = new Set<string>([...completedCourses, ...Object.values(semesters).flat()]);
+    const noAdditionalCreditCourseIds = getNoAdditionalCreditCourseIds(
+      computeNoAdditionalCreditConflicts(courses, {
+        completedCourses,
+        semesters,
+        semesterOrder: semesterOrder ?? [],
+        noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
+      }),
+    );
     const totalCredits = [...placed].reduce(
-      (sum, id) => sum + (courses.get(id)?.credits ?? 0),
+      (sum, id) => sum + getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds),
       0,
     );
     const weightedAvg = computeWeightedAverage(
-      { semesters, grades: grades ?? {}, binaryPass: binaryPass ?? {} },
+      { semesters, grades: grades ?? {}, binaryPass: binaryPass ?? {}, noAdditionalCreditCourseIds },
       courses,
     );
-    return { totalCredits, weightedAvg, completedSet };
-  }, [semesters, completedCourses, grades, binaryPass, courses]);
+    return { totalCredits, weightedAvg, completedSet, noAdditionalCreditCourseIds };
+  }, [semesters, completedCourses, grades, binaryPass, courses, semesterOrder, plan.noAdditionalCreditOverrides]);
 
   const semesterList = (semesterOrder ?? []).length > 0
     ? (semesterOrder ?? []).filter((s) => s !== 0)
@@ -146,6 +160,7 @@ function PrintPlanSection({ plan, courses, trackDef, catalog, includeGrades, ver
                   isCompleted
                   facultyOverrides={facultyColorOverrides}
                   includeGrades={includeGrades}
+                  recognizedCredits={getRecognizedCredits(course, noAdditionalCreditCourseIds)}
                 />
               );
             })}
@@ -160,12 +175,12 @@ function PrintPlanSection({ plan, courses, trackDef, catalog, includeGrades, ver
           const isSummer = (summerSemesters ?? []).includes(sem);
           const isCurrent = currentSemester === sem;
           const semCredits = courseIds.reduce(
-            (sum, id) => sum + (courses.get(id)?.credits ?? 0),
+            (sum, id) => sum + getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds),
             0,
           );
           const semAvg = includeGrades
             ? computeWeightedAverage(
-                { semesters, grades: grades ?? {}, binaryPass: binaryPass ?? {} },
+                { semesters, grades: grades ?? {}, binaryPass: binaryPass ?? {}, noAdditionalCreditCourseIds },
                 courses,
                 sem,
               )
@@ -211,6 +226,7 @@ function PrintPlanSection({ plan, courses, trackDef, catalog, includeGrades, ver
                         isCompleted={completedSet.has(id)}
                         facultyOverrides={facultyColorOverrides}
                         includeGrades={includeGrades}
+                        recognizedCredits={getRecognizedCredits(course, noAdditionalCreditCourseIds)}
                       />
                     );
                   })
@@ -266,6 +282,7 @@ export function PrintView({ courses, trackDef, catalog, includeGrades = true, ve
   const favorites = usePlanStore((s) => s.favorites);
   const substitutions = usePlanStore((s) => s.substitutions);
   const selectedPrereqGroups = usePlanStore((s) => s.selectedPrereqGroups);
+  const noAdditionalCreditOverrides = usePlanStore((s) => s.noAdditionalCreditOverrides);
 
   const activePlan: StudentPlan = useMemo(() => ({
     trackId,
@@ -277,6 +294,7 @@ export function PrintView({ courses, trackDef, catalog, includeGrades = true, ve
     substitutions,
     maxSemester,
     selectedPrereqGroups,
+    noAdditionalCreditOverrides: noAdditionalCreditOverrides ?? {},
     summerSemesters: summerSemesters ?? [],
     currentSemester: currentSemester ?? null,
     semesterOrder: semesterOrder ?? [],
@@ -288,7 +306,7 @@ export function PrintView({ courses, trackDef, catalog, includeGrades = true, ve
     trackId, semesters, completedCourses, selectedSpecializations, favorites,
     grades, substitutions, maxSemester, selectedPrereqGroups, summerSemesters,
     currentSemester, semesterOrder, semesterTypeOverrides, doubleSpecializations,
-    binaryPass, facultyColorOverrides,
+    binaryPass, facultyColorOverrides, noAdditionalCreditOverrides,
   ]);
 
   const sections = useMemo<{ plan: StudentPlan; name?: string }[]>(() => {

@@ -4,6 +4,8 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CourseCard } from './CourseCard';
 import type { SapCourse } from '../types';
+import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
+import { getRecognizedCredits } from '../domain/noAdditionalCredit';
 
 const SEM_LABELS = [
   'לא משובץ',
@@ -36,6 +38,8 @@ interface Props {
   isDragging?: boolean;
   ruleWarnings?: ('melag' | 'sport')[];
   mutualExclusionWarnings?: string[];
+  noAdditionalCreditConflicts?: Map<string, NoAdditionalCreditConflict[]>;
+  noAdditionalCreditCourseIds?: ReadonlySet<string>;
 }
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -55,6 +59,8 @@ export const SemesterColumn = memo(function SemesterColumn({
   semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, isDragging: isDraggingActive,
   ruleWarnings = [],
   mutualExclusionWarnings = [],
+  noAdditionalCreditConflicts = new Map(),
+  noAdditionalCreditCourseIds = new Set(),
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
   const {
@@ -65,7 +71,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
 
-  const totalCredits = courseIds.reduce((s, id) => s + (courses.get(id)?.credits ?? 0), 0);
+  const totalCredits = courseIds.reduce((s, id) => s + getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds), 0);
   const columnStyle = getColumnStyle(isOver, !!(isDraggingActive && semester > 0), isSummer, isCurrent, isPast, isFuture);
   const setColumnRef = (node: HTMLDivElement | null) => {
     setNodeRef(node);
@@ -220,6 +226,8 @@ export const SemesterColumn = memo(function SemesterColumn({
           const course = courses.get(id);
           if (!course) return null;
           const missingPrereqGroups = prereqStatus.get(id) ?? [];
+          const courseNoAdditionalCreditConflicts = noAdditionalCreditConflicts.get(id) ?? [];
+          const recognizedCredits = getRecognizedCredits(course, noAdditionalCreditCourseIds);
           const wrongSemesterType = !!(
             semesterType
             && course.teachingSemester
@@ -234,6 +242,8 @@ export const SemesterColumn = memo(function SemesterColumn({
               isMandatory={mandatoryCourseIds.has(id)}
               hasPrereqWarning={missingPrereqGroups.length > 0}
               missingPrereqGroups={missingPrereqGroups}
+              noAdditionalCreditConflicts={courseNoAdditionalCreditConflicts}
+              recognizedCredits={recognizedCredits}
               isCompleted={effectiveCompleted.has(id)}
               isPlanned={isFuture && !completedCourses.has(id)}
               semester={semester}

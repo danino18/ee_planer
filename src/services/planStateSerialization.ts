@@ -40,6 +40,7 @@ export function serializePlanState(state: StudentPlan): StudentPlan {
     coreToChainOverrides: [...(state.coreToChainOverrides ?? [])],
     courseChainAssignments: { ...(state.courseChainAssignments ?? {}) },
     electiveCreditAssignments: { ...(state.electiveCreditAssignments ?? {}) },
+    noAdditionalCreditOverrides: { ...(state.noAdditionalCreditOverrides ?? {}) },
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
     initializedTracks: [...(state.initializedTracks ?? [])],

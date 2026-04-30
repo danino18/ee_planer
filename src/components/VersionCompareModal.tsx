@@ -4,6 +4,10 @@ import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { computeRequirementsProgress } from '../hooks/usePlan';
 import { computeWeightedAverage } from '../utils/courseGrades';
 import { getComparisonSemesterLabel, getDifferingCourseIds } from '../utils/versionComparison';
+import {
+  computeNoAdditionalCreditConflicts,
+  getNoAdditionalCreditCourseIds,
+} from '../domain/noAdditionalCredit';
 
 interface Props {
   versions: PlanVersion[];
@@ -38,14 +42,32 @@ function VersionColumn({
   const plan = version.plan;
   const trackDef = trackDefs.find((t) => t.id === plan.trackId) ?? null;
   const catalog = plan.trackId ? getTrackSpecializationCatalog(plan.trackId) : null;
+  const noAdditionalCreditCourseIds = useMemo(
+    () => getNoAdditionalCreditCourseIds(
+      computeNoAdditionalCreditConflicts(courses, {
+        completedCourses: plan.completedCourses ?? [],
+        semesters: plan.semesters ?? {},
+        semesterOrder: plan.semesterOrder ?? [],
+        noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
+      }),
+    ),
+    [
+      courses,
+      plan.completedCourses,
+      plan.semesters,
+      plan.semesterOrder,
+      plan.noAdditionalCreditOverrides,
+    ],
+  );
 
   const weightedAverage = useMemo(
     () => computeWeightedAverage({
       semesters: plan.semesters ?? {},
       grades: plan.grades ?? {},
       binaryPass: plan.binaryPass ?? {},
+      noAdditionalCreditCourseIds,
     }, courses),
-    [plan.semesters, plan.grades, plan.binaryPass, courses],
+    [plan.semesters, plan.grades, plan.binaryPass, noAdditionalCreditCourseIds, courses],
   );
 
   const progress = useMemo(() => {
@@ -66,6 +88,9 @@ function VersionColumn({
         englishTaughtCourses: plan.englishTaughtCourses ?? [],
         semesterOrder: plan.semesterOrder,
         coreToChainOverrides: plan.coreToChainOverrides ?? [],
+        courseChainAssignments: plan.courseChainAssignments,
+        electiveCreditAssignments: plan.electiveCreditAssignments,
+        noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
         roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
         entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
       },

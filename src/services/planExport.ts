@@ -12,6 +12,11 @@ import { sanitizeEnvelope } from './planValidation';
 import { computeRequirementsProgress } from '../hooks/usePlan';
 import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
 import { ELECTIVE_AREA_LABELS } from '../domain/electives';
+import {
+  computeNoAdditionalCreditConflicts,
+  getNoAdditionalCreditCourseIds,
+  getRecognizedCredits,
+} from '../domain/noAdditionalCredit';
 
 export interface ExportOptions {
   includeGrades: boolean;
@@ -138,6 +143,20 @@ interface CsvBuildContext {
   includeGrades: boolean;
 }
 
+function getPlanNoAdditionalCreditCourseIds(
+  plan: StudentPlan,
+  courses: Map<string, SapCourse>,
+): Set<string> {
+  return getNoAdditionalCreditCourseIds(
+    computeNoAdditionalCreditConflicts(courses, {
+      completedCourses: plan.completedCourses,
+      semesters: plan.semesters,
+      semesterOrder: plan.semesterOrder,
+      noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
+    }),
+  );
+}
+
 function buildMetadataRows(ctx: CsvBuildContext): string[] {
   const { envelope, trackDef, courses, includeGrades } = ctx;
   const active = envelope.versions.find((v) => v.id === envelope.activeVersionId);
@@ -146,15 +165,18 @@ function buildMetadataRows(ctx: CsvBuildContext): string[] {
   const placed = plan
     ? new Set<string>([...plan.completedCourses, ...Object.values(plan.semesters).flat()])
     : new Set<string>();
+  const noAdditionalCreditCourseIds = plan
+    ? getPlanNoAdditionalCreditCourseIds(plan, courses)
+    : new Set<string>();
   const totalCredits = [...placed].reduce(
-    (sum, id) => sum + (courses.get(id)?.credits ?? 0),
+    (sum, id) => sum + getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds),
     0,
   );
 
   let weightedAverage: number | null = null;
   if (includeGrades && plan) {
     weightedAverage = computeWeightedAverage(
-      { semesters: plan.semesters, grades: plan.grades, binaryPass: plan.binaryPass ?? {} },
+      { semesters: plan.semesters, grades: plan.grades, binaryPass: plan.binaryPass ?? {}, noAdditionalCreditCourseIds },
       courses,
     );
   }
@@ -204,6 +226,7 @@ function buildSemesterRows(ctx: CsvBuildContext): string[] {
   for (const version of envelope.versions) {
     const plan = version.plan;
     const completed = new Set(plan.completedCourses);
+    const noAdditionalCreditCourseIds = getPlanNoAdditionalCreditCourseIds(plan, courses);
     const order = plan.semesterOrder.length > 0
       ? plan.semesterOrder
       : Object.keys(plan.semesters).map(Number).sort((a, b) => a - b);
@@ -224,7 +247,7 @@ function buildSemesterRows(ctx: CsvBuildContext): string[] {
           season,
           courseId,
           course?.name ?? '',
-          course?.credits ?? '',
+          course ? getRecognizedCredits(course, noAdditionalCreditCourseIds) : '',
           course?.faculty ?? '',
           status,
         ];
@@ -249,7 +272,12 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
 
   const weightedAverage = includeGrades
     ? computeWeightedAverage(
-        { semesters: plan.semesters, grades: plan.grades, binaryPass: plan.binaryPass ?? {} },
+        {
+          semesters: plan.semesters,
+          grades: plan.grades,
+          binaryPass: plan.binaryPass ?? {},
+          noAdditionalCreditCourseIds: getPlanNoAdditionalCreditCourseIds(plan, courses),
+        },
         courses,
       )
     : null;
@@ -272,6 +300,7 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
       coreToChainOverrides: plan.coreToChainOverrides ?? [],
       courseChainAssignments: plan.courseChainAssignments,
       electiveCreditAssignments: plan.electiveCreditAssignments,
+      noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
       roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
       entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
     },
@@ -384,7 +413,12 @@ function buildSpecializationRows(ctx: CsvBuildContext): string[] {
 
   const weightedAverage = includeGrades
     ? computeWeightedAverage(
-        { semesters: plan.semesters, grades: plan.grades, binaryPass: plan.binaryPass ?? {} },
+        {
+          semesters: plan.semesters,
+          grades: plan.grades,
+          binaryPass: plan.binaryPass ?? {},
+          noAdditionalCreditCourseIds: getPlanNoAdditionalCreditCourseIds(plan, courses),
+        },
         courses,
       )
     : null;
@@ -407,6 +441,7 @@ function buildSpecializationRows(ctx: CsvBuildContext): string[] {
       coreToChainOverrides: plan.coreToChainOverrides ?? [],
       courseChainAssignments: plan.courseChainAssignments,
       electiveCreditAssignments: plan.electiveCreditAssignments,
+      noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
       roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
       entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
     },

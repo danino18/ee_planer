@@ -97,3 +97,12 @@ test('addPrerequisiteOption does not duplicate an existing OR-group', async () =
     ['02340124', '00440252'],
   ]);
 });
+
+test('parseNoAdditionalCreditIds extracts unique SAP course IDs', async () => {
+  const { parseNoAdditionalCreditIds } = await loadTranspiledModule('src/services/sapApi.ts');
+
+  assert.deepEqual(
+    parseNoAdditionalCreditIds('00440252 02340252 00440252 02340262'),
+    ['00440252', '02340252', '02340262'],
+  );
+});

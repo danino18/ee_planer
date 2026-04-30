@@ -30,6 +30,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "coreToChainOverrides",
   "courseChainAssignments",
   "electiveCreditAssignments",
+  "noAdditionalCreditOverrides",
   "roboticsMinorEnabled",
   "entrepreneurshipMinorEnabled",
   "initializedTracks",
@@ -632,6 +633,19 @@ function validateStudentPlanRecord(
       return electiveCreditAssignments;
     }
     sanitized.electiveCreditAssignments = electiveCreditAssignments;
+  }
+
+  if ("noAdditionalCreditOverrides" in value) {
+    const noAdditionalCreditOverrides = validateStringMap(
+      "noAdditionalCreditOverrides",
+      value.noAdditionalCreditOverrides,
+      600,
+      32
+    );
+    if (isValidationFailure(noAdditionalCreditOverrides)) {
+      return noAdditionalCreditOverrides;
+    }
+    sanitized.noAdditionalCreditOverrides = noAdditionalCreditOverrides;
   }
 
   if ("roboticsMinorEnabled" in value) {

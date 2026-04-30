@@ -32,6 +32,11 @@ import {
 } from '../data/tracks/semesterSchedule';
 import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
 import {
+  computeNoAdditionalCreditConflicts,
+  getNoAdditionalCreditCourseIds,
+  getRecognizedCredits,
+} from '../domain/noAdditionalCredit';
+import {
   allocateElectiveCredits,
   ELECTIVE_AREA_LABELS,
   EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
@@ -79,6 +84,7 @@ function getCountedTotalCredits(
   grades: Record<string, number>,
   binaryPass: Record<string, boolean>,
   courses: Map<string, SapCourse>,
+  noAdditionalCreditCourseIds: ReadonlySet<string> = new Set(),
 ): number {
   const seenRegularCourseIds = new Set<string>();
   const completedInstanceSet = new Set(completedInstances);
@@ -88,6 +94,7 @@ function getCountedTotalCredits(
   let sportsTeamCredits = 0;
 
   const visit = (id: string, semester?: number, index?: number): void => {
+    if (noAdditionalCreditCourseIds.has(id)) return;
     const credits = courses.get(id)?.credits ?? 0;
     if (isChoirOrOrchestraCourseId(id)) {
       choirOrOrchestraCredits += credits;
@@ -247,13 +254,23 @@ export function usePrerequisiteStatus(
 
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {
   const semesters = usePlanStore((s) => s.semesters);
+  const completedCourses = usePlanStore((s) => s.completedCourses);
+  const semesterOrder = usePlanStore((s) => s.semesterOrder);
+  const noAdditionalCreditOverrides = usePlanStore((s) => s.noAdditionalCreditOverrides);
   const grades = usePlanStore((s) => s.grades);
   const binaryPass = usePlanStore((s) => s.binaryPass);
 
-  return useMemo(
-    () => computeWeightedAverage({ semesters, grades, binaryPass }, courses),
-    [semesters, grades, binaryPass, courses],
-  );
+  return useMemo(() => {
+    const noAdditionalCreditCourseIds = getNoAdditionalCreditCourseIds(
+      computeNoAdditionalCreditConflicts(courses, {
+        completedCourses,
+        semesters,
+        semesterOrder,
+        noAdditionalCreditOverrides,
+      }),
+    );
+    return computeWeightedAverage({ semesters, grades, binaryPass, noAdditionalCreditCourseIds }, courses);
+  }, [semesters, completedCourses, semesterOrder, noAdditionalCreditOverrides, grades, binaryPass, courses]);
 }
 
 export type EnglishRequirementItem = {
@@ -316,6 +333,7 @@ export function computeRequirementsProgress(
     coreToChainOverrides,
     courseChainAssignments,
     electiveCreditAssignments,
+    noAdditionalCreditOverrides,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
   } = input;
@@ -326,6 +344,13 @@ export function computeRequirementsProgress(
       ...completedCourses,
       ...Object.values(semesters).flat(),
     ]);
+    const noAdditionalCreditConflicts = computeNoAdditionalCreditConflicts(courses, {
+      completedCourses,
+      semesters,
+      semesterOrder,
+      noAdditionalCreditOverrides,
+    });
+    const noAdditionalCreditCourseIds = getNoAdditionalCreditCourseIds(noAdditionalCreditConflicts);
 
     // Core-locked courses count toward core only. Released core courses are
     // removed from this set by buildCoreLockedSet and may count toward chains.
@@ -380,19 +405,19 @@ export function computeRequirementsProgress(
     for (const semesterEntry of trackDef.semesterSchedule) {
       for (const id of semesterEntry.courses) {
         if (mandatoryIds.has(id) && allPlaced.has(id)) {
-          mandatoryDone += courses.get(id)?.credits ?? 0;
+          mandatoryDone += getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds);
         }
       }
 
       for (const group of semesterEntry.alternativeGroups ?? []) {
         const satisfiedCourseId = getSatisfiedAlternativeCourseId(group, allPlaced, courses, englishScore);
         if (satisfiedCourseId) {
-          mandatoryDone += courses.get(satisfiedCourseId)?.credits ?? 0;
+          mandatoryDone += getRecognizedCredits(courses.get(satisfiedCourseId), noAdditionalCreditCourseIds);
         }
       }
     }
     for (const id of mandatoryLabIdSet) {
-      mandatoryDone += courses.get(id)?.credits ?? 0;
+      mandatoryDone += getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds);
     }
 
     let electiveCredits = 0;
@@ -430,6 +455,10 @@ export function computeRequirementsProgress(
       ) {
         const course = courses.get(id);
         if (!course) continue;
+        if (noAdditionalCreditCourseIds.has(id)) {
+          counted.add(id);
+          continue;
+        }
 
         const selectedArea = resolveElectiveCreditArea(course, trackDef, electiveCreditAssignments);
         const options = getElectiveCreditAssignmentOptions(course, trackDef);
@@ -518,14 +547,15 @@ export function computeRequirementsProgress(
       grades,
       binaryPass,
       courses,
+      noAdditionalCreditCourseIds,
     );
 
     const roboticsMinorProgress: RoboticsMinorProgress | null = roboticsMinorEnabled
-      ? computeRoboticsMinorProgress(allPlaced, courses, weightedAverage, totalCredits)
+      ? computeRoboticsMinorProgress(allPlaced, courses, weightedAverage, totalCredits, noAdditionalCreditCourseIds)
       : null;
 
     const entrepreneurshipMinorProgress: EntrepreneurshipMinorProgress | null = entrepreneurshipMinorEnabled
-      ? computeEntrepreneurshipMinorProgress(allPlaced, courses, weightedAverage, totalCredits)
+      ? computeEntrepreneurshipMinorProgress(allPlaced, courses, weightedAverage, totalCredits, noAdditionalCreditCourseIds)
       : null;
 
     const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => {
@@ -566,6 +596,7 @@ export function computeRequirementsProgress(
       englishScore,
       generalElectiveCourseIds,
       generalElectiveCredits,
+      noAdditionalCreditCourseIds,
     });
     const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
@@ -802,6 +833,7 @@ export function useRequirementsProgress(
   const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
   const courseChainAssignments = usePlanStore((s) => s.courseChainAssignments);
   const electiveCreditAssignments = usePlanStore((s) => s.electiveCreditAssignments);
+  const noAdditionalCreditOverrides = usePlanStore((s) => s.noAdditionalCreditOverrides);
   const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
   const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
 
@@ -825,6 +857,7 @@ export function useRequirementsProgress(
           coreToChainOverrides,
           courseChainAssignments,
           electiveCreditAssignments,
+          noAdditionalCreditOverrides,
           roboticsMinorEnabled,
           entrepreneurshipMinorEnabled,
         },
@@ -833,7 +866,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
   );
 }
 

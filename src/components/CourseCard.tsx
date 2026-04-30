@@ -2,6 +2,7 @@ import { lazy, memo, Suspense, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
+import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -14,6 +15,8 @@ interface Props {
   isCompleted?: boolean;
   isPlanned?: boolean;
   missingPrereqGroups?: string[][];
+  noAdditionalCreditConflicts?: NoAdditionalCreditConflict[];
+  recognizedCredits?: number;
   courses?: Map<string, SapCourse>;
   semester?: number;
   instanceKey?: string;
@@ -35,6 +38,8 @@ export const CourseCard = memo(function CourseCard({
   isCompleted,
   isPlanned,
   missingPrereqGroups = [],
+  noAdditionalCreditConflicts = [],
+  recognizedCredits,
   courses = new Map(),
   semester,
   instanceKey,
@@ -80,6 +85,8 @@ export const CourseCard = memo(function CourseCard({
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
   const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id);
   const showCardActions = showActions && !isDragging;
+  const hasNoAdditionalCreditWarning = noAdditionalCreditConflicts.length > 0;
+  const displayedCredits = recognizedCredits ?? course.credits;
 
   const style: React.CSSProperties = {
     ...(draggable ? { touchAction: 'none' } : {}),
@@ -89,7 +96,7 @@ export const CourseCard = memo(function CourseCard({
   let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
   if (wrongSemesterType) colorClass = 'bg-red-50 border-red-200 hover:border-red-300';
   else if (effectiveIsCompleted) colorClass = 'bg-green-50 border-green-300';
-  else if (hasPrereqWarning) colorClass = 'bg-orange-50 border-orange-300';
+  else if (hasPrereqWarning || hasNoAdditionalCreditWarning) colorClass = 'bg-orange-50 border-orange-300';
   else if (isMandatory) colorClass = 'bg-blue-50 border-blue-200 hover:border-blue-300';
 
   const namedGroups = missingPrereqGroups.filter((group) =>
@@ -199,6 +206,20 @@ export const CourseCard = memo(function CourseCard({
           </div>
         )}
 
+        {hasNoAdditionalCreditWarning && (
+          <div className="mt-1 px-4 space-y-0.5">
+            {noAdditionalCreditConflicts.slice(0, 2).map((conflict) => {
+              const conflictingCourse = courses.get(conflict.conflictingCourseId);
+              return (
+                <p key={conflict.pairKey} className="text-xs text-orange-500 leading-tight">
+                  ללא זיכוי נוסף: {conflictingCourse?.name ?? conflict.conflictingCourseId}
+                </p>
+              );
+            })}
+            {noAdditionalCreditConflicts.length > 2 && <p className="text-xs text-orange-400 leading-tight">...</p>}
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-1.5 gap-1">
           <div className="flex items-center gap-1 min-w-0">
             <span className="text-xs text-gray-400 shrink-0">{course.id}</span>
@@ -239,8 +260,18 @@ export const CourseCard = memo(function CourseCard({
             {grade !== undefined && !isBinaryPass && (
               <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>
             )}
-            {hasPrereqWarning && <span className="text-xs" title="קדמים חסרים">⚠️</span>}
-            <span className="text-xs font-bold text-gray-600">{course.credits} נק"ז</span>
+            {(hasPrereqWarning || hasNoAdditionalCreditWarning) && (
+              <span
+                className="text-xs"
+                title={hasNoAdditionalCreditWarning ? 'ללא זיכוי נוסף' : 'קדמים חסרים'}
+              >⚠️</span>
+            )}
+            <span
+              className={`text-xs font-bold ${displayedCredits === 0 && course.credits > 0 ? 'text-orange-600 line-through decoration-orange-500' : 'text-gray-600'}`}
+              title={displayedCredits === 0 && course.credits > 0 ? `${course.credits} נק"ז מקוריות, 0 נק"ז מוכרות` : undefined}
+            >
+              {displayedCredits} נק"ז
+            </span>
           </div>
         </div>
       </div>
@@ -258,6 +289,7 @@ export const CourseCard = memo(function CourseCard({
             courses={courses}
             semester={semester}
             instanceKey={instanceKey}
+            noAdditionalCreditConflicts={noAdditionalCreditConflicts}
             onClose={() => setModalOpen(false)}
           />
         </Suspense>

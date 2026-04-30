@@ -36,6 +36,7 @@ export interface SapCourse {
   name: string;
   credits: number;
   prerequisites: string[][];  // OR groups: [[A,B],[C]] = "(A AND B) OR C"
+  noAdditionalCreditIds?: string[];
   examMoed1?: string;
   examMoed2?: string;
   faculty: string;
@@ -268,6 +269,7 @@ export interface StudentPlan {
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
   courseChainAssignments?: Record<string, string>;  // courseId → chainGroupId: explicit single-chain assignment
   electiveCreditAssignments?: Record<string, ElectiveCreditArea>;  // courseId -> manual elective credit bucket
+  noAdditionalCreditOverrides?: Record<string, string>;  // pairKey -> courseId that should receive 0 recognized credits
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
   initializedTracks?: string[];  // trackIds that have been fully initialized at least once

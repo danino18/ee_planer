@@ -355,6 +355,12 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       64
     ),
     electiveCreditAssignments: cleanElectiveCreditAssignmentRecord(source.electiveCreditAssignments),
+    noAdditionalCreditOverrides: cleanStringRecord(
+      source.noAdditionalCreditOverrides,
+      "noAdditionalCreditOverrides",
+      MAX_COURSES,
+      COURSE_ID_MAX_LENGTH
+    ),
     roboticsMinorEnabled: cleanBoolean(source.roboticsMinorEnabled, "roboticsMinorEnabled"),
     entrepreneurshipMinorEnabled: cleanBoolean(
       source.entrepreneurshipMinorEnabled,

@@ -50,6 +50,7 @@ export function useDegreeCompletionCheck(
     semesterOrder: s.semesterOrder,
     coreToChainOverrides: s.coreToChainOverrides ?? [],
     courseChainAssignments: s.courseChainAssignments,
+    noAdditionalCreditOverrides: s.noAdditionalCreditOverrides,
     roboticsMinorEnabled: s.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: s.entrepreneurshipMinorEnabled ?? false,
     // Scheduling context fields

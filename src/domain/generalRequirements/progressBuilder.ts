@@ -27,6 +27,7 @@ export interface BuildGeneralRequirementsParams {
   englishScore?: number;
   generalElectiveCourseIds?: Iterable<string>;
   generalElectiveCredits?: Iterable<[string, number]>;
+  noAdditionalCreditCourseIds?: Iterable<string>;
 }
 
 function shouldCountCourseForGeneralRequirements(
@@ -69,17 +70,20 @@ export function buildGeneralRequirementsProgress({
   englishScore,
   generalElectiveCourseIds = [],
   generalElectiveCredits = [],
+  noAdditionalCreditCourseIds = [],
 }: BuildGeneralRequirementsParams): GeneralRequirementProgress[] {
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
   const explicitSportCompletionSet = new Set(explicitSportCompletions);
   const completedInstanceSet = new Set(completedInstances);
   const generalElectiveCourseIdSet = new Set(generalElectiveCourseIds);
   const generalElectiveCreditsByCourseId = new Map(generalElectiveCredits);
+  const noAdditionalCreditCourseIdSet = new Set(noAdditionalCreditCourseIds);
   const courseRefs: CourseRef[] = [];
   const specialCourseRefs: CourseRef[] = [];
   const nonRepeatableSeen = new Set<string>([...completedCourses]);
 
   const pushCourseRef = (id: string, credits: number): void => {
+    if (noAdditionalCreditCourseIdSet.has(id)) return;
     const courseRef = buildCourseRef(id, credits, courses, englishTaughtCourses, labPoolSet);
     if (!courseRef) return;
     if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) {
