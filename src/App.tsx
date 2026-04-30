@@ -184,8 +184,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
 
   useEffect(() => {
-    // In share mode, don't mark cloud sync pending — changes sync to share API instead
-    if (shareMode) return;
+    // Owners viewing their own share use normal cloud sync — skip only for non-owner share mode
+    if (shareMode && !shareMode.isOwner) return;
 
     const unsubscribe = usePlanStore.subscribe((state, previousState) => {
       if (applyingCloudPlan.current) return;
@@ -206,7 +206,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     return unsubscribe;
   }, [shareMode, markCloudSyncPending, user]);
 
-  // Share edit sync: when in edit-permission share mode, sync store changes to share API
+  // Share edit sync: sync store changes to the share API for any editor (owner or partner).
+  // For owners this runs alongside cloud sync so both their plan and the share stay current.
   useEffect(() => {
     if (!shareMode?.canEdit) return;
     const { shareId } = shareMode;
@@ -238,8 +239,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   }, [shareMode]);
 
   useEffect(() => {
-    // In share mode, all Firestore cloud sync is skipped
-    if (shareMode) return;
+    // Owners viewing their own share use normal cloud sync — skip only for non-owner share mode
+    if (shareMode && !shareMode.isOwner) return;
 
     const clearSyncTimers = () => {
       if (saveTimer.current) {
@@ -519,7 +520,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                 aria-expanded={sidebarOpen}
                 aria-controls="sidebar-drawer"
               >☰</button>
-              {!shareMode && <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />}
+              {(!shareMode || shareMode.isOwner) && <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />}
               <button
                 onClick={() => setShowExport(true)}
                 className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"

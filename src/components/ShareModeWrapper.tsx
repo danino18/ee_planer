@@ -3,6 +3,7 @@ import { fetchShare } from '../services/shareApi';
 import { usePlanStore } from '../store/planStore';
 import { buildEnvelopeFromState } from '../services/planSync';
 import { ShareModeContext } from '../context/ShareModeContext';
+import { auth } from '../services/firebase';
 import type { ShareDoc } from '../types/share';
 import type { VersionedPlanEnvelope } from '../types';
 import App from '../App';
@@ -12,7 +13,7 @@ const PLANNER_STORAGE_KEY = 'technion-ee-planner';
 type ShareLoadState =
   | { status: 'loading' }
   | { status: 'error'; reason: 'not_found' | 'revoked' | 'expired' | 'auth_required' | 'forbidden' | 'network' }
-  | { status: 'ready'; share: ShareDoc; canEdit: boolean };
+  | { status: 'ready'; share: ShareDoc; canEdit: boolean; isOwner: boolean; envelopeLoaded: boolean };
 
 function ShareErrorScreen({ reason }: { reason: string }) {
   const messages: Record<string, string> = {
@@ -43,7 +44,6 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
   const originalStorageRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Capture the user's own plan before overwriting with share data
     originalEnvelopeRef.current = buildEnvelopeFromState(usePlanStore.getState());
     originalStorageRef.current = localStorage.getItem(PLANNER_STORAGE_KEY);
 
@@ -56,15 +56,31 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
           setState({ status: 'error', reason: response.reason });
           return;
         }
-        // Load the share's envelope into the store so the full App renders it
-        usePlanStore.getState().loadEnvelope(response.share.envelope);
-        setState({ status: 'ready', share: response.share, canEdit: response.canEdit });
+
+        // Detect ownership synchronously using the Firebase auth singleton.
+        // If the current user is the owner, don't load the stale share snapshot —
+        // let their normal cloud sync load the latest plan instead.
+        const currentUid = auth.currentUser?.uid ?? null;
+        const isOwner = currentUid !== null && currentUid === response.share.ownerUid;
+
+        let envelopeLoaded = false;
+        if (!isOwner) {
+          usePlanStore.getState().loadEnvelope(response.share.envelope);
+          envelopeLoaded = true;
+        }
+
+        setState({
+          status: 'ready',
+          share: response.share,
+          canEdit: response.canEdit,
+          isOwner,
+          envelopeLoaded,
+        });
       })
       .catch(() => {
         if (!cancelled) setState({ status: 'error', reason: 'network' });
       });
 
-    // Restore on page close so localStorage isn't left with share data
     const restoreStorage = () => {
       if (originalStorageRef.current !== null) {
         localStorage.setItem(PLANNER_STORAGE_KEY, originalStorageRef.current);
@@ -77,12 +93,17 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
     return () => {
       cancelled = true;
       window.removeEventListener('beforeunload', restoreStorage);
-      // Restore the user's own plan in the store
-      if (originalEnvelopeRef.current) {
+      // Only restore the store if we actually overwrote it with the share snapshot
+      if (
+        state.status === 'ready' &&
+        state.envelopeLoaded &&
+        originalEnvelopeRef.current
+      ) {
         usePlanStore.getState().loadEnvelope(originalEnvelopeRef.current);
+        restoreStorage();
       }
-      restoreStorage();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);
 
   if (state.status === 'loading') {
@@ -101,7 +122,14 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
   }
 
   return (
-    <ShareModeContext.Provider value={{ shareId, canEdit: state.canEdit, share: state.share }}>
+    <ShareModeContext.Provider
+      value={{
+        shareId,
+        canEdit: state.canEdit,
+        share: state.share,
+        isOwner: state.isOwner,
+      }}
+    >
       <App />
     </ShareModeContext.Provider>
   );
