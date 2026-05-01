@@ -286,7 +286,6 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
     {
       semesters: plan.semesters,
       completedCourses: plan.completedCourses,
-      explicitSportCompletions: plan.explicitSportCompletions ?? [],
       completedInstances: plan.completedInstances ?? [],
       grades: plan.grades ?? {},
       binaryPass: plan.binaryPass ?? {},
@@ -354,9 +353,30 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
     ]));
   }
   pushMetric('נ"ז סה"כ', progress.total.earned, progress.total.required, 'נ"ז');
-  pushMetric('כלליים', progress.general.earned, progress.general.required, 'נ"ז');
-  pushMetric('ספורט', progress.sport.earned, progress.sport.required, 'נ"ז');
-  pushMetric('קורס חופשי', progress.freeElective.earned, progress.freeElective.required, 'נ"ז');
+  pushMetric(
+    'כלל טכניוניים (סה"כ)',
+    progress.generalElectivesBreakdown.total.recognized,
+    progress.generalElectivesBreakdown.total.target,
+    'נ"ז',
+  );
+  pushMetric(
+    'כלל טכניוניים — ספורט',
+    progress.generalElectivesBreakdown.sportFloor.recognized,
+    progress.generalElectivesBreakdown.sportFloor.target,
+    'נ"ז',
+  );
+  pushMetric(
+    'כלל טכניוניים — העשרה / מל"ג',
+    progress.generalElectivesBreakdown.enrichmentFloor.recognized,
+    progress.generalElectivesBreakdown.enrichmentFloor.target,
+    'נ"ז',
+  );
+  pushMetric(
+    'כלל טכניוניים — בחירה חופשית',
+    progress.generalElectivesBreakdown.freeChoice.recognized,
+    progress.generalElectivesBreakdown.freeChoice.target,
+    'נ"ז',
+  );
   pushMetric(
     'שרשראות התמחות',
     progress.specializationGroups.completed,
@@ -427,7 +447,6 @@ function buildSpecializationRows(ctx: CsvBuildContext): string[] {
     {
       semesters: plan.semesters,
       completedCourses: plan.completedCourses,
-      explicitSportCompletions: plan.explicitSportCompletions ?? [],
       completedInstances: plan.completedInstances ?? [],
       grades: plan.grades ?? {},
       binaryPass: plan.binaryPass ?? {},

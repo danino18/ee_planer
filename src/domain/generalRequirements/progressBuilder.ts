@@ -8,34 +8,27 @@ import {
   isSportCourseId,
   isSportsTeamCourseId,
 } from '../../data/generalRequirements/courseClassification';
-import { gradeKey, REPEATABLE_COURSES } from '../../utils/courseGrades';
+import { REPEATABLE_COURSES } from '../../utils/courseGrades';
 import { calculateGeneralRequirements } from './rulesEngine';
-import type { CourseRef, GeneralRequirementRule, GeneralRequirementProgress } from './types';
+import type {
+  CourseRef,
+  GeneralRequirementRule,
+  GeneralRequirementsResult,
+} from './types';
 import { calculateSpecialEnrichmentAllocation } from './specialAllocation';
+import { allocateGeneralElectives } from './electivesAllocator';
 
 export interface BuildGeneralRequirementsParams {
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition;
   semesters: Record<number, string[]>;
   completedCourses: string[];
-  explicitSportCompletions: string[];
-  completedInstances: string[];
-  grades: Record<string, number>;
-  binaryPass: Record<string, boolean>;
   englishTaughtCourses: string[];
   miluimCredits: number;
   englishScore?: number;
   generalElectiveCourseIds?: Iterable<string>;
   generalElectiveCredits?: Iterable<[string, number]>;
   noAdditionalCreditCourseIds?: Iterable<string>;
-}
-
-function shouldCountCourseForGeneralRequirements(
-  courseId: string,
-  explicitSportCompletionSet: Set<string>,
-): boolean {
-  if (!isSportCourseId(courseId)) return true;
-  return explicitSportCompletionSet.has(courseId);
 }
 
 function buildCourseRef(
@@ -61,20 +54,14 @@ export function buildGeneralRequirementsProgress({
   trackDef,
   semesters,
   completedCourses,
-  explicitSportCompletions,
-  completedInstances,
-  grades,
-  binaryPass,
   englishTaughtCourses,
   miluimCredits,
   englishScore,
   generalElectiveCourseIds = [],
   generalElectiveCredits = [],
   noAdditionalCreditCourseIds = [],
-}: BuildGeneralRequirementsParams): GeneralRequirementProgress[] {
+}: BuildGeneralRequirementsParams): GeneralRequirementsResult {
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
-  const explicitSportCompletionSet = new Set(explicitSportCompletions);
-  const completedInstanceSet = new Set(completedInstances);
   const generalElectiveCourseIdSet = new Set(generalElectiveCourseIds);
   const generalElectiveCreditsByCourseId = new Map(generalElectiveCredits);
   const noAdditionalCreditCourseIdSet = new Set(noAdditionalCreditCourseIds);
@@ -94,37 +81,21 @@ export function buildGeneralRequirementsProgress({
   };
 
   for (const id of nonRepeatableSeen) {
-    if (REPEATABLE_COURSES.has(id) && isSportCourseId(id)) continue;
-    if (!shouldCountCourseForGeneralRequirements(id, explicitSportCompletionSet)) continue;
+    if (REPEATABLE_COURSES.has(id)) continue;
     const sap = courses.get(id);
     if (!sap) continue;
     pushCourseRef(id, sap.credits);
   }
 
-  for (const [semesterKey, semCourses] of Object.entries(semesters)) {
-    const semester = Number(semesterKey);
-    for (const [index, id] of semCourses.entries()) {
+  for (const semCourses of Object.values(semesters)) {
+    for (const id of semCourses) {
       const sap = courses.get(id);
       if (!sap) continue;
       if (REPEATABLE_COURSES.has(id)) {
-        if (isSportCourseId(id)) {
-          const instanceKey = `${id}__${semester}__${index}`;
-          const hasExplicitRepeatableSportCompletion =
-            completedInstanceSet.has(instanceKey) ||
-            grades[gradeKey(id, semester)] !== undefined ||
-            !!binaryPass[id] ||
-            explicitSportCompletionSet.has(id);
-          if (!hasExplicitRepeatableSportCompletion) continue;
-        } else if (!shouldCountCourseForGeneralRequirements(id, explicitSportCompletionSet)) {
-          continue;
-        }
         pushCourseRef(id, sap.credits);
       } else {
-        if (!shouldCountCourseForGeneralRequirements(id, explicitSportCompletionSet)) continue;
-        if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) {
-          if (nonRepeatableSeen.has(id)) continue;
-          nonRepeatableSeen.add(id);
-        }
+        if (nonRepeatableSeen.has(id)) continue;
+        nonRepeatableSeen.add(id);
         pushCourseRef(id, sap.credits);
       }
     }
@@ -159,6 +130,42 @@ export function buildGeneralRequirementsProgress({
   }
   const requirementCourseRefs = [...courseRefs, ...recognizedSpecialRefs];
 
+  const generalCreditsTarget = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);
+
+  const regularSportCredits = courseRefs.reduce(
+    (sum, course) => sum + (isRegularSportCourseId(course.courseId) ? course.credits : 0),
+    0,
+  );
+  const melagCredits = courseRefs.reduce(
+    (sum, course) =>
+      sum +
+      (isFreeElectiveCourseId(course.courseId) && !isSportCourseId(course.courseId)
+        ? course.credits
+        : 0),
+    0,
+  );
+  let externalFacultyCredits = 0;
+  for (const course of courseRefs) {
+    if (isSportCourseId(course.courseId) || isFreeElectiveCourseId(course.courseId)) continue;
+    if (
+      generalElectiveCreditsByCourseId.has(course.courseId) ||
+      generalElectiveCourseIdSet.has(course.courseId)
+    ) {
+      externalFacultyCredits += generalElectiveCreditsByCourseId.get(course.courseId) ?? course.credits;
+    }
+  }
+
+  const generalElectivesBreakdown = allocateGeneralElectives({
+    regularSportCredits,
+    melagCredits,
+    externalFacultyCredits,
+    recognizedChoirCredits: specialAllocation.recognizedChoirOrOrchestraCredits,
+    recognizedSportsTeamCredits: specialAllocation.recognizedSportsTeamCredits,
+    unrecognizedSpecialCredits: specialAllocation.unrecognizedSpecialCredits,
+    allocation: specialAllocation,
+    generalCreditsTarget,
+  });
+
   const rules: GeneralRequirementRule[] = GENERAL_REQUIREMENTS_RULES.map((rule) => {
     if (rule.id === 'labs' && trackDef.labPool) {
       return {
@@ -173,7 +180,7 @@ export function buildGeneralRequirementsProgress({
     if (rule.id === 'general_electives') {
       return {
         ...rule,
-        targetValue: Math.max(0, trackDef.generalCreditsRequired - miluimCredits),
+        targetValue: generalCreditsTarget,
         courseMatcher: {
           predicate: (course) =>
             generalElectiveCreditsByCourseId.has(course.courseId) ||
@@ -245,9 +252,25 @@ export function buildGeneralRequirementsProgress({
     return rule;
   });
 
-  const activeRules = rules.filter(
-    (rule) => rule.id !== 'labs' || trackDef.labPool !== undefined,
-  );
+  const activeRules = rules.filter((rule) => {
+    if (rule.id === 'labs' && trackDef.labPool === undefined) return false;
+    // Sport floor and enrichment floor are now sub-buckets inside the
+    // general_electives breakdown — the panel renders them nested. Drop the
+    // standalone rows so the student sees a single 12-nkz parent.
+    if (rule.id === 'sport' || rule.id === 'free_elective') return false;
+    return true;
+  });
 
-  return calculateGeneralRequirements(requirementCourseRefs, activeRules);
+  const allProgress = calculateGeneralRequirements(requirementCourseRefs, activeRules);
+  for (const requirement of allProgress) {
+    if (requirement.requirementId !== 'general_electives') continue;
+    const recognized = generalElectivesBreakdown.total.recognized;
+    const target = generalElectivesBreakdown.total.target;
+    requirement.completedValue = recognized;
+    requirement.missingValue = Math.max(0, target - recognized);
+    requirement.targetValue = target;
+    requirement.status = recognized >= target ? 'completed' : recognized > 0 ? 'partial' : 'missing';
+  }
+
+  return { progress: allProgress, generalElectivesBreakdown };
 }

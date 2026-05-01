@@ -16,8 +16,9 @@ import {
   EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
   resolveElectiveCreditArea,
 } from '../electives';
-import { gradeKey, REPEATABLE_COURSES } from '../../utils/courseGrades';
+import { REPEATABLE_COURSES } from '../../utils/courseGrades';
 import { calculateSpecialEnrichmentAllocation } from '../generalRequirements/specialAllocation';
+import type { GeneralElectivesBreakdown } from '../generalRequirements/types';
 import {
   computeNoAdditionalCreditConflicts,
   getNoAdditionalCreditCourseIds,
@@ -41,9 +42,8 @@ export interface DegreeProgressShape {
   elective: { earned: number; required: number };
   total: { earned: number; required: number };
   specializationGroups: { completed: number; required: number; unavailable: boolean };
-  sport: { earned: number; required: number };
   general: { earned: number; required: number };
-  freeElective: { earned: number; required: number };
+  generalElectivesBreakdown: GeneralElectivesBreakdown;
   labPoolProgress:
     | { earned: number; required: number; mandatory: boolean; max?: number }
     | null;
@@ -289,35 +289,18 @@ function buildSpecialRecognizedCreditsByCourseId(
   courses: Map<string, SapCourse>,
 ): Map<string, number> {
   const specialOccurrences: Array<{ id: string; credits: number }> = [];
-  const visit = (id: string, semester?: number, index?: number): void => {
+  const visit = (id: string): void => {
     if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) return;
-    if (isSportsTeamCourseId(id)) {
-      if (semester === undefined || index === undefined) return;
-      const instanceKey = `${id}__${semester}__${index}`;
-      const hasExplicitCompletion =
-        input.completedInstances.includes(instanceKey) ||
-        input.grades[gradeKey(id, semester)] !== undefined ||
-        !!input.binaryPass[id] ||
-        input.explicitSportCompletions.includes(id);
-      if (!hasExplicitCompletion) return;
-    }
     specialOccurrences.push({ id, credits: courses.get(id)?.credits ?? 0 });
   };
 
   for (const id of input.completedCourses) {
-    if (isSportsTeamCourseId(id)) continue;
+    if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) continue;
     visit(id);
   }
-  for (const sem of input.semesterOrder) {
-    for (const [index, id] of (input.semesters[sem] ?? []).entries()) {
-      visit(id, sem, index);
-    }
-  }
-  for (const [key, ids] of Object.entries(input.semesters)) {
-    const sem = Number(key);
-    if (input.semesterOrder.includes(sem)) continue;
-    for (const [index, id] of ids.entries()) {
-      visit(id, sem, index);
+  for (const ids of Object.values(input.semesters)) {
+    for (const id of ids) {
+      visit(id);
     }
   }
 
@@ -362,7 +345,7 @@ function buildSpecialRecognizedCreditsByCourseId(
  * wins). Buckets mirror the credit-counting buckets used inside
  * `computeRequirementsProgress`, plus an `uncounted` bucket for placed
  * courses that contribute to no requirement (e.g., unsatisfied alt-group
- * members, sport courses without explicit completion).
+ * members).
  */
 export function buildCourseAssignments(
   input: RequirementsInput,
@@ -378,7 +361,6 @@ export function buildCourseAssignments(
     courses,
     input.englishScore,
   );
-  const explicitSportSet = new Set(input.explicitSportCompletions);
   const courseToSpecGroups = buildCourseToSpecGroups(catalog);
   const specialRecognizedCreditsByCourseId = buildSpecialRecognizedCreditsByCourseId(
     input,
@@ -418,7 +400,7 @@ export function buildCourseAssignments(
       bucket = recognizedCredits > 0 ? 'special_general' : 'uncounted';
       credits = recognizedCredits;
     } else if (isSportCourseId(id)) {
-      bucket = explicitSportSet.has(id) && isRegularSportCourseId(id) ? 'sport' : 'uncounted';
+      bucket = isRegularSportCourseId(id) ? 'sport' : 'uncounted';
     } else if (isFreeElectiveCourseId(id)) {
       bucket = 'melag';
     } else if (visibleMandatoryIds.has(id)) {
@@ -559,40 +541,40 @@ export function buildRequirementChecks(
     });
   }
 
+  const breakdown = progress.generalElectivesBreakdown;
   checks.push({
     id: 'general_elective',
     title: 'קורסי בחירה כלל-טכניוניים',
-    earned: progress.general.earned,
-    required: progress.general.required,
+    earned: breakdown.total.recognized,
+    required: breakdown.total.target,
     unit: 'credits',
-    status: deriveStatus(progress.general.earned, progress.general.required),
-    missingValue: Math.max(0, progress.general.required - progress.general.earned),
+    status: deriveStatus(breakdown.total.recognized, breakdown.total.target),
+    missingValue: Math.max(0, breakdown.total.target - breakdown.total.recognized),
     countedCourseIds: idsForBuckets(assignments, ['sport', 'melag', 'special_general', 'general_elective']),
   });
 
-  checks.push({
-    id: 'sport',
-    title: 'ספורט / חינוך גופני',
-    earned: progress.sport.earned,
-    required: progress.sport.required,
-    unit: 'credits',
-    status: deriveStatus(progress.sport.earned, progress.sport.required),
-    missingValue: Math.max(0, progress.sport.required - progress.sport.earned),
-    countedCourseIds: idsForBuckets(assignments, ['sport']),
-  });
-
-  if (progress.freeElective.required > 0) {
+  if (breakdown.sportFloor.target > 0) {
     checks.push({
-      id: 'free_elective',
-      title: 'בחירה חופשית',
-      earned: progress.freeElective.earned,
-      required: progress.freeElective.required,
+      id: 'general_elective_sport_floor',
+      title: 'כלל-טכניוניים — ספורט (חובה)',
+      earned: breakdown.sportFloor.recognized,
+      required: breakdown.sportFloor.target,
       unit: 'credits',
-      status: deriveStatus(progress.freeElective.earned, progress.freeElective.required),
-      missingValue: Math.max(
-        0,
-        progress.freeElective.required - progress.freeElective.earned,
-      ),
+      status: deriveStatus(breakdown.sportFloor.recognized, breakdown.sportFloor.target),
+      missingValue: Math.max(0, breakdown.sportFloor.target - breakdown.sportFloor.recognized),
+      countedCourseIds: idsForBuckets(assignments, ['sport']),
+    });
+  }
+
+  if (breakdown.enrichmentFloor.target > 0) {
+    checks.push({
+      id: 'general_elective_enrichment_floor',
+      title: 'כלל-טכניוניים — מקצועות העשרה / מל"ג',
+      earned: breakdown.enrichmentFloor.recognized,
+      required: breakdown.enrichmentFloor.target,
+      unit: 'credits',
+      status: deriveStatus(breakdown.enrichmentFloor.recognized, breakdown.enrichmentFloor.target),
+      missingValue: Math.max(0, breakdown.enrichmentFloor.target - breakdown.enrichmentFloor.recognized),
       countedCourseIds: idsForBuckets(assignments, ['melag']),
     });
   }

@@ -30,7 +30,7 @@ import {
   getSatisfiedAlternativeCourseId,
   getVisibleMandatoryCourseIds,
 } from '../data/tracks/semesterSchedule';
-import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
+import { computeWeightedAverage } from '../utils/courseGrades';
 import {
   computeNoAdditionalCreditConflicts,
   getNoAdditionalCreditCourseIds,
@@ -79,21 +79,15 @@ function getRequirement(
 function getCountedTotalCredits(
   completedCourses: string[],
   semesters: Record<number, string[]>,
-  explicitSportCompletions: string[],
-  completedInstances: string[],
-  grades: Record<string, number>,
-  binaryPass: Record<string, boolean>,
   courses: Map<string, SapCourse>,
   noAdditionalCreditCourseIds: ReadonlySet<string> = new Set(),
 ): number {
   const seenRegularCourseIds = new Set<string>();
-  const completedInstanceSet = new Set(completedInstances);
-  const explicitSportCompletionSet = new Set(explicitSportCompletions);
   let regularCredits = 0;
   let choirOrOrchestraCredits = 0;
   let sportsTeamCredits = 0;
 
-  const visit = (id: string, semester?: number, index?: number): void => {
+  const visit = (id: string): void => {
     if (noAdditionalCreditCourseIds.has(id)) return;
     const credits = courses.get(id)?.credits ?? 0;
     if (isChoirOrOrchestraCourseId(id)) {
@@ -101,14 +95,6 @@ function getCountedTotalCredits(
       return;
     }
     if (isSportsTeamCourseId(id)) {
-      if (semester === undefined || index === undefined) return;
-      const instanceKey = `${id}__${semester}__${index}`;
-      const hasExplicitCompletion =
-        completedInstanceSet.has(instanceKey) ||
-        grades[gradeKey(id, semester)] !== undefined ||
-        !!binaryPass[id] ||
-        explicitSportCompletionSet.has(id);
-      if (!hasExplicitCompletion) return;
       sportsTeamCredits += credits;
       return;
     }
@@ -118,13 +104,12 @@ function getCountedTotalCredits(
   };
 
   for (const id of completedCourses) {
-    if (isSportsTeamCourseId(id)) continue;
+    if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) continue;
     visit(id);
   }
-  for (const [semesterKey, ids] of Object.entries(semesters)) {
-    const semester = Number(semesterKey);
-    for (const [index, id] of ids.entries()) {
-      visit(id, semester, index);
+  for (const ids of Object.values(semesters)) {
+    for (const id of ids) {
+      visit(id);
     }
   }
 
@@ -361,10 +346,6 @@ export function computeRequirementsProgress(
   const {
     semesters,
     completedCourses,
-    explicitSportCompletions,
-    completedInstances,
-    grades,
-    binaryPass,
     selectedSpecializations,
     doubleSpecializations,
     hasEnglishExemption,
@@ -590,10 +571,6 @@ export function computeRequirementsProgress(
     const totalCredits = getCountedTotalCredits(
       completedCourses,
       semesters,
-      explicitSportCompletions,
-      completedInstances,
-      grades,
-      binaryPass,
       courses,
       noAdditionalCreditCourseIds,
     );
@@ -630,15 +607,11 @@ export function computeRequirementsProgress(
       };
     });
 
-    const generalRequirements = buildGeneralRequirementsProgress({
+    const { progress: generalRequirements, generalElectivesBreakdown } = buildGeneralRequirementsProgress({
       courses,
       trackDef,
       semesters,
       completedCourses,
-      explicitSportCompletions,
-      completedInstances,
-      grades,
-      binaryPass,
       miluimCredits,
       englishTaughtCourses,
       englishScore,
@@ -646,10 +619,8 @@ export function computeRequirementsProgress(
       generalElectiveCredits,
       noAdditionalCreditCourseIds,
     });
-    const freeElectiveRequirement = getRequirement(generalRequirements, 'free_elective');
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
     const englishRequirement = getRequirement(generalRequirements, 'english');
-    const sportRequirement = getRequirement(generalRequirements, 'sport');
     const labsRequirement = getRequirement(generalRequirements, 'labs');
 
     const englishPlaced: { id: string; name: string }[] = [];
@@ -815,19 +786,12 @@ export function computeRequirementsProgress(
         diagnostics: specializationCatalog.diagnostics,
       },
       groupDetails,
-      sport: {
-        earned: sportRequirement?.completedValue ?? 0,
-        required: sportRequirement?.targetValue ?? 2,
-      },
       general: {
         earned: generalElectivesRequirement?.completedValue ?? 0,
         required: generalElectivesRequirement?.targetValue ?? generalRequired,
       },
-      freeElective: {
-        earned: freeElectiveRequirement?.completedValue ?? 0,
-        required: freeElectiveRequirement?.targetValue ?? 6,
-      },
       generalRequirements,
+      generalElectivesBreakdown,
       labPoolProgress: trackDef.labPool && labsRequirement
         ? {
             earned: labsRequirement.completedValue,
@@ -867,7 +831,6 @@ export function useRequirementsProgress(
 ) {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
-  const explicitSportCompletions = usePlanStore((s) => s.explicitSportCompletions ?? []);
   const completedInstances = usePlanStore((s) => s.completedInstances ?? []);
   const grades = usePlanStore((s) => s.grades);
   const binaryPass = usePlanStore((s) => s.binaryPass ?? {});
@@ -891,7 +854,6 @@ export function useRequirementsProgress(
         {
           semesters,
           completedCourses,
-          explicitSportCompletions,
           completedInstances,
           grades,
           binaryPass,
@@ -914,7 +876,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, explicitSportCompletions, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
   );
 }
 

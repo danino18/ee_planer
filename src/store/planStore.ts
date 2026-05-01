@@ -20,7 +20,6 @@ import {
   sanitizeTrackSpecializationSelections,
 } from '../domain/specializations';
 import { serializePlanState } from '../services/planStateSerialization';
-import { isSportCourseId } from '../data/generalRequirements/courseClassification';
 
 export { gradeKey, REPEATABLE_COURSES } from '../utils/courseGrades';
 
@@ -283,27 +282,6 @@ function sanitizeSpecializationStateForTrack(plan: StudentPlan): StudentPlan {
   };
 }
 
-function addExplicitSportCompletion(
-  explicitSportCompletions: string[] | undefined,
-  courseId: string,
-): string[] {
-  if (!isSportCourseId(courseId)) return explicitSportCompletions ?? [];
-  const next = explicitSportCompletions ?? [];
-  return next.includes(courseId) ? next : [...next, courseId];
-}
-
-function removeExplicitSportCompletion(
-  explicitSportCompletions: string[] | undefined,
-  courseId: string,
-): string[] {
-  if (!isSportCourseId(courseId)) return explicitSportCompletions ?? [];
-  return (explicitSportCompletions ?? []).filter((id) => id !== courseId);
-}
-
-function hasRecordedGradeForCourse(grades: Record<string, number>, courseId: string): boolean {
-  return Object.keys(grades).some((key) => key === courseId || key.startsWith(`${courseId}_`));
-}
-
 function parseInstanceKey(instanceKey: string | undefined): { courseId: string; semester: number; index: number } | null {
   if (!instanceKey) return null;
   const parts = instanceKey.split('__');
@@ -512,9 +490,6 @@ export const usePlanStore = create<PlanState>()(
             completedCourses: stillPlaced
               ? state.completedCourses
               : state.completedCourses.filter((id) => id !== courseId),
-            explicitSportCompletions: stillPlaced
-              ? state.explicitSportCompletions ?? []
-              : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
             courseChainAssignments: stillPlaced
               ? state.courseChainAssignments ?? {}
               : omitCourseKey(state.courseChainAssignments, courseId),
@@ -578,13 +553,8 @@ export const usePlanStore = create<PlanState>()(
           const history = pushHistory(state);
           const isCompleted = state.completedCourses.includes(courseId);
           if (isCompleted) {
-            const hasOtherExplicitCompletion =
-              !!(state.binaryPass ?? {})[courseId] || hasRecordedGradeForCourse(state.grades, courseId);
             return {
               completedCourses: state.completedCourses.filter((id) => id !== courseId),
-              explicitSportCompletions: hasOtherExplicitCompletion
-                ? addExplicitSportCompletion(state.explicitSportCompletions, courseId)
-                : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
               _history: history,
             };
           }
@@ -594,7 +564,6 @@ export const usePlanStore = create<PlanState>()(
             : { ...state.semesters, 0: [...(state.semesters[0] ?? []), courseId] };
           return {
             completedCourses: [...state.completedCourses, courseId],
-            explicitSportCompletions: addExplicitSportCompletion(state.explicitSportCompletions, courseId),
             semesters: newSemesters,
             _history: history,
           };
@@ -647,9 +616,6 @@ export const usePlanStore = create<PlanState>()(
               grades: newGrades,
               binaryPass: newBinaryPass,
               completedCourses,
-              explicitSportCompletions: newBinaryPass[courseId]
-                ? addExplicitSportCompletion(state.explicitSportCompletions, courseId)
-                : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
             };
           }
           newGrades[key] = grade;
@@ -667,7 +633,6 @@ export const usePlanStore = create<PlanState>()(
             grades: newGrades,
             binaryPass: newBinaryPass,
             completedCourses,
-            explicitSportCompletions: addExplicitSportCompletion(state.explicitSportCompletions, courseId),
             semesters: newSemesters,
           };
         }),
@@ -903,9 +868,6 @@ export const usePlanStore = create<PlanState>()(
               binaryPass: bp,
               grades: newGrades,
               completedCourses,
-              explicitSportCompletions: newGrades[courseId] !== undefined
-                ? addExplicitSportCompletion(state.explicitSportCompletions, courseId)
-                : removeExplicitSportCompletion(state.explicitSportCompletions, courseId),
             };
           }
           bp[courseId] = value;
@@ -923,7 +885,6 @@ export const usePlanStore = create<PlanState>()(
             binaryPass: bp,
             grades: newGrades,
             completedCourses,
-            explicitSportCompletions: addExplicitSportCompletion(state.explicitSportCompletions, courseId),
             semesters: newSemesters,
           };
         }),

@@ -100,7 +100,6 @@ function makeInput(overrides = {}) {
   return {
     semesters: {},
     completedCourses: [],
-    explicitSportCompletions: [],
     completedInstances: [],
     grades: {},
     binaryPass: {},
@@ -131,12 +130,11 @@ function makeCourses(entries) {
 }
 
 function buildGeneralProgress(input, courses, trackDef = eeTrack) {
-  const progress = buildGeneralRequirementsProgress({
+  const result = buildGeneralRequirementsProgress({
     courses,
     trackDef,
     semesters: input.semesters,
     completedCourses: input.completedCourses,
-    explicitSportCompletions: input.explicitSportCompletions,
     completedInstances: input.completedInstances,
     grades: input.grades,
     binaryPass: input.binaryPass,
@@ -144,7 +142,10 @@ function buildGeneralProgress(input, courses, trackDef = eeTrack) {
     miluimCredits: input.miluimCredits,
     englishScore: input.englishScore,
   });
-  return Object.fromEntries(progress.map((requirement) => [requirement.requirementId, requirement]));
+  return {
+    byId: Object.fromEntries(result.progress.map((req) => [req.requirementId, req])),
+    breakdown: result.generalElectivesBreakdown,
+  };
 }
 
 const emptyCatalog = { groups: [], trackId: 'ee' };
@@ -467,22 +468,10 @@ test('buildCourseAssignments: 5th lab beyond max=4 gets excess_lab bucket', () =
   assert.equal(result.find((a) => a.courseId === l5)?.bucket, 'excess_lab');
 });
 
-test('buildCourseAssignments: sport without explicit completion gets uncounted bucket', () => {
+test('buildCourseAssignments: regular sport in plan gets sport bucket without explicit completion', () => {
   const input = makeInput({
     semesters: { 1: [SPORT_ID] },
     semesterOrder: [1],
-    explicitSportCompletions: [],
-  });
-  const courses = makeCourses({ [SPORT_ID]: 1.5 });
-  const result = buildCourseAssignments(input, courses, eeTrack, emptyCatalog);
-  assert.equal(result.find((a) => a.courseId === SPORT_ID)?.bucket, 'uncounted');
-});
-
-test('buildCourseAssignments: sport with explicit completion gets sport bucket', () => {
-  const input = makeInput({
-    semesters: { 1: [SPORT_ID] },
-    semesterOrder: [1],
-    explicitSportCompletions: [SPORT_ID],
   });
   const courses = makeCourses({ [SPORT_ID]: 1.5 });
   const result = buildCourseAssignments(input, courses, eeTrack, emptyCatalog);
@@ -568,7 +557,6 @@ test('buildCourseAssignments: each courseId appears at most once (no duplicates)
   const input = makeInput({
     semesters: { 1: [EE_MANDATORY_ID, l1, l2, l3, SPORT_ID, MELAG_ID, ELECTIVE_ID] },
     semesterOrder: [1],
-    explicitSportCompletions: [SPORT_ID],
   });
   const courses = makeCourses({
     [EE_MANDATORY_ID]: 3,
@@ -608,9 +596,24 @@ function makeProgress(overrides = {}) {
     elective: { earned: 0, required: 39.5 },
     total: { earned: 0, required: 157.5 },
     specializationGroups: { completed: 0, required: 3, unavailable: false },
-    sport: { earned: 0, required: 1 },
     general: { earned: 0, required: 12 },
-    freeElective: { earned: 0, required: 0 },
+    generalElectivesBreakdown: {
+      total: { recognized: 0, target: 12 },
+      sportFloor: { recognized: 0, target: 2 },
+      enrichmentFloor: { recognized: 0, target: 6 },
+      freeChoice: { recognized: 0, target: 4 },
+      contributors: {
+        regularSportToFloor: 0,
+        regularSportToFreeChoice: 0,
+        melagToFloor: 0,
+        melagToFreeChoice: 0,
+        externalFacultyToFreeChoice: 0,
+        choirRecognized: 0,
+        sportsTeamRecognized: 0,
+        unrecognizedSpecialCredits: 0,
+        surplusBeyond12: 0,
+      },
+    },
     labPoolProgress: null,
     coreRequirementProgress: null,
     english: { score: undefined, hasExemption: false, requirements: [], englishInPlan: [] },
@@ -717,7 +720,7 @@ test('buildRequirementChecks: countedCourseIds for mandatory_credits includes ma
   assert.ok(!mandatory?.countedCourseIds.includes(MELAG_ID));
 });
 
-test('computeRequirementsProgress: 1.5 sports-team credits still require 1 regular PE credit', () => {
+test('computeRequirementsProgress: 1.5 sports-team credits still require 1 regular PE credit (sport floor)', () => {
   const input = makeInput({
     semesters: { 1: [SPORTS_TEAM_ID] },
     semesterOrder: [1],
@@ -725,11 +728,16 @@ test('computeRequirementsProgress: 1.5 sports-team credits still require 1 regul
   });
   const courses = makeCourses({ [SPORTS_TEAM_ID]: 1.5 });
 
-  const progress = buildGeneralProgress(input, courses);
+  const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(progress.sport.targetValue, 1);
-  assert.equal(progress.sport.completedValue, 0);
-  assert.equal(progress.general_electives.completedValue, 1.5);
+  // 1.5 sports-team credits → table: enrichment=6, freeChoice=3.5, sport=1.
+  // Bucket targets stay canonical 2/6/4; the table fills sport=1, freeChoice=0.5.
+  assert.equal(breakdown.sportFloor.target, 2);
+  assert.equal(breakdown.sportFloor.recognized, 1);
+  assert.equal(breakdown.contributors.sportsTeamRecognized, 1.5);
+  assert.equal(breakdown.contributors.sportsTeamToSportFloor, 1);
+  assert.equal(breakdown.contributors.sportsTeamToFreeChoice, 0.5);
+  assert.equal(breakdown.total.recognized, 1.5);
 });
 
 test('computeRequirementsProgress: 3 sports-team credits complete PE without regular sport', () => {
@@ -740,11 +748,16 @@ test('computeRequirementsProgress: 3 sports-team credits complete PE without reg
   });
   const courses = makeCourses({ [SPORTS_TEAM_ID]: 1.5 });
 
-  const progress = buildGeneralProgress(input, courses);
+  const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(progress.sport.targetValue, 0);
-  assert.equal(progress.sport.completedValue, 0);
-  assert.equal(progress.general_electives.completedValue, 3);
+  // 3 sports-team credits → table: enrichment=6, freeChoice=3, sport=0.
+  // Sport floor canonical 2 is fully filled by the table (2 nkz attributed),
+  // free-choice gets 1 nkz from the table.
+  assert.equal(breakdown.sportFloor.target, 2);
+  assert.equal(breakdown.sportFloor.recognized, 2);
+  assert.equal(breakdown.contributors.sportsTeamRecognized, 3);
+  assert.equal(breakdown.contributors.sportsTeamToSportFloor, 2);
+  assert.equal(breakdown.total.recognized, 3);
 });
 
 test('computeRequirementsProgress: choir/orchestra never satisfies sport', () => {
@@ -754,12 +767,19 @@ test('computeRequirementsProgress: choir/orchestra never satisfies sport', () =>
   });
   const courses = makeCourses({ [CHOIR_ID]: 2 });
 
-  const progress = buildGeneralProgress(input, courses);
+  const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(progress.sport.targetValue, 2);
-  assert.equal(progress.sport.completedValue, 0);
-  assert.equal(progress.free_elective.targetValue, 2);
-  assert.equal(progress.general_electives.completedValue, 8);
+  // 8 choir credits → table: enrichment=2, freeChoice=0, sport=2.
+  // Sport floor stays empty (choir cannot fill sport); enrichment fills 4 nkz,
+  // free-choice fills 4 nkz.
+  assert.equal(breakdown.sportFloor.target, 2);
+  assert.equal(breakdown.sportFloor.recognized, 0);
+  assert.equal(breakdown.enrichmentFloor.target, 6);
+  assert.equal(breakdown.enrichmentFloor.recognized, 4);
+  assert.equal(breakdown.contributors.choirRecognized, 8);
+  assert.equal(breakdown.contributors.choirToEnrichmentFloor, 4);
+  assert.equal(breakdown.contributors.choirToFreeChoice, 4);
+  assert.equal(breakdown.total.recognized, 8);
 });
 
 test('computeRequirementsProgress: special enrichment minimum does not drop below 2', () => {
@@ -769,10 +789,13 @@ test('computeRequirementsProgress: special enrichment minimum does not drop belo
   });
   const courses = makeCourses({ [CHOIR_ID]: 2 });
 
-  const progress = buildGeneralProgress(input, courses);
+  const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(progress.free_elective.targetValue, 2);
-  assert.equal(progress.general_electives.completedValue, 8);
+  // 12 choir credits → table caps recognition at 8 (row 1).
+  assert.equal(breakdown.enrichmentFloor.target, 6);
+  assert.equal(breakdown.enrichmentFloor.recognized, 4);
+  assert.equal(breakdown.contributors.choirRecognized, 8);
+  assert.equal(breakdown.total.recognized, 8);
 });
 
 test('buildCourseAssignments: recognized special credits use the special_general bucket', () => {

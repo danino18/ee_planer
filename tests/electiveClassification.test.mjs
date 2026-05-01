@@ -196,7 +196,6 @@ function progressFor(trackDef, placedIds, overrides = {}) {
     {
       semesters: { 0: placedIds },
       completedCourses: overrides.completedCourses ?? [],
-      explicitSportCompletions: overrides.explicitSportCompletions ?? [],
       completedInstances: [],
       grades: {},
       binaryPass: {},
@@ -300,13 +299,13 @@ test('free elective and sport courses stay out of faculty elective counting', ()
     ['00214119', '03940810'],
     {
       completedCourses: ['00214119', '03940810'],
-      explicitSportCompletions: ['03940810'],
     },
   );
 
   assert.equal(progress.elective.earned, 0);
-  assert.equal(progress.freeElective.earned, 2);
-  assert.equal(progress.sport.earned, 1.5);
+  // MELAG fills the enrichment floor; sport fills the sport floor.
+  assert.equal(progress.generalElectivesBreakdown.enrichmentFloor.recognized, 2);
+  assert.equal(progress.generalElectivesBreakdown.sportFloor.recognized, 1.5);
 });
 
 test('recognized external faculty electives count toward faculty elective up to 9 credits', () => {
@@ -336,7 +335,6 @@ test('external specialization course counts fully outside the 9 credit cap', () 
     {
       semesters: { 0: ['03360504', '00940312', '00960570', '00970317'] },
       completedCourses: [],
-      explicitSportCompletions: [],
       completedInstances: [],
       grades: {},
       binaryPass: {},
@@ -462,7 +460,6 @@ test('cs specialization progress excludes core-locked courses from selected spec
     {
       semesters: { 0: ['00460195', '00460202', '00460010'] },
       completedCourses: [],
-      explicitSportCompletions: [],
       completedInstances: [],
       grades: {},
       binaryPass: {},
@@ -494,7 +491,6 @@ test('cs specialization progress excludes core-locked courses from selected spec
     {
       semesters: { 0: ['00460195', '00460202', '00460010'] },
       completedCourses: [],
-      explicitSportCompletions: [],
       completedInstances: [],
       grades: {},
       binaryPass: {},

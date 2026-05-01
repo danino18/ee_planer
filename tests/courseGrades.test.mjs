@@ -185,6 +185,20 @@ test('sport courses in the 03940800-03940820 range use semester-scoped repeatabl
   assert.deepEqual(sanitized, { '03940810_1': 91, REGULAR: 77 });
 });
 
+test('choir and orchestra courses use semester-scoped repeatable grade keys', () => {
+  const movedChoirGrades = moveRepeatableCourseGrade({ '03940587_1': 92 }, '03940587', 1, 2);
+  assert.deepEqual(movedChoirGrades, { '03940587_2': 92 });
+
+  const movedOrchestraGrades = moveRepeatableCourseGrade({ '03940582_1': 88 }, '03940582', 1, 2);
+  assert.deepEqual(movedOrchestraGrades, { '03940582_2': 88 });
+
+  const sanitized = sanitizeRepeatableCourseGrades(
+    { 1: ['03940587'], 2: [] },
+    { '03940587_1': 92, '03940587_2': 80 },
+  );
+  assert.deepEqual(sanitized, { '03940587_1': 92 });
+});
+
 test('clearing or sanitizing repeatable-course semester grades removes orphaned grade keys', () => {
   const cleared = clearRepeatableCourseSemesterGrade(
     { '03940902_1': 95, '03940902_2': 87 },
