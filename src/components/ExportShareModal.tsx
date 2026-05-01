@@ -15,6 +15,7 @@ import {
   parseImportedEnvelope,
 } from '../services/planExport';
 import { useAuth } from '../context/AuthContext';
+import { useShareMode } from '../context/ShareModeContext';
 import { createShare, buildShareUrl } from '../services/shareApi';
 import type { ShareAccess, SharePermission } from '../types/share';
 import { ApiRequestError } from '../services/apiClient';
@@ -37,6 +38,8 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
   const activeVersionId = usePlanStore((s) => s.activeVersionId);
   const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
   const { user, signInWithGoogle } = useAuth();
+  const shareMode = useShareMode();
+  const shareTabAllowed = !shareMode || shareMode.isOwner;
 
   const [tab, setTab] = useState<Tab>('export');
   const [includeGrades, setIncludeGrades] = useState(false);
@@ -59,6 +62,8 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [lastSharedEmails, setLastSharedEmails] = useState<string[]>([]);
+  const [lastSharedTtlMs, setLastSharedTtlMs] = useState<number | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -67,6 +72,12 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  useEffect(() => {
+    if (!shareTabAllowed && tab === 'share') {
+      setTab('export');
+    }
+  }, [shareTabAllowed, tab]);
 
   const exportVersionIds = useMemo(() => {
     if (versionScope === 'current') {
@@ -213,6 +224,8 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
         expiresAt,
       });
       setShareUrl(buildShareUrl(shareId));
+      setLastSharedEmails(allowedEmails);
+      setLastSharedTtlMs(shareTtlMs);
     } catch (err) {
       const message = err instanceof ApiRequestError
         ? err.message
@@ -232,6 +245,32 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
     } catch {
       setShareError('העתקה נכשלה. סמן את הקישור והעתק ידנית.');
     }
+  }
+
+  function handleSendShareEmail() {
+    if (!shareUrl || lastSharedEmails.length === 0) return;
+    const senderName = user?.displayName?.trim() || user?.email || 'משתמש המתכנן';
+    const subject = 'הנה הקישור למערכת הלימודים שלי בטכניון';
+    const lines: string[] = [
+      'היי,',
+      `שיתפתי איתך את מערכת הלימודים שלי במתכנן הטכניון.`,
+      `קישור: ${shareUrl}`,
+    ];
+    if (lastSharedTtlMs !== null) {
+      const days = Math.max(1, Math.round(lastSharedTtlMs / 86400000));
+      const expiryDate = new Date(Date.now() + lastSharedTtlMs).toLocaleDateString('he-IL', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      lines.push(`הקישור זמין למשך ${days} ימים (עד ${expiryDate}).`);
+    } else {
+      lines.push('הקישור ללא הגבלת זמן.');
+    }
+    lines.push(`נשלח על-ידי: ${senderName}`);
+    const body = lines.join('\n');
+    const to = lastSharedEmails.join(',');
+    window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
   const importedPlanSummary = useMemo(() => {
@@ -293,14 +332,16 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
                 : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >ייבוא</button>
-          <button
-            onClick={() => setTab('share')}
-            className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === 'share'
-                ? 'border-blue-500 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-800'
-            }`}
-          >שיתוף קישור</button>
+          {shareTabAllowed && (
+            <button
+              onClick={() => setTab('share')}
+              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                tab === 'share'
+                  ? 'border-blue-500 text-blue-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}
+            >שיתוף קישור</button>
+          )}
         </div>
 
         {tab === 'export' && (
@@ -617,6 +658,20 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
                 <p className="text-xs text-emerald-700 mt-2">
                   שלח את הקישור הזה למי שתרצה לשתף איתו. ניתן ליצור קישור חדש בכל עת.
                 </p>
+                {lastSharedEmails.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-emerald-200">
+                    <p className="text-xs text-emerald-800 mb-1.5">
+                      שלח את הקישור במייל ל-{lastSharedEmails.length === 1 ? 'נמען' : `${lastSharedEmails.length} נמענים`} שהוזנו:
+                    </p>
+                    <button
+                      onClick={handleSendShareEmail}
+                      className="text-xs bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 py-1.5 rounded transition-colors"
+                    >✉ שלח מייל לנמענים</button>
+                    <p className="text-xs text-emerald-700 mt-1.5">
+                      הפעולה תפתח את לקוח המייל המקומי שלך עם הקישור והפרטים מוכנים לשליחה.
+                    </p>
+                  </div>
+                )}
                 <button
                   onClick={() => { setShareUrl(null); setShareCopied(false); }}
                   className="text-xs text-emerald-700 hover:text-emerald-900 underline mt-2"

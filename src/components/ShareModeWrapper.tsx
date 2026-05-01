@@ -3,6 +3,7 @@ import { fetchShare } from '../services/shareApi';
 import { usePlanStore } from '../store/planStore';
 import { buildEnvelopeFromState } from '../services/planSync';
 import { ShareModeContext } from '../context/ShareModeContext';
+import { useAuth } from '../context/AuthContext';
 import { auth } from '../services/firebase';
 import type { ShareDoc } from '../types/share';
 import type { VersionedPlanEnvelope } from '../types';
@@ -16,19 +17,50 @@ type ShareLoadState =
   | { status: 'ready'; share: ShareDoc; canEdit: boolean; isOwner: boolean; envelopeLoaded: boolean };
 
 function ShareErrorScreen({ reason }: { reason: string }) {
+  const { user, signInWithGoogle, error: authError } = useAuth();
+  const [signingIn, setSigningIn] = useState(false);
+
+  useEffect(() => {
+    if (reason === 'auth_required' && user) {
+      window.location.reload();
+    }
+  }, [reason, user]);
+
   const messages: Record<string, string> = {
     not_found: 'הקישור לא נמצא או נמחק.',
     revoked: 'הקישור בוטל על ידי בעל התוכנית.',
     expired: 'הקישור פג תוקף.',
-    auth_required: 'הקישור דורש התחברות. פתח אותו דרך הדפדפן לאחר התחברות.',
+    auth_required: 'הקישור משותף עם כתובות מייל ספציפיות. התחבר עם חשבון Google כדי שנוכל לאמת שאתה אחד הנמענים.',
     forbidden: 'אין לך הרשאה לצפות בקישור הזה.',
     network: 'שגיאה בטעינת הקישור. בדוק את חיבור האינטרנט ונסה שנית.',
   };
+
+  async function handleSignIn() {
+    setSigningIn(true);
+    try {
+      await signInWithGoogle();
+    } finally {
+      setSigningIn(false);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6" dir="rtl">
       <div className="max-w-md w-full text-center text-sm border border-red-200 rounded-2xl px-6 py-8 bg-red-50 text-red-700">
         <p className="font-semibold text-base mb-2">שגיאה בפתיחת הקישור</p>
         <p>{messages[reason] ?? 'שגיאה לא צפויה.'}</p>
+        {reason === 'auth_required' && (
+          <div className="mt-4">
+            <button
+              onClick={handleSignIn}
+              disabled={signingIn}
+              className="inline-block bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+            >{signingIn ? 'מתחבר...' : 'התחבר עם Google'}</button>
+            {authError && (
+              <p className="mt-2 text-xs text-red-600">{authError}</p>
+            )}
+          </div>
+        )}
         <a
           href={window.location.origin}
           className="mt-4 inline-block text-blue-600 hover:text-blue-800 underline text-xs"

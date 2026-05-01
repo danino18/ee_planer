@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { parseShareHash } from './services/shareRouting'
+import { AuthProvider } from './context/AuthContext'
 
 const App = lazy(() => import('./App'));
 const ShareModeWrapper = lazy(() => import('./components/ShareModeWrapper'));
@@ -15,17 +16,11 @@ export default function Root() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  if (shareRoute) {
-    return (
-      <Suspense fallback={null}>
-        <ShareModeWrapper shareId={shareRoute.shareId} />
-      </Suspense>
-    );
-  }
-
   return (
-    <Suspense fallback={null}>
-      <App />
-    </Suspense>
+    <AuthProvider>
+      <Suspense fallback={null}>
+        {shareRoute ? <ShareModeWrapper shareId={shareRoute.shareId} /> : <App />}
+      </Suspense>
+    </AuthProvider>
   );
 }
