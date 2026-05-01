@@ -142,7 +142,9 @@ test('choir credits reduce floors via the table; recognized credits land in tota
     choirOrOrchestraCredits: 6,
     sportsTeamCredits: 0,
   });
-  // Per the table: 6 choir → recognized 6, enrichment 4, freeChoice 0, sport 2
+  // Per the table: 6 choir → recognized 6, enrichment 4, freeChoice 0, sport 2.
+  // Bucket targets stay at the canonical 2/6/4; the table reductions are folded
+  // into the recognized side so the student sees the floors filling up.
   const breakdown = allocateGeneralElectives({
     regularSportCredits: 0,
     melagCredits: 0,
@@ -153,8 +155,15 @@ test('choir credits reduce floors via the table; recognized credits land in tota
     allocation,
     generalCreditsTarget: 12,
   });
-  assert.equal(breakdown.enrichmentFloor.target, 4);
+  assert.equal(breakdown.sportFloor.target, 2);
+  assert.equal(breakdown.sportFloor.recognized, 0);
+  assert.equal(breakdown.enrichmentFloor.target, 6);
+  assert.equal(breakdown.enrichmentFloor.recognized, 2);
+  assert.equal(breakdown.freeChoice.target, 4);
+  assert.equal(breakdown.freeChoice.recognized, 4);
   assert.equal(breakdown.contributors.choirRecognized, 6);
+  assert.equal(breakdown.contributors.choirToEnrichmentFloor, 2);
+  assert.equal(breakdown.contributors.choirToFreeChoice, 4);
   assert.equal(breakdown.total.recognized, 6);
 });
 

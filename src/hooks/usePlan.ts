@@ -30,7 +30,7 @@ import {
   getSatisfiedAlternativeCourseId,
   getVisibleMandatoryCourseIds,
 } from '../data/tracks/semesterSchedule';
-import { computeWeightedAverage, gradeKey } from '../utils/courseGrades';
+import { computeWeightedAverage } from '../utils/courseGrades';
 import {
   allocateElectiveCredits,
   ELECTIVE_AREA_LABELS,
@@ -74,31 +74,20 @@ function getRequirement(
 function getCountedTotalCredits(
   completedCourses: string[],
   semesters: Record<number, string[]>,
-  completedInstances: string[],
-  grades: Record<string, number>,
-  binaryPass: Record<string, boolean>,
   courses: Map<string, SapCourse>,
 ): number {
   const seenRegularCourseIds = new Set<string>();
-  const completedInstanceSet = new Set(completedInstances);
   let regularCredits = 0;
   let choirOrOrchestraCredits = 0;
   let sportsTeamCredits = 0;
 
-  const visit = (id: string, semester?: number, index?: number): void => {
+  const visit = (id: string): void => {
     const credits = courses.get(id)?.credits ?? 0;
     if (isChoirOrOrchestraCourseId(id)) {
       choirOrOrchestraCredits += credits;
       return;
     }
     if (isSportsTeamCourseId(id)) {
-      if (semester === undefined || index === undefined) return;
-      const instanceKey = `${id}__${semester}__${index}`;
-      const hasInstanceSignal =
-        completedInstanceSet.has(instanceKey) ||
-        grades[gradeKey(id, semester)] !== undefined ||
-        !!binaryPass[id];
-      if (!hasInstanceSignal) return;
       sportsTeamCredits += credits;
       return;
     }
@@ -108,13 +97,12 @@ function getCountedTotalCredits(
   };
 
   for (const id of completedCourses) {
-    if (isSportsTeamCourseId(id)) continue;
+    if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) continue;
     visit(id);
   }
-  for (const [semesterKey, ids] of Object.entries(semesters)) {
-    const semester = Number(semesterKey);
-    for (const [index, id] of ids.entries()) {
-      visit(id, semester, index);
+  for (const ids of Object.values(semesters)) {
+    for (const id of ids) {
+      visit(id);
     }
   }
 
@@ -299,9 +287,6 @@ export function computeRequirementsProgress(
   const {
     semesters,
     completedCourses,
-    completedInstances,
-    grades,
-    binaryPass,
     selectedSpecializations,
     doubleSpecializations,
     hasEnglishExemption,
@@ -509,9 +494,6 @@ export function computeRequirementsProgress(
     const totalCredits = getCountedTotalCredits(
       completedCourses,
       semesters,
-      completedInstances,
-      grades,
-      binaryPass,
       courses,
     );
 
@@ -552,9 +534,6 @@ export function computeRequirementsProgress(
       trackDef,
       semesters,
       completedCourses,
-      completedInstances,
-      grades,
-      binaryPass,
       miluimCredits,
       englishTaughtCourses,
       englishScore,

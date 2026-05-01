@@ -21,6 +21,11 @@ const EMPTY_RESULT: GeneralRequirementsResult = {
       externalFacultyToFreeChoice: 0,
       choirRecognized: 0,
       sportsTeamRecognized: 0,
+      choirToEnrichmentFloor: 0,
+      choirToFreeChoice: 0,
+      sportsTeamToSportFloor: 0,
+      sportsTeamToEnrichmentFloor: 0,
+      sportsTeamToFreeChoice: 0,
       unrecognizedSpecialCredits: 0,
       surplusBeyond12: 0,
     },
@@ -33,9 +38,6 @@ export function useGeneralRequirements(
 ): GeneralRequirementsResult {
   const semesters = usePlanStore((s) => s.semesters);
   const completedCourses = usePlanStore((s) => s.completedCourses);
-  const completedInstances = usePlanStore((s) => s.completedInstances ?? []);
-  const grades = usePlanStore((s) => s.grades);
-  const binaryPass = usePlanStore((s) => s.binaryPass ?? {});
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
   const englishScore = usePlanStore((s) => s.englishScore);
@@ -48,12 +50,9 @@ export function useGeneralRequirements(
       trackDef,
       semesters,
       completedCourses,
-      completedInstances,
-      grades,
-      binaryPass,
       englishTaughtCourses,
       miluimCredits,
       englishScore,
     });
-  }, [courses, trackDef, semesters, completedCourses, completedInstances, grades, binaryPass, englishTaughtCourses, miluimCredits, englishScore]);
+  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses, miluimCredits, englishScore]);
 }

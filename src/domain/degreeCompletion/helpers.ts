@@ -16,7 +16,7 @@ import {
   EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
   resolveElectiveCreditArea,
 } from '../electives';
-import { gradeKey, REPEATABLE_COURSES } from '../../utils/courseGrades';
+import { REPEATABLE_COURSES } from '../../utils/courseGrades';
 import { calculateSpecialEnrichmentAllocation } from '../generalRequirements/specialAllocation';
 import type { GeneralElectivesBreakdown } from '../generalRequirements/types';
 import type {
@@ -285,34 +285,18 @@ function buildSpecialRecognizedCreditsByCourseId(
   courses: Map<string, SapCourse>,
 ): Map<string, number> {
   const specialOccurrences: Array<{ id: string; credits: number }> = [];
-  const visit = (id: string, semester?: number, index?: number): void => {
+  const visit = (id: string): void => {
     if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) return;
-    if (isSportsTeamCourseId(id)) {
-      if (semester === undefined || index === undefined) return;
-      const instanceKey = `${id}__${semester}__${index}`;
-      const hasInstanceSignal =
-        input.completedInstances.includes(instanceKey) ||
-        input.grades[gradeKey(id, semester)] !== undefined ||
-        !!input.binaryPass[id];
-      if (!hasInstanceSignal) return;
-    }
     specialOccurrences.push({ id, credits: courses.get(id)?.credits ?? 0 });
   };
 
   for (const id of input.completedCourses) {
-    if (isSportsTeamCourseId(id)) continue;
+    if (isChoirOrOrchestraCourseId(id) || isSportsTeamCourseId(id)) continue;
     visit(id);
   }
-  for (const sem of input.semesterOrder) {
-    for (const [index, id] of (input.semesters[sem] ?? []).entries()) {
-      visit(id, sem, index);
-    }
-  }
-  for (const [key, ids] of Object.entries(input.semesters)) {
-    const sem = Number(key);
-    if (input.semesterOrder.includes(sem)) continue;
-    for (const [index, id] of ids.entries()) {
-      visit(id, sem, index);
+  for (const ids of Object.values(input.semesters)) {
+    for (const id of ids) {
+      visit(id);
     }
   }
 

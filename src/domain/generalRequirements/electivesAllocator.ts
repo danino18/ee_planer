@@ -12,6 +12,10 @@ export interface AllocatorInput {
   generalCreditsTarget: number;
 }
 
+const BASE_SPORT_FLOOR = 2;
+const BASE_ENRICHMENT_FLOOR = 6;
+const BASE_FREE_CHOICE = 4;
+
 interface Bucket {
   recognized: number;
   target: number;
@@ -26,9 +30,42 @@ function pourInto(bucket: Bucket, amount: number): { used: number; remainder: nu
 }
 
 export function allocateGeneralElectives(input: AllocatorInput): GeneralElectivesBreakdown {
-  const sportFloor: Bucket = { recognized: 0, target: input.allocation.sportRequired };
-  const enrichmentFloor: Bucket = { recognized: 0, target: input.allocation.enrichmentRequired };
-  const freeChoice: Bucket = { recognized: 0, target: input.allocation.freeChoiceRequired };
+  const allocation = input.allocation;
+
+  // The combined allocation table reduces each "*Required" floor by however much
+  // the recognized special credits already filled it. Pre-fill the buckets with
+  // those reductions so further regular-source pours respect the remaining room.
+  const sportPrefill = Math.max(0, BASE_SPORT_FLOOR - allocation.sportRequired);
+  const enrichmentPrefill = Math.max(0, BASE_ENRICHMENT_FLOOR - allocation.enrichmentRequired);
+  const freeChoicePrefill = Math.max(0, BASE_FREE_CHOICE - allocation.freeChoiceRequired);
+
+  const sportFloor: Bucket = { recognized: sportPrefill, target: BASE_SPORT_FLOOR };
+  const enrichmentFloor: Bucket = { recognized: enrichmentPrefill, target: BASE_ENRICHMENT_FLOOR };
+  const freeChoice: Bucket = { recognized: freeChoicePrefill, target: BASE_FREE_CHOICE };
+
+  // Per-source attribution for the disclosure. Each source table has its own
+  // reductions; when both choir and sports-team are present they overlap, but
+  // the per-table figures still tell the student what each table contributed.
+  const choirToEnrichmentFloor = Math.max(
+    0,
+    BASE_ENRICHMENT_FLOOR - allocation.choirAllocation.enrichmentRequired,
+  );
+  const choirToFreeChoice = Math.max(
+    0,
+    BASE_FREE_CHOICE - allocation.choirAllocation.freeChoiceRequired,
+  );
+  const sportsTeamToSportFloor = Math.max(
+    0,
+    BASE_SPORT_FLOOR - allocation.sportsTeamAllocation.sportRequired,
+  );
+  const sportsTeamToEnrichmentFloor = Math.max(
+    0,
+    BASE_ENRICHMENT_FLOOR - allocation.sportsTeamAllocation.enrichmentRequired,
+  );
+  const sportsTeamToFreeChoice = Math.max(
+    0,
+    BASE_FREE_CHOICE - allocation.sportsTeamAllocation.freeChoiceRequired,
+  );
 
   const contributors: GeneralElectivesBreakdown['contributors'] = {
     regularSportToFloor: 0,
@@ -38,18 +75,16 @@ export function allocateGeneralElectives(input: AllocatorInput): GeneralElective
     externalFacultyToFreeChoice: 0,
     choirRecognized: input.recognizedChoirCredits,
     sportsTeamRecognized: input.recognizedSportsTeamCredits,
+    choirToEnrichmentFloor,
+    choirToFreeChoice,
+    sportsTeamToSportFloor,
+    sportsTeamToEnrichmentFloor,
+    sportsTeamToFreeChoice,
     unrecognizedSpecialCredits: input.unrecognizedSpecialCredits,
     surplusBeyond12: 0,
   };
 
-  // Step 1: recognized special credits are pre-routed by the allocation table.
-  // The table already reduced sportRequired / enrichmentRequired / freeChoiceRequired
-  // so the remaining floors reflect what regular courses still need to fill.
-  // The recognized special credits themselves go straight into total (tracked
-  // separately) and are NOT poured into the bucket targets that the table
-  // already shrank.
-
-  // Step 2: regular sport → sport floor first, overflow → free-choice.
+  // Regular sport → sport floor, overflow → free-choice, then surplus.
   let remaining = input.regularSportCredits;
   {
     const { used, remainder } = pourInto(sportFloor, remaining);
@@ -62,7 +97,7 @@ export function allocateGeneralElectives(input: AllocatorInput): GeneralElective
     contributors.surplusBeyond12 += remainder;
   }
 
-  // Step 3: MELAG / humanities free-elective → enrichment floor first, overflow → free-choice.
+  // MELAG / humanities free-elective → enrichment floor, overflow → free-choice.
   remaining = input.melagCredits;
   {
     const { used, remainder } = pourInto(enrichmentFloor, remaining);
@@ -75,7 +110,7 @@ export function allocateGeneralElectives(input: AllocatorInput): GeneralElective
     contributors.surplusBeyond12 += remainder;
   }
 
-  // Step 4: external-faculty electives → free-choice only.
+  // External-faculty electives → free-choice only.
   remaining = input.externalFacultyCredits;
   {
     const { used, remainder } = pourInto(freeChoice, remaining);
@@ -83,9 +118,9 @@ export function allocateGeneralElectives(input: AllocatorInput): GeneralElective
     contributors.surplusBeyond12 += remainder;
   }
 
-  const recognizedFromBuckets = sportFloor.recognized + enrichmentFloor.recognized + freeChoice.recognized;
-  const recognizedSpecial = input.recognizedChoirCredits + input.recognizedSportsTeamCredits;
-  const totalRecognized = Math.min(input.generalCreditsTarget, recognizedFromBuckets + recognizedSpecial);
+  const recognizedFromBuckets =
+    sportFloor.recognized + enrichmentFloor.recognized + freeChoice.recognized;
+  const totalRecognized = Math.min(input.generalCreditsTarget, recognizedFromBuckets);
 
   return {
     total: { recognized: totalRecognized, target: input.generalCreditsTarget },

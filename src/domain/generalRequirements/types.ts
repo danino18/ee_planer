@@ -80,6 +80,11 @@ export interface GeneralElectivesBreakdown {
     externalFacultyToFreeChoice: number;
     choirRecognized: number;
     sportsTeamRecognized: number;
+    choirToEnrichmentFloor: number;
+    choirToFreeChoice: number;
+    sportsTeamToSportFloor: number;
+    sportsTeamToEnrichmentFloor: number;
+    sportsTeamToFreeChoice: number;
     unrecognizedSpecialCredits: number;
     surplusBeyond12: number;
   };

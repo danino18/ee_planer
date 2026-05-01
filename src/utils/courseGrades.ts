@@ -1,8 +1,11 @@
 import type { SapCourse, StudentPlan } from '../types';
-import { isSportCourseId } from '../data/generalRequirements/courseClassification';
+import {
+  isChoirOrOrchestraCourseId,
+  isSportCourseId,
+} from '../data/generalRequirements/courseClassification';
 
 export const REPEATABLE_COURSES: Pick<Set<string>, 'has'> = {
-  has: (courseId) => isSportCourseId(courseId),
+  has: (courseId) => isSportCourseId(courseId) || isChoirOrOrchestraCourseId(courseId),
 };
 
 export function gradeKey(courseId: string, semester?: number): string {

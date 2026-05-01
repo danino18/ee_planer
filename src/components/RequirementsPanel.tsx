@@ -262,6 +262,11 @@ function GeneralElectivesRow({
     c.externalFacultyToFreeChoice > 0 ||
     c.choirRecognized > 0 ||
     c.sportsTeamRecognized > 0 ||
+    c.choirToEnrichmentFloor > 0 ||
+    c.choirToFreeChoice > 0 ||
+    c.sportsTeamToSportFloor > 0 ||
+    c.sportsTeamToEnrichmentFloor > 0 ||
+    c.sportsTeamToFreeChoice > 0 ||
     c.unrecognizedSpecialCredits > 0 ||
     c.surplusBeyond12 > 0;
 
@@ -322,8 +327,23 @@ function GeneralElectivesRow({
               {c.choirRecognized > 0 && (
                 <p>מקהלה / תזמורת — הוכרו לפי הטבלה: {formatCredits(c.choirRecognized)} נק"ז</p>
               )}
+              {c.choirToEnrichmentFloor > 0 && (
+                <p>מקהלה / תזמורת ← רצפת העשרה: {formatCredits(c.choirToEnrichmentFloor)} נק"ז</p>
+              )}
+              {c.choirToFreeChoice > 0 && (
+                <p>מקהלה / תזמורת ← בחירה חופשית: {formatCredits(c.choirToFreeChoice)} נק"ז</p>
+              )}
               {c.sportsTeamRecognized > 0 && (
                 <p>נבחרת ספורט — הוכרו לפי הטבלה: {formatCredits(c.sportsTeamRecognized)} נק"ז</p>
+              )}
+              {c.sportsTeamToSportFloor > 0 && (
+                <p>נבחרת ספורט ← רצפת ספורט: {formatCredits(c.sportsTeamToSportFloor)} נק"ז</p>
+              )}
+              {c.sportsTeamToEnrichmentFloor > 0 && (
+                <p>נבחרת ספורט ← רצפת העשרה: {formatCredits(c.sportsTeamToEnrichmentFloor)} נק"ז</p>
+              )}
+              {c.sportsTeamToFreeChoice > 0 && (
+                <p>נבחרת ספורט ← בחירה חופשית: {formatCredits(c.sportsTeamToFreeChoice)} נק"ז</p>
               )}
               {c.unrecognizedSpecialCredits > 0 && (
                 <p className="text-amber-700">

@@ -8,7 +8,7 @@ import {
   isSportCourseId,
   isSportsTeamCourseId,
 } from '../../data/generalRequirements/courseClassification';
-import { gradeKey, REPEATABLE_COURSES } from '../../utils/courseGrades';
+import { REPEATABLE_COURSES } from '../../utils/courseGrades';
 import { calculateGeneralRequirements } from './rulesEngine';
 import type {
   CourseRef,
@@ -23,9 +23,6 @@ export interface BuildGeneralRequirementsParams {
   trackDef: TrackDefinition;
   semesters: Record<number, string[]>;
   completedCourses: string[];
-  completedInstances: string[];
-  grades: Record<string, number>;
-  binaryPass: Record<string, boolean>;
   englishTaughtCourses: string[];
   miluimCredits: number;
   englishScore?: number;
@@ -56,9 +53,6 @@ export function buildGeneralRequirementsProgress({
   trackDef,
   semesters,
   completedCourses,
-  completedInstances,
-  grades,
-  binaryPass,
   englishTaughtCourses,
   miluimCredits,
   englishScore,
@@ -66,7 +60,6 @@ export function buildGeneralRequirementsProgress({
   generalElectiveCredits = [],
 }: BuildGeneralRequirementsParams): GeneralRequirementsResult {
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
-  const completedInstanceSet = new Set(completedInstances);
   const generalElectiveCourseIdSet = new Set(generalElectiveCourseIds);
   const generalElectiveCreditsByCourseId = new Map(generalElectiveCredits);
   const courseRefs: CourseRef[] = [];
@@ -84,34 +77,21 @@ export function buildGeneralRequirementsProgress({
   };
 
   for (const id of nonRepeatableSeen) {
-    if (REPEATABLE_COURSES.has(id) && isSportCourseId(id)) continue;
+    if (REPEATABLE_COURSES.has(id)) continue;
     const sap = courses.get(id);
     if (!sap) continue;
     pushCourseRef(id, sap.credits);
   }
 
-  for (const [semesterKey, semCourses] of Object.entries(semesters)) {
-    const semester = Number(semesterKey);
-    for (const [index, id] of semCourses.entries()) {
+  for (const semCourses of Object.values(semesters)) {
+    for (const id of semCourses) {
       const sap = courses.get(id);
       if (!sap) continue;
       if (REPEATABLE_COURSES.has(id)) {
-        if (isSportsTeamCourseId(id)) {
-          // Repeatable sports-team instance counts when it has a per-instance
-          // signal (explicit instance completion, a grade, or a binary pass).
-          const instanceKey = `${id}__${semester}__${index}`;
-          const hasInstanceSignal =
-            completedInstanceSet.has(instanceKey) ||
-            grades[gradeKey(id, semester)] !== undefined ||
-            !!binaryPass[id];
-          if (!hasInstanceSignal) continue;
-        }
         pushCourseRef(id, sap.credits);
       } else {
-        if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) {
-          if (nonRepeatableSeen.has(id)) continue;
-          nonRepeatableSeen.add(id);
-        }
+        if (nonRepeatableSeen.has(id)) continue;
+        nonRepeatableSeen.add(id);
         pushCourseRef(id, sap.credits);
       }
     }

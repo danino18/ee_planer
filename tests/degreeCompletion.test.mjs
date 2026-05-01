@@ -730,9 +730,13 @@ test('computeRequirementsProgress: 1.5 sports-team credits still require 1 regul
 
   const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(breakdown.sportFloor.target, 1);
-  assert.equal(breakdown.sportFloor.recognized, 0);
+  // 1.5 sports-team credits → table: enrichment=6, freeChoice=3.5, sport=1.
+  // Bucket targets stay canonical 2/6/4; the table fills sport=1, freeChoice=0.5.
+  assert.equal(breakdown.sportFloor.target, 2);
+  assert.equal(breakdown.sportFloor.recognized, 1);
   assert.equal(breakdown.contributors.sportsTeamRecognized, 1.5);
+  assert.equal(breakdown.contributors.sportsTeamToSportFloor, 1);
+  assert.equal(breakdown.contributors.sportsTeamToFreeChoice, 0.5);
   assert.equal(breakdown.total.recognized, 1.5);
 });
 
@@ -746,8 +750,13 @@ test('computeRequirementsProgress: 3 sports-team credits complete PE without reg
 
   const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(breakdown.sportFloor.target, 0);
+  // 3 sports-team credits → table: enrichment=6, freeChoice=3, sport=0.
+  // Sport floor canonical 2 is fully filled by the table (2 nkz attributed),
+  // free-choice gets 1 nkz from the table.
+  assert.equal(breakdown.sportFloor.target, 2);
+  assert.equal(breakdown.sportFloor.recognized, 2);
   assert.equal(breakdown.contributors.sportsTeamRecognized, 3);
+  assert.equal(breakdown.contributors.sportsTeamToSportFloor, 2);
   assert.equal(breakdown.total.recognized, 3);
 });
 
@@ -760,10 +769,16 @@ test('computeRequirementsProgress: choir/orchestra never satisfies sport', () =>
 
   const { breakdown } = buildGeneralProgress(input, courses);
 
+  // 8 choir credits → table: enrichment=2, freeChoice=0, sport=2.
+  // Sport floor stays empty (choir cannot fill sport); enrichment fills 4 nkz,
+  // free-choice fills 4 nkz.
   assert.equal(breakdown.sportFloor.target, 2);
   assert.equal(breakdown.sportFloor.recognized, 0);
-  assert.equal(breakdown.enrichmentFloor.target, 2);
+  assert.equal(breakdown.enrichmentFloor.target, 6);
+  assert.equal(breakdown.enrichmentFloor.recognized, 4);
   assert.equal(breakdown.contributors.choirRecognized, 8);
+  assert.equal(breakdown.contributors.choirToEnrichmentFloor, 4);
+  assert.equal(breakdown.contributors.choirToFreeChoice, 4);
   assert.equal(breakdown.total.recognized, 8);
 });
 
@@ -776,8 +791,9 @@ test('computeRequirementsProgress: special enrichment minimum does not drop belo
 
   const { breakdown } = buildGeneralProgress(input, courses);
 
-  assert.equal(breakdown.enrichmentFloor.target, 2);
-  // Cap from the table: max recognized choir credits is 8.
+  // 12 choir credits → table caps recognition at 8 (row 1).
+  assert.equal(breakdown.enrichmentFloor.target, 6);
+  assert.equal(breakdown.enrichmentFloor.recognized, 4);
   assert.equal(breakdown.contributors.choirRecognized, 8);
   assert.equal(breakdown.total.recognized, 8);
 });

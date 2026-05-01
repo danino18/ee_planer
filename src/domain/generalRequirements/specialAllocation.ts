@@ -8,6 +8,12 @@ export interface SpecialEnrichmentAllocationInput {
   sportsTeamCredits: number;
 }
 
+export interface SpecialEnrichmentSourceAllocation {
+  enrichmentRequired: number;
+  freeChoiceRequired: number;
+  sportRequired: number;
+}
+
 export interface SpecialEnrichmentAllocation {
   enrichmentRequired: number;
   freeChoiceRequired: number;
@@ -16,6 +22,8 @@ export interface SpecialEnrichmentAllocation {
   recognizedSportsTeamCredits: number;
   recognizedSpecialCredits: number;
   unrecognizedSpecialCredits: number;
+  choirAllocation: SpecialEnrichmentSourceAllocation;
+  sportsTeamAllocation: SpecialEnrichmentSourceAllocation;
 }
 
 interface AllocationRow {
@@ -26,6 +34,12 @@ interface AllocationRow {
   sportRequired: number;
 }
 
+const BASE_SOURCE_ALLOCATION: SpecialEnrichmentSourceAllocation = {
+  enrichmentRequired: 6,
+  freeChoiceRequired: 4,
+  sportRequired: 2,
+};
+
 const BASE_ALLOCATION: SpecialEnrichmentAllocation = {
   enrichmentRequired: 6,
   freeChoiceRequired: 4,
@@ -34,6 +48,8 @@ const BASE_ALLOCATION: SpecialEnrichmentAllocation = {
   recognizedSportsTeamCredits: 0,
   recognizedSpecialCredits: 0,
   unrecognizedSpecialCredits: 0,
+  choirAllocation: BASE_SOURCE_ALLOCATION,
+  sportsTeamAllocation: BASE_SOURCE_ALLOCATION,
 };
 
 const CHOIR_ORCHESTRA_4_YEAR_ROWS: AllocationRow[] = [
@@ -117,6 +133,16 @@ export function calculateSpecialEnrichmentAllocation({
     recognizedSportsTeamCredits,
     recognizedSpecialCredits,
     unrecognizedSpecialCredits: Math.max(0, allSpecialCredits - recognizedSpecialCredits),
+    choirAllocation: {
+      enrichmentRequired: choirAllocation.enrichmentRequired,
+      freeChoiceRequired: choirAllocation.freeChoiceRequired,
+      sportRequired: choirAllocation.sportRequired,
+    },
+    sportsTeamAllocation: {
+      enrichmentRequired: sportsTeamAllocation.enrichmentRequired,
+      freeChoiceRequired: sportsTeamAllocation.freeChoiceRequired,
+      sportRequired: sportsTeamAllocation.sportRequired,
+    },
   };
 }
 
