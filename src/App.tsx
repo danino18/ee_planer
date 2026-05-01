@@ -7,7 +7,7 @@ import { usePlanStore } from './store/planStore';
 import { buildEnvelopeFromState, getPlanSignature, shouldApplyCloudEnvelope } from './services/planSync';
 import { VersionTabs } from './components/VersionTabs';
 import { VersionCompareModal } from './components/VersionCompareModal';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import { TrackSelector } from './components/TrackSelector';
 import { SemesterGrid } from './components/SemesterGrid';
 import { RequirementsPanel } from './components/RequirementsPanel';
@@ -513,13 +513,15 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                 aria-controls="sidebar-drawer"
               >☰</button>
               {(!shareMode || shareMode.isOwner) && <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />}
-              <button
-                onClick={() => setShowExport(true)}
-                className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
-                title="ייצוא, שיתוף, או ייבוא של המערכת"
-              >
-                <span>⇪</span><span className="hidden sm:inline"> שיתוף</span>
-              </button>
+              {(!shareMode || shareMode.isOwner) && (
+                <button
+                  onClick={() => setShowExport(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
+                  title="ייצוא, שיתוף, או ייבוא של המערכת"
+                >
+                  <span>⇪</span><span className="hidden sm:inline"> שיתוף</span>
+                </button>
+              )}
               <button
                 onClick={undo}
                 disabled={_history.length === 0}
@@ -672,9 +674,5 @@ function AppInner() {
 }
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
-  );
+  return <AppInner />;
 }
