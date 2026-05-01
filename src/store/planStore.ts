@@ -66,6 +66,7 @@ interface PlanState extends StudentPlan {
   setNoAdditionalCreditOverride: (pairKey: string, courseId: string | null) => void;
   toggleRoboticsMinor: () => void;
   toggleEntrepreneurshipMinor: () => void;
+  toggleQuantumComputingMinor: () => void;
   setEnglishScore: (score: number | null) => void;
   setTargetGraduationSemesterId: (semId: number | null) => void;
   setLoadProfile: (profile: 'working' | 'fulltime') => void;
@@ -94,7 +95,7 @@ const DEFAULT_ORDER = Array.from({ length: DEFAULT_SEMESTERS }, (_, i) => i + 1)
 const DEFAULT_SEMESTER_MAP: Record<number, string[]> = { 0: [] };
 for (let i = 1; i <= DEFAULT_SEMESTERS; i++) DEFAULT_SEMESTER_MAP[i] = [];
 
-const CE_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
+const CE_ADDED_RECOMMENDED_COURSES: Record<number, string[]> = {
   4: ['01140073'],
 };
 
@@ -188,6 +189,7 @@ const initialState: StudentPlan = {
   noAdditionalCreditOverrides: {},
   roboticsMinorEnabled: false,
   entrepreneurshipMinorEnabled: false,
+  quantumComputingMinorEnabled: false,
   initializedTracks: [],
   targetGraduationSemesterId: null,
   loadProfile: 'fulltime' as const,
@@ -241,7 +243,7 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
   };
 
   if (migrated.trackId === 'ce') {
-    removeRecommendedCourses(migrated.semesters, CE_REMOVED_RECOMMENDED_COURSES);
+    addRecommendedCourses(migrated, 'ce', CE_ADDED_RECOMMENDED_COURSES);
   }
 
   if (migrated.trackId === 'cs') {
@@ -358,6 +360,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     coreToChainOverrides: p.coreToChainOverrides ?? [],
     electiveCreditAssignments: p.electiveCreditAssignments ?? {},
     noAdditionalCreditOverrides: p.noAdditionalCreditOverrides ?? {},
+    quantumComputingMinorEnabled: p.quantumComputingMinorEnabled ?? false,
     targetGraduationSemesterId: p.targetGraduationSemesterId ?? null,
     loadProfile: p.loadProfile ?? 'fulltime',
     savedTracks: p.savedTracks ?? current.savedTracks ?? {},
@@ -842,6 +845,9 @@ export const usePlanStore = create<PlanState>()(
 
       toggleEntrepreneurshipMinor: () =>
         set((state) => ({ entrepreneurshipMinorEnabled: !state.entrepreneurshipMinorEnabled })),
+
+      toggleQuantumComputingMinor: () =>
+        set((state) => ({ quantumComputingMinorEnabled: !state.quantumComputingMinorEnabled })),
 
       setTargetGraduationSemesterId: (semId) =>
         set(() => ({ targetGraduationSemesterId: semId })),

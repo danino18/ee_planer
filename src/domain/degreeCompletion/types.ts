@@ -19,6 +19,7 @@ export interface RequirementsInput {
   noAdditionalCreditOverrides?: Record<string, string>;
   roboticsMinorEnabled: boolean;
   entrepreneurshipMinorEnabled: boolean;
+  quantumComputingMinorEnabled: boolean;
 }
 
 export type DegreeBucket =

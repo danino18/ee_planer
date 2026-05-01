@@ -272,6 +272,7 @@ export interface StudentPlan {
   noAdditionalCreditOverrides?: Record<string, string>;  // pairKey -> courseId that should receive 0 recognized credits
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor
+  quantumComputingMinorEnabled?: boolean;  // student opted into the quantum computing minor
   initializedTracks?: string[];  // trackIds that have been fully initialized at least once
   targetGraduationSemesterId?: number | null;  // semesterId from semesterOrder the student wants to graduate in
   loadProfile?: 'working' | 'fulltime';  // student's load preference for smart scheduling

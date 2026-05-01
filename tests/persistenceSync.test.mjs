@@ -88,6 +88,7 @@ function createPlan(overrides = {}) {
         coreToChainOverrides: [],
         roboticsMinorEnabled: false,
         entrepreneurshipMinorEnabled: false,
+        quantumComputingMinorEnabled: false,
         initializedTracks: ['cs'],
       },
     },
@@ -99,6 +100,7 @@ function createPlan(overrides = {}) {
     coreToChainOverrides: ['02340117'],
     roboticsMinorEnabled: true,
     entrepreneurshipMinorEnabled: true,
+    quantumComputingMinorEnabled: true,
     initializedTracks: ['ee'],
     ...overrides,
   };
@@ -125,6 +127,7 @@ test('serializePlanState preserves saved tracks, initialized tracks, and special
   assert.deepEqual(serialized.selectedSpecializations, ['spec-secondary']);
   assert.deepEqual(serialized.doubleSpecializations, ['spec-secondary']);
   assert.deepEqual(serialized.initializedTracks, ['ee']);
+  assert.equal(serialized.quantumComputingMinorEnabled, true);
   assert.ok(serialized.savedTracks?.cs, 'savedTracks should be preserved in serialized plans');
   assert.deepEqual(serialized.savedTracks.cs.selectedSpecializations, ['spec-cs']);
 });

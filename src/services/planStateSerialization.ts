@@ -43,6 +43,7 @@ export function serializePlanState(state: StudentPlan): StudentPlan {
     noAdditionalCreditOverrides: { ...(state.noAdditionalCreditOverrides ?? {}) },
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
+    quantumComputingMinorEnabled: state.quantumComputingMinorEnabled ?? false,
     initializedTracks: [...(state.initializedTracks ?? [])],
     targetGraduationSemesterId: state.targetGraduationSemesterId ?? null,
     loadProfile: state.loadProfile ?? 'fulltime',

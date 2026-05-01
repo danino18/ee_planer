@@ -32,7 +32,13 @@ export const ceTrack: TrackDefinition = {
   semesterSchedule: [
     {
       semester: 1,
-      courses: ['00440102','01040012','01040064','01040016','02340129','01140071','02340114'],
+      courses: ['00440102','01040012','02340129','01140071','02340114'],
+      alternativeGroups: [
+        {
+          courseIds: ['01040064', '01040016'],
+          defaultCourseId: '01040064',
+        },
+      ],
     },
     {
       semester: 2,
@@ -44,7 +50,7 @@ export const ceTrack: TrackDefinition = {
     },
     {
       semester: 4,
-      courses: ['00440131','01040034','00440127','02340218','02340118'],
+      courses: ['00440131','01040034','00440127','02340218','02340118','01140073'],
     },
     {
       semester: 5,

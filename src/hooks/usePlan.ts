@@ -18,6 +18,13 @@ import { ROBOTICS_MINOR_EXTRA_CREDITS } from '../data/roboticsMinor';
 import { computeEntrepreneurshipMinorProgress } from './useEntrepreneurshipMinor';
 import type { EntrepreneurshipMinorProgress } from './useEntrepreneurshipMinor';
 import { ENTREPRENEURSHIP_MINOR_EXTRA_CREDITS } from '../data/entrepreneurshipMinor';
+import { computeQuantumComputingMinorProgress } from './useQuantumComputingMinor';
+import type { QuantumComputingMinorProgress } from './useQuantumComputingMinor';
+import {
+  CE_PROJECT_A_ID,
+  CE_PROJECT_B_ID,
+  getCeProjectRequirementProfile,
+} from '../domain/ceProjectRequirements';
 import {
   isCourseTaughtInEnglish,
   isChoirOrOrchestraCourseId,
@@ -311,12 +318,29 @@ function shouldApplyEeCombinedFieldsAdjustment(
 function getEffectiveMandatoryCreditsRequired(
   trackDef: TrackDefinition,
   allPlaced: ReadonlySet<string>,
+  courses: Map<string, SapCourse>,
 ): number {
+  if (trackDef.id === 'ce') {
+    return getCeProjectRequirementProfile(trackDef, allPlaced, courses).mandatoryCreditsRequired;
+  }
+
   if (shouldApplyEeCombinedFieldsAdjustment(trackDef, allPlaced)) {
     return trackDef.mandatoryCredits - EE_COMBINED_FIELDS_PHYSICS_CREDIT_DELTA;
   }
 
   return trackDef.mandatoryCredits;
+}
+
+function getEffectiveElectiveCreditsRequired(
+  trackDef: TrackDefinition,
+  allPlaced: ReadonlySet<string>,
+  courses: Map<string, SapCourse>,
+): number {
+  if (trackDef.id === 'ce') {
+    return getCeProjectRequirementProfile(trackDef, allPlaced, courses).electiveCreditsRequired;
+  }
+
+  return trackDef.electiveCreditsRequired;
 }
 
 function getEffectiveAreaRequirementCredits(
@@ -359,6 +383,7 @@ export function computeRequirementsProgress(
     noAdditionalCreditOverrides,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
+    quantumComputingMinorEnabled,
   } = input;
 
   if (!trackDef) return null;
@@ -367,7 +392,11 @@ export function computeRequirementsProgress(
       ...completedCourses,
       ...Object.values(semesters).flat(),
     ]);
-    const mandatoryCreditsRequired = getEffectiveMandatoryCreditsRequired(trackDef, allPlaced);
+    const mandatoryCreditsRequired = getEffectiveMandatoryCreditsRequired(trackDef, allPlaced, courses);
+    const electiveCreditsRequired = getEffectiveElectiveCreditsRequired(trackDef, allPlaced, courses);
+    const ceMandatoryProjectIds = trackDef.id === 'ce'
+      ? new Set(getCeProjectRequirementProfile(trackDef, allPlaced, courses).mandatoryProjectCourseIds)
+      : new Set<string>();
     const noAdditionalCreditConflicts = computeNoAdditionalCreditConflicts(courses, {
       completedCourses,
       semesters,
@@ -428,6 +457,9 @@ export function computeRequirementsProgress(
     let mandatoryDone = 0;
     for (const semesterEntry of trackDef.semesterSchedule) {
       for (const id of semesterEntry.courses) {
+        if (trackDef.id === 'ce' && (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID)) {
+          continue;
+        }
         if (mandatoryIds.has(id) && allPlaced.has(id)) {
           mandatoryDone += getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds);
         }
@@ -441,6 +473,9 @@ export function computeRequirementsProgress(
       }
     }
     for (const id of mandatoryLabIdSet) {
+      mandatoryDone += getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds);
+    }
+    for (const id of ceMandatoryProjectIds) {
       mandatoryDone += getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds);
     }
 
@@ -469,9 +504,13 @@ export function computeRequirementsProgress(
     };
 
     for (const id of iteratePlacedCourseIds(completedCourses, semesters, semesterOrder)) {
+      const isMandatoryForElectiveExclusion =
+        mandatoryIds.has(id) &&
+        !(trackDef.id === 'ce' && (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID) && !ceMandatoryProjectIds.has(id));
       if (
-        !mandatoryIds.has(id) &&
+        !isMandatoryForElectiveExclusion &&
         !mandatoryLabIdSet.has(id) &&
+        !ceMandatoryProjectIds.has(id) &&
         !excessLabIdSet.has(id) &&
         !counted.has(id) &&
         !isSportCourseId(id) &&
@@ -582,6 +621,11 @@ export function computeRequirementsProgress(
     const entrepreneurshipMinorProgress: EntrepreneurshipMinorProgress | null = entrepreneurshipMinorEnabled
       ? computeEntrepreneurshipMinorProgress(allPlaced, courses, weightedAverage, totalCredits, noAdditionalCreditCourseIds)
       : null;
+
+    const quantumComputingMinorProgress: QuantumComputingMinorProgress | null =
+      quantumComputingMinorEnabled && trackDef.id === 'ce'
+        ? computeQuantumComputingMinorProgress(allPlaced, courses, weightedAverage, totalCredits, noAdditionalCreditCourseIds)
+        : null;
 
     const groupDetails = groupEvaluations.map(({ group, mode, evaluation }) => {
       const ruleRequired = evaluation.ruleBlocks.reduce((sum, block) => sum + block.requiredCount, 0);
@@ -765,7 +809,7 @@ export function computeRequirementsProgress(
 
     return {
       mandatory: { earned: mandatoryDone, required: mandatoryCreditsRequired },
-      elective: { earned: electiveCredits, required: trackDef.electiveCreditsRequired },
+      elective: { earned: electiveCredits, required: electiveCreditsRequired },
       electiveBreakdown: {
         areaRequirements: electiveAreaRequirements,
         assignmentChoices: electiveAssignmentChoices,
@@ -811,9 +855,10 @@ export function computeRequirementsProgress(
       },
       roboticsMinorProgress,
       entrepreneurshipMinorProgress,
+      quantumComputingMinorProgress,
       isReady:
         mandatoryDone >= mandatoryCreditsRequired &&
-        electiveCredits >= trackDef.electiveCreditsRequired &&
+        electiveCredits >= electiveCreditsRequired &&
         electiveAreaRequirementsSatisfied &&
         (specializationCatalog.interactionDisabled
           ? false
@@ -847,6 +892,7 @@ export function useRequirementsProgress(
   const noAdditionalCreditOverrides = usePlanStore((s) => s.noAdditionalCreditOverrides);
   const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
   const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
+  const quantumComputingMinorEnabled = usePlanStore((s) => s.quantumComputingMinorEnabled ?? false);
 
   return useMemo(
     () =>
@@ -870,13 +916,14 @@ export function useRequirementsProgress(
           noAdditionalCreditOverrides,
           roboticsMinorEnabled,
           entrepreneurshipMinorEnabled,
+          quantumComputingMinorEnabled,
         },
         courses,
         trackDef,
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, weightedAverage],
+    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, weightedAverage],
   );
 }
 

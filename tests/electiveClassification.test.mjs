@@ -72,6 +72,8 @@ const { csTrack } = await loadTranspiledModule('src/data/tracks/cs.ts');
 const { eePhysicsTrack } = await loadTranspiledModule('src/data/tracks/ee_physics.ts');
 const { eeCombinedTrack } = await loadTranspiledModule('src/data/tracks/ee_combined.ts');
 const { eeMathTrack } = await loadTranspiledModule('src/data/tracks/ee_math.ts');
+const { ceTrack } = await loadTranspiledModule('src/data/tracks/ce.ts');
+const { computeQuantumComputingMinorProgress } = await loadTranspiledModule('src/hooks/useQuantumComputingMinor.ts');
 const { sanitizeStudentPlan } = await loadTranspiledModule('src/services/planValidation.ts');
 
 const filesRoot = join(repoRoot, 'files', 'קבוצות התמחות');
@@ -94,6 +96,19 @@ function course(id, credits, faculty = '') {
   };
 }
 
+function namedCourse(id, name, credits, extra = {}) {
+  return {
+    id,
+    name,
+    credits,
+    prerequisites: [],
+    faculty: '',
+    ...extra,
+  };
+}
+
+const EE_MATH_LAB_IDS = ['00450100', '00450101', '00450102'];
+
 const courses = new Map([
   ['00460001', course('00460001', 18)],
   ['00460002', course('00460002', 22)],
@@ -110,6 +125,7 @@ const courses = new Map([
   ['03360504', course('03360504', 3.5)],
   ['00214119', course('00214119', 2)],
   ['03940810', course('03940810', 1.5)],
+  ...EE_MATH_LAB_IDS.map((id) => [id, course(id, 1)]),
 ]);
 
 const EE_COMBINED_ELECTRODYNAMICS_ID = '01140246';
@@ -158,6 +174,68 @@ const eeCombinedMandatoryCourses = new Map([
   ['01140250', course('01140250', 3)],
   ['01140252', course('01140252', 3)],
   ...EE_COMBINED_LAB_IDS.map((id) => [id, course(id, 1)]),
+]);
+
+const CE_PROJECT_A_ID = '00440167';
+const CE_PROJECT_B_ID = '00440169';
+const CE_CS_PROJECT_1_ID = '02340001';
+const CE_CS_PROJECT_2_ID = '02360001';
+const ceBaseMandatoryIds = [
+  '00440102', '01040012', '01040064', '02340129', '01140071', '02340114',
+  '01040013', '02340125', '01040136', '01140075', '00440252',
+  '02340124', '02340141', '00440105', '01040220', '01040215', '01040214', '03240033',
+  '00440131', '01040034', '00440127', '02340218', '02340118', '01140073',
+  '00440137', '00440157', '02340123', '01040134', '02340247', '00460267',
+];
+const ceMandatoryCourses = new Map([
+  ['00440102', course('00440102', 0)],
+  ['01040012', course('01040012', 5.5)],
+  ['01040064', { ...course('01040064', 5), noAdditionalCreditIds: ['01040016'] }],
+  ['01040016', { ...course('01040016', 5), noAdditionalCreditIds: ['01040064'] }],
+  ['02340129', course('02340129', 3)],
+  ['01140071', course('01140071', 3.5)],
+  ['02340114', course('02340114', 4)],
+  ['01040013', course('01040013', 5.5)],
+  ['02340125', course('02340125', 3)],
+  ['01040136', course('01040136', 4)],
+  ['01140075', course('01140075', 5)],
+  ['00440252', course('00440252', 5)],
+  ['02340124', course('02340124', 4)],
+  ['02340141', course('02340141', 3)],
+  ['00440105', course('00440105', 4)],
+  ['01040220', course('01040220', 2.5)],
+  ['01040215', course('01040215', 2.5)],
+  ['01040214', course('01040214', 2.5)],
+  ['03240033', course('03240033', 3)],
+  ['00440131', course('00440131', 5)],
+  ['01040034', course('01040034', 3.5)],
+  ['00440127', course('00440127', 3.5)],
+  ['02340218', course('02340218', 3)],
+  ['02340118', course('02340118', 3)],
+  ['01140073', course('01140073', 3.5)],
+  ['00440137', course('00440137', 5)],
+  ['00440157', course('00440157', 2)],
+  ['02340123', course('02340123', 4.5)],
+  ['01040134', course('01040134', 2.5)],
+  ['02340247', course('02340247', 3)],
+  ['00460267', course('00460267', 3)],
+  [CE_PROJECT_A_ID, namedCourse(CE_PROJECT_A_ID, "פרוייקט א'", 4)],
+  [CE_PROJECT_B_ID, namedCourse(CE_PROJECT_B_ID, "פרויקט ב'", 4)],
+  [CE_CS_PROJECT_1_ID, namedCourse(CE_CS_PROJECT_1_ID, 'פרויקט במדמח א', 3)],
+  [CE_CS_PROJECT_2_ID, namedCourse(CE_CS_PROJECT_2_ID, 'פרויקט במדמח ב', 3)],
+]);
+const quantumCourses = new Map([
+  ['02360343', course('02360343', 3)],
+  ['02360990', course('02360990', 3)],
+  ['00460241', course('00460241', 3.5)],
+  ['00460734', course('00460734', 3)],
+  ['00460243', course('00460243', 3)],
+  ['02360313', course('02360313', 3)],
+  ['01140073', course('01140073', 3.5)],
+  ['01140054', course('01140054', 5)],
+  ['01040004', course('01040004', 5)],
+  ['01040131', course('01040131', 2.5)],
+  ['01040033', course('01040033', 2.5)],
 ]);
 
 function buildSpecializationCatalogsFromFiles() {
@@ -272,6 +350,36 @@ function eeCombinedMandatoryProgress({
     eeCombinedMandatoryCourses,
     eeCombinedTrack,
     emptyCatalog(eeCombinedTrack.id),
+    null,
+  );
+}
+
+function ceMandatoryProgress(projectIds, extraIds = []) {
+  return computeRequirementsProgress(
+    {
+      semesters: { 0: [...ceBaseMandatoryIds, ...projectIds, ...extraIds] },
+      completedCourses: [],
+      explicitSportCompletions: [],
+      completedInstances: [],
+      grades: {},
+      binaryPass: {},
+      selectedSpecializations: [],
+      doubleSpecializations: [],
+      hasEnglishExemption: false,
+      miluimCredits: 0,
+      englishScore: undefined,
+      englishTaughtCourses: [],
+      semesterOrder: [1],
+      coreToChainOverrides: [],
+      courseChainAssignments: {},
+      electiveCreditAssignments: {},
+      roboticsMinorEnabled: false,
+      entrepreneurshipMinorEnabled: false,
+      quantumComputingMinorEnabled: false,
+    },
+    ceMandatoryCourses,
+    ceTrack,
+    emptyCatalog(ceTrack.id),
     null,
   );
 }
@@ -451,6 +559,90 @@ test('ee_combined lab pool completes the 3 mandatory lab credits missing from th
   assert.equal(withLabs.labPoolProgress?.required, 3);
 });
 
+test('ce counts electrical project A and B as the 114.5 mandatory project path', () => {
+  const progress = ceMandatoryProgress([CE_PROJECT_A_ID, CE_PROJECT_B_ID]);
+
+  assert.equal(progress.mandatory.earned, 114.5);
+  assert.equal(progress.mandatory.required, 114.5);
+  assert.equal(progress.elective.required, 26);
+});
+
+test('ce counts two CS projects as the 112.5 mandatory project path', () => {
+  const progress = ceMandatoryProgress([CE_CS_PROJECT_1_ID, CE_CS_PROJECT_2_ID]);
+
+  assert.equal(progress.mandatory.earned, 112.5);
+  assert.equal(progress.mandatory.required, 112.5);
+  assert.equal(progress.elective.required, 28);
+});
+
+test('ce counts one electrical project and one CS project as the 113.5 mandatory project path', () => {
+  const progress = ceMandatoryProgress([CE_PROJECT_A_ID, CE_CS_PROJECT_1_ID]);
+
+  assert.equal(progress.mandatory.earned, 113.5);
+  assert.equal(progress.mandatory.required, 113.5);
+  assert.equal(progress.elective.required, 27);
+});
+
+test('ce algebra alternatives avoid the 111 credit double-placement regression', () => {
+  const progress = ceMandatoryProgress(
+    [CE_PROJECT_A_ID, CE_PROJECT_B_ID],
+    ['01040016'],
+  );
+
+  assert.equal(progress.mandatory.earned, 114.5);
+  assert.equal(progress.mandatory.required, 114.5);
+});
+
+test('quantum computing minor completes option 1', () => {
+  const progress = computeQuantumComputingMinorProgress(
+    new Set(['02360343', '02360990', '00460241', '00460734', '00460243']),
+    quantumCourses,
+    86,
+    30,
+  );
+
+  assert.equal(progress.option1Satisfied, true);
+  assert.equal(progress.option2Satisfied, false);
+  assert.equal(progress.complete, true);
+  assert.equal(progress.gpaStatus, 'eligible');
+  assert.equal(progress.missingTotalCredits, false);
+});
+
+test('quantum computing minor completes option 2 through each g2 alternative', () => {
+  const base = ['02360343', '02360990', '00460734', '00460243', '02360313'];
+  const g2Options = [
+    ['01140073'],
+    ['01140054', '01040004', '01040131'],
+    ['01140054', '01040033', '01040131'],
+  ];
+
+  for (const g2 of g2Options) {
+    const progress = computeQuantumComputingMinorProgress(
+      new Set([...base, ...g2]),
+      quantumCourses,
+      86,
+      30,
+    );
+
+    assert.equal(progress.option2Satisfied, true);
+    assert.equal(progress.complete, true);
+  }
+});
+
+test('quantum computing minor reports advisor GPA and total-credit status without adding degree credits', () => {
+  const progress = computeQuantumComputingMinorProgress(
+    new Set(['02360343', '02360990', '00460241', '00460734', '00460243']),
+    quantumCourses,
+    82,
+    29,
+  );
+
+  assert.equal(progress.option1Satisfied, true);
+  assert.equal(progress.complete, true);
+  assert.equal(progress.gpaStatus, 'advisor');
+  assert.equal(progress.missingTotalCredits, true);
+});
+
 test('cs specialization progress excludes core-locked courses from selected specialization groups', () => {
   const catalogs = buildSpecializationCatalogsFromFiles();
   const machineLearning = catalogs.cs.groups.find((group) => group.name.includes('למידת מכונה'));
@@ -527,7 +719,17 @@ test('ee_math separates electrical and math elective credits', () => {
   assert.equal(area(progress, 'ee')?.earned, 18);
   assert.equal(area(progress, 'ee')?.required, 18);
   assert.equal(area(progress, 'math')?.earned, 5);
-  assert.equal(area(progress, 'math')?.required, 5);
+  assert.equal(area(progress, 'math')?.required, 6);
+});
+
+test('ee_math tracks the 3 mandatory lab credits', () => {
+  const withoutLabs = progressFor(eeMathTrack, []);
+  const withLabs = progressFor(eeMathTrack, EE_MATH_LAB_IDS);
+
+  assert.equal(withoutLabs.labPoolProgress?.earned, 0);
+  assert.equal(withoutLabs.labPoolProgress?.required, 3);
+  assert.equal(withLabs.labPoolProgress?.earned, 3);
+  assert.equal(withLabs.labPoolProgress?.required, 3);
 });
 
 test('manual assignment can move an ambiguous physics elective and is accepted by plan validation', () => {

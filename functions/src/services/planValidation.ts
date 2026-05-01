@@ -366,6 +366,10 @@ export function sanitizePlanPayload(payload: unknown, allowSavedTracks = true): 
       source.entrepreneurshipMinorEnabled,
       "entrepreneurshipMinorEnabled"
     ),
+    quantumComputingMinorEnabled: cleanBoolean(
+      source.quantumComputingMinorEnabled,
+      "quantumComputingMinorEnabled"
+    ),
     initializedTracks: cleanStringArray(source.initializedTracks, "initializedTracks", 20),
     targetGraduationSemesterId: cleanNullableInteger(
       source.targetGraduationSemesterId,

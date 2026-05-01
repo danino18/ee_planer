@@ -23,12 +23,20 @@ import {
   ROBOTICS_MINOR_LISTS,
 } from '../data/roboticsMinor';
 import type { EntrepreneurshipMinorProgress } from '../hooks/useEntrepreneurshipMinor';
+import type { QuantumComputingMinorProgress } from '../hooks/useQuantumComputingMinor';
 import {
   ENTREPRENEURSHIP_COURSES,
   ENTREPRENEURSHIP_MINOR_MIN_GPA,
   ENTREPRENEURSHIP_MINOR_MIN_TOTAL_CREDITS,
   ENTREPRENEURSHIP_MINOR_MIN_CREDITS,
 } from '../data/entrepreneurshipMinor';
+import {
+  QUANTUM_MINOR_ADVISOR_GPA,
+  QUANTUM_MINOR_G2_OPTIONS,
+  QUANTUM_MINOR_GROUPS,
+  QUANTUM_MINOR_MIN_GPA,
+  QUANTUM_MINOR_MIN_TOTAL_CREDITS,
+} from '../data/quantumComputingMinor';
 
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
@@ -592,6 +600,7 @@ interface Props {
     };
     roboticsMinorProgress: RoboticsMinorProgress | null;
     entrepreneurshipMinorProgress: EntrepreneurshipMinorProgress | null;
+    quantumComputingMinorProgress: QuantumComputingMinorProgress | null;
     isReady: boolean;
   } | null;
   weightedAverage: number | null;
@@ -606,6 +615,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setCoreToChainOverrides,
     toggleRoboticsMinor,
     toggleEntrepreneurshipMinor,
+    toggleQuantumComputingMinor,
     addCourseToSemester,
     setElectiveCreditAssignment,
     miluimCredits,
@@ -613,6 +623,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     coreToChainOverrides,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
+    quantumComputingMinorEnabled,
     semesterOrder,
     summerSemesters,
     semesters,
@@ -625,6 +636,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setCoreToChainOverrides: state.setCoreToChainOverrides,
     toggleRoboticsMinor: state.toggleRoboticsMinor,
     toggleEntrepreneurshipMinor: state.toggleEntrepreneurshipMinor,
+    toggleQuantumComputingMinor: state.toggleQuantumComputingMinor,
     addCourseToSemester: state.addCourseToSemester,
     setElectiveCreditAssignment: state.setElectiveCreditAssignment,
     miluimCredits: state.miluimCredits,
@@ -632,12 +644,14 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     coreToChainOverrides: state.coreToChainOverrides ?? [],
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
+    quantumComputingMinorEnabled: state.quantumComputingMinorEnabled ?? false,
     semesterOrder: state.semesterOrder,
     summerSemesters: state.summerSemesters,
     semesters: state.semesters,
     completedCourses: state.completedCourses,
   })));
   const [expandedRoboticsList, setExpandedRoboticsList] = useState<number | null>(null);
+  const [expandedQuantumGroup, setExpandedQuantumGroup] = useState<string | null>(null);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -969,6 +983,126 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 </div>
               );
             })()}
+          </div>
+        );
+      })()}
+
+      {trackId === 'ce' && (
+        <div className="mb-2 flex items-center gap-2">
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={quantumComputingMinorEnabled}
+              onChange={toggleQuantumComputingMinor}
+              className="rounded"
+            />
+            התמחות משנית בחישוב קוונטי
+          </label>
+        </div>
+      )}
+
+      {trackId === 'ce' && quantumComputingMinorEnabled && progress.quantumComputingMinorProgress && (() => {
+        const qp = progress.quantumComputingMinorProgress;
+        const gpaClass = qp.gpaStatus === 'eligible'
+          ? 'text-green-700'
+          : qp.gpaStatus === 'advisor'
+            ? 'text-amber-700'
+            : 'text-red-600';
+        const gpaText = qp.gpaStatus === 'eligible'
+          ? `ממוצע ≥ ${QUANTUM_MINOR_MIN_GPA} ✓`
+          : qp.gpaStatus === 'advisor'
+            ? `ממוצע ${QUANTUM_MINOR_ADVISOR_GPA}-${QUANTUM_MINOR_MIN_GPA}: נדרש אישור יועץ`
+            : `נדרש ממוצע ≥ ${QUANTUM_MINOR_MIN_GPA} או אישור יועץ מ-${QUANTUM_MINOR_ADVISOR_GPA}`;
+
+        return (
+          <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5 space-y-2">
+            <div className="text-xs text-sky-800 space-y-0.5">
+              <p className="font-semibold">דרישות קבלה להתמחות המשנית</p>
+              <p className={qp.missingTotalCredits ? 'text-red-600' : 'text-green-700'}>
+                {qp.missingTotalCredits
+                  ? `נדרשות לפחות ${QUANTUM_MINOR_MIN_TOTAL_CREDITS} נק"ז — חסר`
+                  : `לפחות ${QUANTUM_MINOR_MIN_TOTAL_CREDITS} נק"ז ✓`}
+              </p>
+              <p className={gpaClass}>{gpaText}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className={`rounded-md px-2 py-1 ${qp.option1Satisfied ? 'bg-green-100 text-green-700' : 'bg-white text-gray-600'}`}>
+                אפשרות 1 {qp.option1Satisfied ? '✓' : ''}
+              </div>
+              <div className={`rounded-md px-2 py-1 ${qp.option2Satisfied ? 'bg-green-100 text-green-700' : 'bg-white text-gray-600'}`}>
+                אפשרות 2 {qp.option2Satisfied ? '✓' : ''}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              {qp.groupProgress.map((gp) => {
+                const isExpanded = expandedQuantumGroup === gp.id;
+                const groupData = QUANTUM_MINOR_GROUPS.find((group) => group.id === gp.id)!;
+                return (
+                  <div key={gp.id}>
+                    <button
+                      onClick={() => setExpandedQuantumGroup(isExpanded ? null : gp.id)}
+                      className={`text-[11px] px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
+                        gp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      <span>{isExpanded ? '▲' : '▼'}</span>
+                      <span>{gp.title}{gp.satisfied ? ' ✓' : ` ${gp.satisfiedCount}/${gp.minCourses}`}</span>
+                    </button>
+                    {isExpanded && (
+                      <div className="mt-0.5 ms-2 space-y-0.5">
+                        {groupData.courses.map((course) => {
+                          const placed = allPlaced.has(course.id);
+                          return (
+                            <div key={course.id} className="flex items-center gap-1 text-[11px]">
+                              <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
+                                {placed ? '✓' : '○'}
+                              </span>
+                              <span className={`${placed ? 'text-green-700' : 'text-gray-500'} flex-1 min-w-0`}>
+                                {course.name}
+                              </span>
+                              <span className="text-gray-300 shrink-0">{course.credits} נק"ז</span>
+                              {!placed && renderMinorAddButton(course.id)}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-gray-700">ג2. קורסי טרום-קוונטים</p>
+              {qp.g2OptionProgress.map((option) => {
+                const optionData = QUANTUM_MINOR_G2_OPTIONS.find((entry) => entry.id === option.id)!;
+                return (
+                  <div key={option.id} className={`rounded-md px-2 py-1 ${option.satisfied ? 'bg-green-100' : 'bg-white'}`}>
+                    <div className={`text-[11px] font-medium ${option.satisfied ? 'text-green-700' : 'text-gray-600'}`}>
+                      {option.title}{option.satisfied ? ' ✓' : ` ${option.matchedCourseIds.length}/${option.requiredCourseIds.length}`}
+                    </div>
+                    <div className="mt-0.5 space-y-0.5">
+                      {optionData.courses.map((course) => {
+                        const placed = allPlaced.has(course.id);
+                        return (
+                          <div key={course.id} className="flex items-center gap-1 text-[11px]">
+                            <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
+                              {placed ? '✓' : '○'}
+                            </span>
+                            <span className={`${placed ? 'text-green-700' : 'text-gray-500'} flex-1 min-w-0`}>
+                              {course.name}
+                            </span>
+                            {!placed && renderMinorAddButton(course.id)}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         );
       })()}

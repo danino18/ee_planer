@@ -92,6 +92,7 @@ function VersionColumn({
         noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
         roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
         entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
+        quantumComputingMinorEnabled: plan.quantumComputingMinorEnabled ?? false,
       },
       courses,
       trackDef,

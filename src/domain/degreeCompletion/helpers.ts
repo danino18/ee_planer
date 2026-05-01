@@ -23,6 +23,11 @@ import {
   computeNoAdditionalCreditConflicts,
   getNoAdditionalCreditCourseIds,
 } from '../noAdditionalCredit';
+import {
+  CE_PROJECT_A_ID,
+  CE_PROJECT_B_ID,
+  getCeProjectRequirementProfile,
+} from '../ceProjectRequirements';
 import type {
   CourseAssignment,
   DegreeBucket,
@@ -83,9 +88,15 @@ export function buildPreciseMandatorySet(
   const allPlaced = buildAllPlaced(input);
   const visibleIds = getVisibleMandatoryCourseIds(trackDef, courses, input.englishScore);
   const result = new Set<string>();
+  const ceMandatoryProjectIds = trackDef.id === 'ce'
+    ? new Set(getCeProjectRequirementProfile(trackDef, allPlaced, courses).mandatoryProjectCourseIds)
+    : new Set<string>();
 
   for (const entry of trackDef.semesterSchedule) {
     for (const id of entry.courses) {
+      if (trackDef.id === 'ce' && (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID)) {
+        continue;
+      }
       if (visibleIds.has(id) && allPlaced.has(id)) {
         result.add(id);
       }
@@ -100,6 +111,10 @@ export function buildPreciseMandatorySet(
       );
       if (satisfiedId) result.add(satisfiedId);
     }
+  }
+
+  for (const id of ceMandatoryProjectIds) {
+    result.add(id);
   }
 
   return result;
@@ -381,6 +396,11 @@ export function buildCourseAssignments(
   for (const id of iterateAllPlacedOrdered(input)) {
     let bucket: DegreeBucket;
     let credits = courses.get(id)?.credits ?? 0;
+    const isMandatoryOnlyBecauseScheduledCeProject =
+      trackDef.id === 'ce' &&
+      (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID) &&
+      visibleMandatoryIds.has(id) &&
+      !preciseMandatorySet.has(id);
 
     if (noAdditionalCreditCourseIds.has(id)) {
       bucket = 'uncounted';
@@ -403,7 +423,7 @@ export function buildCourseAssignments(
       bucket = isRegularSportCourseId(id) ? 'sport' : 'uncounted';
     } else if (isFreeElectiveCourseId(id)) {
       bucket = 'melag';
-    } else if (visibleMandatoryIds.has(id)) {
+    } else if (visibleMandatoryIds.has(id) && !isMandatoryOnlyBecauseScheduledCeProject) {
       // Visible mandatory course that didn't make it into preciseMandatorySet:
       // most commonly the losing alternative in an alternativeGroup. These
       // contribute to neither mandatory nor elective credits.

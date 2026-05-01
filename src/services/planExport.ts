@@ -202,6 +202,7 @@ function buildMetadataRows(ctx: CsvBuildContext): string[] {
   rows.push(csvRow(['חודשי מילואים', plan?.miluimCredits ?? 0]));
   rows.push(csvRow(['מינור רובוטיקה', plan?.roboticsMinorEnabled ? 'כן' : 'לא']));
   rows.push(csvRow(['מינור יזמות', plan?.entrepreneurshipMinorEnabled ? 'כן' : 'לא']));
+  rows.push(csvRow(['התמחות משנית בחישוב קוונטי', plan?.quantumComputingMinorEnabled ? 'כן' : 'לא']));
   return rows;
 }
 
@@ -302,6 +303,7 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
       noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
       roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
       entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
+      quantumComputingMinorEnabled: plan.quantumComputingMinorEnabled ?? false,
     },
     courses,
     trackDef,
@@ -413,6 +415,11 @@ function buildRequirementsRows(ctx: CsvBuildContext): string[] {
       'קורסים',
     );
   }
+  if (progress.quantumComputingMinorProgress) {
+    const q = progress.quantumComputingMinorProgress;
+    pushMetric('התמחות קוונטית — אפשרות 1', q.option1Satisfied ? 1 : 0, 1, 'מסלול');
+    pushMetric('התמחות קוונטית — אפשרות 2', q.option2Satisfied ? 1 : 0, 1, 'מסלול');
+  }
 
   rows.push(csvRow([
     'אנגלית',
@@ -463,6 +470,7 @@ function buildSpecializationRows(ctx: CsvBuildContext): string[] {
       noAdditionalCreditOverrides: plan.noAdditionalCreditOverrides,
       roboticsMinorEnabled: plan.roboticsMinorEnabled ?? false,
       entrepreneurshipMinorEnabled: plan.entrepreneurshipMinorEnabled ?? false,
+      quantumComputingMinorEnabled: plan.quantumComputingMinorEnabled ?? false,
     },
     courses,
     trackDef,

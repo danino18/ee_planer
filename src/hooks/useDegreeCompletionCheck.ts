@@ -52,6 +52,7 @@ export function useDegreeCompletionCheck(
     noAdditionalCreditOverrides: s.noAdditionalCreditOverrides,
     roboticsMinorEnabled: s.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: s.entrepreneurshipMinorEnabled ?? false,
+    quantumComputingMinorEnabled: s.quantumComputingMinorEnabled ?? false,
     // Scheduling context fields
     summerSemesters: s.summerSemesters,
     semesterTypeOverrides: s.semesterTypeOverrides ?? {},

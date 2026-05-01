@@ -61,7 +61,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     undo,
     semesters,
     addCourseToSemester,
-    removeCourseFromSemester,
     loadEnvelope,
     _history,
     _initKey,
@@ -83,7 +82,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     undo: state.undo,
     semesters: state.semesters,
     addCourseToSemester: state.addCourseToSemester,
-    removeCourseFromSemester: state.removeCourseFromSemester,
     loadEnvelope: state.loadEnvelope,
     _history: state._history,
     _initKey: state._initKey,
@@ -143,12 +141,6 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       return hasPendingCloudSync ? 'pending' : 'saved';
     });
   }, [user, hasPendingCloudSync]);
-
-  useEffect(() => {
-    if (trackId === 'ce' && (semesters[4] ?? []).includes('01140073')) {
-      removeCourseFromSemester('01140073', 4);
-    }
-  }, [trackId, semesters, removeCourseFromSemester]);
 
   useEffect(() => {
     if (!trackId) return;
