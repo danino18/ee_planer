@@ -49,17 +49,19 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
 
     let cancelled = false;
 
-    fetchShare(shareId)
+    auth.authStateReady()
+      .then(() => {
+        if (cancelled) return null;
+        return fetchShare(shareId);
+      })
       .then((response) => {
-        if (cancelled) return;
+        if (!response || cancelled) return;
         if (!response.ok) {
           setState({ status: 'error', reason: response.reason });
           return;
         }
 
-        // Detect ownership synchronously using the Firebase auth singleton.
-        // If the current user is the owner, don't load the stale share snapshot —
-        // let their normal cloud sync load the latest plan instead.
+        // Detect ownership after auth is fully initialized so auth.currentUser is reliable.
         const currentUid = auth.currentUser?.uid ?? null;
         const isOwner = currentUid !== null && currentUid === response.share.ownerUid;
 
@@ -67,6 +69,19 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
         if (!isOwner) {
           usePlanStore.getState().loadEnvelope(response.share.envelope);
           envelopeLoaded = true;
+        } else {
+          // Owner: load the share snapshot only if it's newer than the local plan.
+          // This makes partner edits visible when the owner opens their share link,
+          // while preventing a stale share snapshot from overwriting fresher local edits.
+          const shareUpdatedAt = Math.max(...response.share.envelope.versions.map((v) => v.updatedAt));
+          const localUpdatedAt = Math.max(
+            ...buildEnvelopeFromState(usePlanStore.getState()).versions.map((v) => v.updatedAt),
+          );
+          if (shareUpdatedAt > localUpdatedAt) {
+            usePlanStore.getState().loadEnvelope(response.share.envelope);
+            usePlanStore.getState().markCloudSyncPending(shareUpdatedAt);
+            envelopeLoaded = true;
+          }
         }
 
         setState({
