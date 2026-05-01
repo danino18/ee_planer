@@ -201,7 +201,7 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
       versionIds: versions.map((v) => v.id),
     });
 
-    const expiresAt = shareTtlMs !== null ? Date.now() + shareTtlMs : null;
+    const expiresAt = shareTtlMs;
 
     setShareLoading(true);
     try {
