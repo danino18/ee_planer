@@ -73,6 +73,7 @@ function createPlanPayload() {
         coreToChainOverrides: ['02340117'],
         courseChainAssignments: { '02340117': 'chain-a' },
         electiveCreditAssignments: { '01160210': 'physics' },
+        noAdditionalCreditOverrides: {},
         roboticsMinorEnabled: true,
         entrepreneurshipMinorEnabled: false,
         quantumComputingMinorEnabled: false,
@@ -89,6 +90,7 @@ function createPlanPayload() {
     coreToChainOverrides: ['02340117'],
     courseChainAssignments: { '02340117': 'chain-a' },
     electiveCreditAssignments: { '01160210': 'physics' },
+    noAdditionalCreditOverrides: { '02340117_02340118': '02340117' },
     roboticsMinorEnabled: true,
     entrepreneurshipMinorEnabled: true,
     quantumComputingMinorEnabled: true,
@@ -110,6 +112,8 @@ test('client sanitizer accepts current StudentPlan fields in plan and savedTrack
   assert.deepEqual(sanitized.savedTracks.cs.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(sanitized.electiveCreditAssignments, { '01160210': 'physics' });
   assert.deepEqual(sanitized.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(sanitized.noAdditionalCreditOverrides, { '02340117_02340118': '02340117' });
+  assert.deepEqual(sanitized.savedTracks.cs.noAdditionalCreditOverrides, {});
   assert.equal(sanitized.roboticsMinorEnabled, true);
   assert.equal(sanitized.entrepreneurshipMinorEnabled, true);
   assert.equal(sanitized.quantumComputingMinorEnabled, true);
@@ -192,6 +196,8 @@ test('server security validator accepts current StudentPlan fields in plan and s
   assert.deepEqual(validated.value.savedTracks.cs.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(validated.value.electiveCreditAssignments, { '01160210': 'physics' });
   assert.deepEqual(validated.value.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(validated.value.noAdditionalCreditOverrides, { '02340117_02340118': '02340117' });
+  assert.deepEqual(validated.value.savedTracks.cs.noAdditionalCreditOverrides, {});
   assert.equal(validated.value.roboticsMinorEnabled, true);
   assert.equal(validated.value.entrepreneurshipMinorEnabled, true);
   assert.equal(validated.value.quantumComputingMinorEnabled, true);
@@ -213,9 +219,11 @@ test('server service sanitizer accepts current StudentPlan fields in plan and sa
   assert.deepEqual(sanitized.explicitSportCompletions, ['39480001']);
   assert.deepEqual(sanitized.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(sanitized.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(sanitized.noAdditionalCreditOverrides, { '02340117_02340118': '02340117' });
   assert.deepEqual(sanitized.savedTracks.cs.explicitSportCompletions, ['39480001']);
   assert.deepEqual(sanitized.savedTracks.cs.courseChainAssignments, { '02340117': 'chain-a' });
   assert.deepEqual(sanitized.savedTracks.cs.electiveCreditAssignments, { '01160210': 'physics' });
+  assert.deepEqual(sanitized.savedTracks.cs.noAdditionalCreditOverrides, {});
   assert.equal(sanitized.savedTracks.cs.roboticsMinorEnabled, true);
   assert.equal(sanitized.savedTracks.cs.entrepreneurshipMinorEnabled, false);
   assert.equal(sanitized.savedTracks.cs.quantumComputingMinorEnabled, false);
@@ -266,7 +274,7 @@ test('cloud sync schema stays aligned for serialized StudentPlan fields', () => 
     'service sanitizer must clean electiveCreditAssignments',
   );
 
-  for (const key of ['courseChainAssignments', 'targetGraduationSemesterId', 'loadProfile']) {
+  for (const key of ['courseChainAssignments', 'noAdditionalCreditOverrides', 'targetGraduationSemesterId', 'loadProfile']) {
     assert.match(serializerSource, new RegExp(`${key}:`), `serializePlanState must include ${key}`);
     assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
     assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
