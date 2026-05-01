@@ -665,7 +665,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   }
 
   const isMiluim = miluimCredits !== undefined;
-  const shouldShowCoreAddButton = trackId === 'ce';
+  const shouldShowCoreAddButton = trackId === 'ce' || trackId === 'cs';
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
