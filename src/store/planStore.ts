@@ -63,6 +63,7 @@ interface PlanState extends StudentPlan {
   setCoreToChainOverrides: (ids: string[]) => void;
   setCourseChainAssignment: (courseId: string, chainGroupId: string | null) => void;
   setElectiveCreditAssignment: (courseId: string, area: ElectiveCreditArea | null) => void;
+  setNoAdditionalCreditOverride: (pairKey: string, courseId: string | null) => void;
   toggleRoboticsMinor: () => void;
   toggleEntrepreneurshipMinor: () => void;
   setEnglishScore: (score: number | null) => void;
@@ -184,6 +185,7 @@ const initialState: StudentPlan = {
   dismissedRecommendedCourses: {},
   coreToChainOverrides: [],
   electiveCreditAssignments: {},
+  noAdditionalCreditOverrides: {},
   roboticsMinorEnabled: false,
   entrepreneurshipMinorEnabled: false,
   initializedTracks: [],
@@ -355,6 +357,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
     coreToChainOverrides: p.coreToChainOverrides ?? [],
     electiveCreditAssignments: p.electiveCreditAssignments ?? {},
+    noAdditionalCreditOverrides: p.noAdditionalCreditOverrides ?? {},
     targetGraduationSemesterId: p.targetGraduationSemesterId ?? null,
     loadProfile: p.loadProfile ?? 'fulltime',
     savedTracks: p.savedTracks ?? current.savedTracks ?? {},
@@ -823,6 +826,17 @@ export const usePlanStore = create<PlanState>()(
           return { electiveCreditAssignments: { ...current, [courseId]: area } };
         }),
 
+      setNoAdditionalCreditOverride: (pairKey, courseId) =>
+        set((state) => {
+          const current = state.noAdditionalCreditOverrides ?? {};
+          if (courseId === null) {
+            const rest = { ...current };
+            delete rest[pairKey];
+            return { noAdditionalCreditOverrides: rest };
+          }
+          return { noAdditionalCreditOverrides: { ...current, [pairKey]: courseId } };
+        }),
+
       toggleRoboticsMinor: () =>
         set((state) => ({ roboticsMinorEnabled: !state.roboticsMinorEnabled })),
 
@@ -931,6 +945,7 @@ export const usePlanStore = create<PlanState>()(
             dismissedRecommendedCourses,
             savedTracks,
             electiveCreditAssignments: {},
+            noAdditionalCreditOverrides: {},
             _history: [],
             _initKey: state._initKey + 1,
             isSwitchingTrack: false,

@@ -16,6 +16,7 @@ export interface RequirementsInput {
   coreToChainOverrides: string[];
   courseChainAssignments?: Record<string, string>;
   electiveCreditAssignments?: Record<string, ElectiveCreditArea>;
+  noAdditionalCreditOverrides?: Record<string, string>;
   roboticsMinorEnabled: boolean;
   entrepreneurshipMinorEnabled: boolean;
 }

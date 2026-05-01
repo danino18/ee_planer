@@ -25,6 +25,7 @@ export function computeEntrepreneurshipMinorProgress(
   courses: Map<string, SapCourse>,
   weightedAverage: number | null,
   totalCredits: number,
+  noAdditionalCreditCourseIds: ReadonlySet<string> = new Set(),
 ): EntrepreneurshipMinorProgress {
   let creditsEarned = 0;
   let mandatoryCompleted = 0;
@@ -36,6 +37,7 @@ export function computeEntrepreneurshipMinorProgress(
   for (const course of ENTREPRENEURSHIP_COURSES) {
     if (course.id === null) continue;
     if (!allPlaced.has(course.id)) continue;
+    if (noAdditionalCreditCourseIds.has(course.id)) continue;
 
     const credits = courses.get(course.id)?.credits ?? course.credits;
     creditsEarned += credits;

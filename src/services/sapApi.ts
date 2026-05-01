@@ -33,6 +33,10 @@ function parsePrerequisites(prereqStr?: string): string[][] {
     .filter(group => group.length > 0);
 }
 
+export function parseNoAdditionalCreditIds(value?: string): string[] {
+  return [...new Set(value?.match(/\d{8}/g) ?? [])];
+}
+
 export function addPrerequisiteOption(course: SapCourse | undefined, prerequisiteGroup: string[]): void {
   if (!course) return;
   const alreadyExists = course.prerequisites.some(
@@ -78,6 +82,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
             name: g['שם מקצוע'] ?? id,
             credits: isNaN(credits) ? 0 : credits,
             prerequisites: parsePrerequisites(g['מקצועות קדם']),
+            noAdditionalCreditIds: parseNoAdditionalCreditIds(g['מקצועות ללא זיכוי נוסף']),
             examMoed1: g['מועד א'],
             examMoed2: g['מועד ב'],
             faculty: g['פקולטה'] ?? '',
@@ -126,11 +131,24 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     '03940800': { name: 'ספורט נבחרות', credits: 1.5 },
     '03940587': { name: 'מקהלה 3', credits: 2 },
     '03940582': { name: 'תיזמורת סימפונית', credits: 2 },
+    '00440262': { name: 'תכן לוגי ומבוא למחשבים', credits: 3.5 },
   };
   for (const [id, info] of Object.entries(LEGACY_COURSES)) {
     if (!merged.has(id)) {
       merged.set(id, { id, name: info.name, credits: info.credits, prerequisites: [], faculty: '' });
     }
+  }
+
+  const logicalDesignIntro = merged.get('00440262');
+  if (logicalDesignIntro) {
+    logicalDesignIntro.noAdditionalCreditIds = [
+      ...new Set([
+        ...(logicalDesignIntro.noAdditionalCreditIds ?? []),
+        '00440252',
+        '02340252',
+        '02340262',
+      ]),
+    ];
   }
 
   for (const course of humanitiesFreeElectiveCourses) {

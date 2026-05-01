@@ -86,6 +86,7 @@ export interface WeightedAverageInput {
   semesters: StudentPlan['semesters'];
   grades: StudentPlan['grades'];
   binaryPass?: StudentPlan['binaryPass'];
+  noAdditionalCreditCourseIds?: Iterable<string>;
 }
 
 function getPlacedGradeEntries(
@@ -99,13 +100,14 @@ function getPlacedGradeEntries(
     ? [[semester, input.semesters[semester] ?? []] as const]
     : Object.entries(input.semesters).map(([sem, courseIds]) => [Number(sem), courseIds] as const);
   const binaryPass = input.binaryPass ?? {};
+  const noAdditionalCreditCourseIds = new Set(input.noAdditionalCreditCourseIds ?? []);
 
   for (const [sem, courseIds] of semesterEntries) {
     if (sem <= 0) continue;
 
     for (const courseId of courseIds) {
       const key = gradeKey(courseId, sem);
-      if (seenGradeKeys.has(key) || binaryPass[courseId]) continue;
+      if (seenGradeKeys.has(key) || binaryPass[courseId] || noAdditionalCreditCourseIds.has(courseId)) continue;
       seenGradeKeys.add(key);
 
       const grade = input.grades[key];

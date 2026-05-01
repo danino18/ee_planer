@@ -32,6 +32,7 @@ export function computeRoboticsMinorProgress(
   courses: Map<string, SapCourse>,
   weightedAverage: number | null,
   totalCredits: number,
+  noAdditionalCreditCourseIds: ReadonlySet<string> = new Set(),
 ): RoboticsMinorProgress {
   let poolEarned = 0;
   const listProgress: RoboticsListProgress[] = [];
@@ -41,6 +42,7 @@ export function computeRoboticsMinorProgress(
 
     for (const rc of list.courses) {
       if (!allPlaced.has(rc.id)) continue;
+      if (noAdditionalCreditCourseIds.has(rc.id)) continue;
       matchedCourseIds.push(rc.id);
       poolEarned += courses.get(rc.id)?.credits ?? rc.credits;
     }

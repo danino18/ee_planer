@@ -19,6 +19,10 @@ import {
 import { REPEATABLE_COURSES } from '../../utils/courseGrades';
 import { calculateSpecialEnrichmentAllocation } from '../generalRequirements/specialAllocation';
 import type { GeneralElectivesBreakdown } from '../generalRequirements/types';
+import {
+  computeNoAdditionalCreditConflicts,
+  getNoAdditionalCreditCourseIds,
+} from '../noAdditionalCredit';
 import type {
   CourseAssignment,
   DegreeBucket,
@@ -362,6 +366,14 @@ export function buildCourseAssignments(
     input,
     courses,
   );
+  const noAdditionalCreditCourseIds = getNoAdditionalCreditCourseIds(
+    computeNoAdditionalCreditConflicts(courses, {
+      completedCourses: input.completedCourses,
+      semesters: input.semesters,
+      semesterOrder: input.semesterOrder,
+      noAdditionalCreditOverrides: input.noAdditionalCreditOverrides,
+    }),
+  );
 
   const assignments: CourseAssignment[] = [];
   let externalFacultyElectiveCredits = 0;
@@ -370,7 +382,10 @@ export function buildCourseAssignments(
     let bucket: DegreeBucket;
     let credits = courses.get(id)?.credits ?? 0;
 
-    if (preciseMandatorySet.has(id)) {
+    if (noAdditionalCreditCourseIds.has(id)) {
+      bucket = 'uncounted';
+      credits = 0;
+    } else if (preciseMandatorySet.has(id)) {
       bucket = 'mandatory';
     } else if (mandatoryLabIds.has(id)) {
       bucket = 'mandatory_lab';

@@ -13,6 +13,11 @@ import type { SapCourse, TrackDefinition, SpecializationGroup } from '../types';
 import { usePlanStore, MAX_SEMESTERS } from '../store/planStore';
 import { usePrerequisiteStatus } from '../hooks/usePlan';
 import { computeWeightedAverage, REPEATABLE_COURSES } from '../utils/courseGrades';
+import {
+  computeNoAdditionalCreditConflicts,
+  getNoAdditionalCreditCourseIds,
+  getRecognizedCredits,
+} from '../domain/noAdditionalCredit';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
@@ -39,7 +44,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
     grades, binaryPass, selectedSpecializations, courseChainAssignments, facultyColorOverrides, setFacultyColorOverride,
-    englishScore,
+    englishScore, noAdditionalCreditOverrides,
   } = usePlanStore(useShallow((state) => ({
     semesters: state.semesters,
     moveCourse: state.moveCourse,
@@ -66,8 +71,22 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     facultyColorOverrides: state.facultyColorOverrides,
     setFacultyColorOverride: state.setFacultyColorOverride,
     englishScore: state.englishScore,
+    noAdditionalCreditOverrides: state.noAdditionalCreditOverrides,
   })));
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
+  const noAdditionalCreditConflicts = useMemo(
+    () => computeNoAdditionalCreditConflicts(courses, {
+      completedCourses,
+      semesters,
+      semesterOrder,
+      noAdditionalCreditOverrides,
+    }),
+    [courses, completedCourses, semesters, semesterOrder, noAdditionalCreditOverrides],
+  );
+  const noAdditionalCreditCourseIds = useMemo(
+    () => getNoAdditionalCreditCourseIds(noAdditionalCreditConflicts),
+    [noAdditionalCreditConflicts],
+  );
 
   // Mandatory lab IDs: first `required` placed lab pool courses in semester order
   const mandatoryLabIds = useMemo(() => {
@@ -289,8 +308,10 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
       onToggleWarnings: () => toggleSemesterWarnings(sem),
       semesterAverage: sem > 0
-        ? computeWeightedAverage({ semesters, grades, binaryPass }, courses, sem)
+        ? computeWeightedAverage({ semesters, grades, binaryPass, noAdditionalCreditCourseIds }, courses, sem)
         : null,
+      noAdditionalCreditConflicts,
+      noAdditionalCreditCourseIds,
       courseChainMap,
       isDragging: !!activeCourseId,
       ruleWarnings: semesterRuleWarnings[sem] ?? [],
@@ -482,6 +503,8 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
               isMandatory={mandatoryIds.has(activeCourseId)}
               isCompleted={completedSet.has(activeCourseId)}
               missingPrereqGroups={prereqStatus.get(activeCourseId) ?? []}
+              noAdditionalCreditConflicts={noAdditionalCreditConflicts.get(activeCourseId) ?? []}
+              recognizedCredits={getRecognizedCredits(activeCourse, noAdditionalCreditCourseIds)}
               draggable={false}
               showActions={false}
             />

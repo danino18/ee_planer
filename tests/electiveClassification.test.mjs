@@ -112,6 +112,54 @@ const courses = new Map([
   ['03940810', course('03940810', 1.5)],
 ]);
 
+const EE_COMBINED_ELECTRODYNAMICS_ID = '01140246';
+const EE_COMBINED_FIELDS_ID = '00440140';
+const EE_COMBINED_LAB_IDS = ['00450100', '00450101', '00450102'];
+
+const eeCombinedMandatoryCourses = new Map([
+  ['00440102', course('00440102', 0)],
+  ['01040012', course('01040012', 5.5)],
+  ['01140020', course('01140020', 1.5)],
+  ['01140074', course('01140074', 5)],
+  ['02340117', course('02340117', 4)],
+  ['03240033', course('03240033', 3)],
+  ['01040064', course('01040064', 5)],
+  ['00440252', course('00440252', 5)],
+  ['01040013', course('01040013', 5.5)],
+  ['01040038', course('01040038', 2.5)],
+  ['01040136', course('01040136', 4)],
+  ['01140030', course('01140030', 1)],
+  ['01140076', course('01140076', 5)],
+  ['00440105', course('00440105', 4)],
+  ['00440268', course('00440268', 3)],
+  ['01040034', course('01040034', 3.5)],
+  ['01040214', course('01040214', 2.5)],
+  ['01040215', course('01040215', 2.5)],
+  ['01040220', course('01040220', 2.5)],
+  ['01140101', course('01140101', 4)],
+  ['00440127', course('00440127', 3.5)],
+  ['00440131', course('00440131', 5)],
+  ['00440157', course('00440157', 2)],
+  ['01150203', course('01150203', 5)],
+  ['01140036', course('01140036', 5)],
+  [EE_COMBINED_ELECTRODYNAMICS_ID, course(EE_COMBINED_ELECTRODYNAMICS_ID, 5)],
+  [EE_COMBINED_FIELDS_ID, course(EE_COMBINED_FIELDS_ID, 3.5)],
+  ['00440137', course('00440137', 5)],
+  ['00440148', course('00440148', 3)],
+  ['00440202', course('00440202', 3)],
+  ['01150204', course('01150204', 5)],
+  ['01160217', course('01160217', 3.5)],
+  ['00440158', course('00440158', 1.5)],
+  ['00440167', course('00440167', 4)],
+  ['01140035', course('01140035', 1.5)],
+  ['00440169', course('00440169', 4)],
+  ['01140037', course('01140037', 1.5)],
+  ['01240108', course('01240108', 3.5)],
+  ['01140250', course('01140250', 3)],
+  ['01140252', course('01140252', 3)],
+  ...EE_COMBINED_LAB_IDS.map((id) => [id, course(id, 1)]),
+]);
+
 function buildSpecializationCatalogsFromFiles() {
   return buildTrackSpecializationCatalogs(
     Object.fromEntries(
@@ -167,6 +215,63 @@ function progressFor(trackDef, placedIds, overrides = {}) {
     courses,
     trackDef,
     emptyCatalog(trackDef.id),
+    null,
+  );
+}
+
+function eeCombinedMandatoryProgress({
+  includeElectrodynamics = true,
+  includeFields = false,
+  includeLabs = true,
+} = {}) {
+  const semester4 = [
+    '00440127',
+    '00440131',
+    '00440157',
+    '01150203',
+    '01140036',
+    ...(includeElectrodynamics ? [EE_COMBINED_ELECTRODYNAMICS_ID] : []),
+    ...(includeFields ? [EE_COMBINED_FIELDS_ID] : []),
+  ];
+
+  return computeRequirementsProgress(
+    {
+      semesters: {
+        1: ['00440102', '01040012', '01140020', '01140074', '02340117', '03240033', '01040064'],
+        2: ['00440252', '01040013', '01040038', '01040136', '01140030', '01140076'],
+        3: ['00440105', '00440268', '01040034', '01040214', '01040215', '01040220', '01140101'],
+        4: semester4,
+        5: ['00440137', '00440148', '00440202', '01150204', '01160217'],
+        6: ['00440158', '00440167', '01140035'],
+        7: [
+          '00440169',
+          '01140037',
+          '01240108',
+          ...(includeLabs ? EE_COMBINED_LAB_IDS.slice(0, 2) : []),
+        ],
+        8: ['01140250', ...(includeLabs ? EE_COMBINED_LAB_IDS.slice(2) : [])],
+      },
+      completedCourses: [],
+      explicitSportCompletions: [],
+      completedInstances: [],
+      grades: {},
+      binaryPass: {},
+      selectedSpecializations: [],
+      doubleSpecializations: [],
+      hasEnglishExemption: false,
+      miluimCredits: 0,
+      englishScore: undefined,
+      englishTaughtCourses: [],
+      semesterOrder: [1, 2, 3, 4, 5, 6, 7, 8],
+      coreToChainOverrides: [],
+      courseChainAssignments: {},
+      electiveCreditAssignments: {},
+      roboticsMinorEnabled: false,
+      entrepreneurshipMinorEnabled: false,
+    },
+    eeCombinedMandatoryCourses,
+    eeCombinedTrack,
+    emptyCatalog(eeCombinedTrack.id),
     null,
   );
 }
@@ -291,6 +396,59 @@ test('ee_combined applies the 22 electrical / 5 physics / 30 total policy', () =
   assert.equal(area(progress, 'ee')?.required, 22);
   assert.equal(area(progress, 'physics')?.earned, 5);
   assert.equal(area(progress, 'physics')?.required, 5);
+});
+
+test('ee_combined keeps the default mandatory and physics requirements when electrodynamics is placed', () => {
+  const progress = eeCombinedMandatoryProgress({
+    includeElectrodynamics: true,
+    includeFields: true,
+  });
+
+  assert.equal(progress.mandatory.earned, 136);
+  assert.equal(progress.mandatory.required, 136);
+  assert.equal(area(progress, 'physics')?.required, 5);
+});
+
+test('ee_combined keeps existing behavior when fields is removed', () => {
+  const progress = eeCombinedMandatoryProgress({
+    includeElectrodynamics: true,
+    includeFields: false,
+  });
+
+  assert.equal(progress.mandatory.earned, 136);
+  assert.equal(progress.mandatory.required, 136);
+  assert.equal(area(progress, 'physics')?.required, 5);
+});
+
+test('ee_combined shifts 1.5 credits from mandatory to physics electives when fields replaces electrodynamics', () => {
+  const progress = eeCombinedMandatoryProgress({
+    includeElectrodynamics: false,
+    includeFields: true,
+  });
+
+  assert.equal(progress.mandatory.earned, 134.5);
+  assert.equal(progress.mandatory.required, 134.5);
+  assert.equal(area(progress, 'physics')?.required, 6.5);
+});
+
+test('ee_combined lab pool completes the 3 mandatory lab credits missing from the schedule', () => {
+  const withoutLabs = eeCombinedMandatoryProgress({
+    includeElectrodynamics: true,
+    includeFields: false,
+    includeLabs: false,
+  });
+  const withLabs = eeCombinedMandatoryProgress({
+    includeElectrodynamics: true,
+    includeFields: false,
+    includeLabs: true,
+  });
+
+  assert.equal(withoutLabs.mandatory.earned, 133);
+  assert.equal(withoutLabs.mandatory.required, 136);
+  assert.equal(withLabs.mandatory.earned, 136);
+  assert.equal(withLabs.mandatory.required, 136);
+  assert.equal(withLabs.labPoolProgress?.earned, 3);
+  assert.equal(withLabs.labPoolProgress?.required, 3);
 });
 
 test('cs specialization progress excludes core-locked courses from selected specialization groups', () => {
