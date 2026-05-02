@@ -214,7 +214,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       setShareSaveStatus('saving');
       shareTimer.current = window.setTimeout(async () => {
         try {
-          const envelope = extractEnvelope(usePlanStore.getState());
+          const envelope = extractEnvelope(usePlanStore.getState(), Date.now());
           await updateSharedEnvelope(shareId, envelope);
           setShareSaveStatus('saved');
           window.setTimeout(() => setShareSaveStatus('idle'), 2000);
