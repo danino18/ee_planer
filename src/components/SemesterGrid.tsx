@@ -22,6 +22,7 @@ import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/fa
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
+import { useShareMode } from '../context/ShareModeContext';
 
 interface Props {
   courses: Map<string, SapCourse>;
@@ -37,6 +38,8 @@ const semesterGridCollisionDetection = createSemesterGridCollisionDetection({
 });
 
 export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, specializations }: Props) {
+  const shareMode = useShareMode();
+  const isReadOnly = shareMode?.isShareReview ?? false;
   const {
     semesters, moveCourse, addCourseToSemester, completedCourses, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
@@ -181,6 +184,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   }
 
   function handleDragStart(event: DragStartEvent) {
+    if (isReadOnly) return;
     const activeId = String(event.active.id);
     if (activeId.startsWith('col-')) return; // column drag — no course overlay
     const { courseId } = parseInstanceKey(activeId);
@@ -189,6 +193,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveCourseId(null);
+    if (isReadOnly) return;
     const { active, over } = event;
     if (!over) return;
     const activeId = String(active.id);
@@ -314,6 +319,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       noAdditionalCreditCourseIds,
       courseChainMap,
       isDragging: !!activeCourseId,
+      readOnly: isReadOnly,
       ruleWarnings: semesterRuleWarnings[sem] ?? [],
       mutualExclusionWarnings: semesterMutualExclusionWarnings[sem] ?? [],
     };
@@ -455,7 +461,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
           <SemesterColumn {...semColProps(0)} />
         </div>
         <div className="flex flex-row sm:flex-col flex-wrap gap-2">
-          {maxSemester < MAX_SEMESTERS && (
+          {!isReadOnly && maxSemester < MAX_SEMESTERS && (
             <button
               onClick={addSemester}
               className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-colors min-h-14 text-sm font-medium"
@@ -464,7 +470,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
               <span>הוסף סמסטר</span>
             </button>
           )}
-          {maxSemester > 1 && (
+          {!isReadOnly && maxSemester > 1 && (
             <button
               onClick={removeSemester}
               className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-red-200 rounded-xl text-red-300 hover:border-red-400 hover:text-red-500 transition-colors min-h-14 text-sm font-medium"
@@ -473,7 +479,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
               <span>הסר סמסטר</span>
             </button>
           )}
-          {maxSemester < MAX_SEMESTERS && (
+          {!isReadOnly && maxSemester < MAX_SEMESTERS && (
             <button
               onClick={addSummerSemester}
               className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-amber-300 rounded-xl text-amber-400 hover:border-amber-500 hover:text-amber-600 transition-colors min-h-14 text-sm font-medium"
@@ -482,7 +488,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
               <span>הוסף קיץ</span>
             </button>
           )}
-          {hasSummers && (
+          {!isReadOnly && hasSummers && (
             <button
               onClick={removeSummerSemester}
               className="flex-1 sm:flex-none flex flex-col items-center justify-center gap-1 px-3 sm:px-5 border-2 border-dashed border-orange-200 rounded-xl text-orange-300 hover:border-orange-400 hover:text-orange-500 transition-colors min-h-14 text-sm font-medium"

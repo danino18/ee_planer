@@ -5,8 +5,11 @@ export interface ShareModeContextValue {
   shareId: string;
   canEdit: boolean;
   share: ShareDoc;
-  /** True when the logged-in user is the share owner. Owners use normal cloud sync. */
+  /** True when the logged-in user is the share owner. */
   isOwner: boolean;
+  isShareReview: boolean;
+  shareUpdatedAt: number;
+  isNewShareReview: boolean;
 }
 
 export const ShareModeContext = createContext<ShareModeContextValue | null>(null);

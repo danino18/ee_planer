@@ -700,7 +700,7 @@ function validateStudentPlanRecord(
 function validateVersionedEnvelope(value: unknown): ValidationResult {
   if (!isPlainObject(value)) return fail("Envelope must be an object");
   if (value.schemaVersion !== 2) return fail("Invalid schemaVersion");
-  if (!Array.isArray(value.versions) || value.versions.length === 0 || value.versions.length > 4) {
+  if (!Array.isArray(value.versions) || value.versions.length === 0 || value.versions.length > 6) {
     return fail("Invalid versions array");
   }
   if (!isNonEmptyString(value.activeVersionId, 128)) return fail("Invalid activeVersionId");

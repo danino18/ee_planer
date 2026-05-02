@@ -54,7 +54,9 @@ export function buildExportEnvelope(
   state: StateLike,
   options: ExportOptions,
 ): VersionedPlanEnvelope {
-  const fullEnvelope = buildEnvelopeFromState(state);
+  const fullEnvelope = buildEnvelopeFromState(state, {
+    activeVersionUpdatedAt: Date.now(),
+  });
   const requestedIds = options.versionIds && options.versionIds.length > 0
     ? new Set(options.versionIds)
     : null;

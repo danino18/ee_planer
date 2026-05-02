@@ -73,6 +73,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     hasPendingCloudSync,
     markCloudSyncPending,
     markCloudSyncSettled,
+    copyShareReviewToEditableVersion,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -94,6 +95,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     hasPendingCloudSync: state.hasPendingCloudSync,
     markCloudSyncPending: state.markCloudSyncPending,
     markCloudSyncSettled: state.markCloudSyncSettled,
+    copyShareReviewToEditableVersion: state.copyShareReviewToEditableVersion,
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id);
   const specs = specializationCatalog.groups;
@@ -144,6 +146,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
   useEffect(() => {
     if (!trackId) return;
+    if (shareMode?.isShareReview) return;
     const key = `${trackId}_${_initKey}`;
     if (initialized.current.has(key)) return;
 
@@ -173,11 +176,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     } finally {
       suppressAutoInitCloudPending.current = false;
     }
-  }, [trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
+  }, [shareMode, trackId, _initKey, semesters, trackDef.semesterSchedule, courses, addCourseToSemester, dismissedRecommendedCourses, englishScore, initializedTracks, markTrackInitialized]);
 
   useEffect(() => {
-    // Owners viewing their own share use normal cloud sync — skip only for non-owner share mode
-    if (shareMode && !shareMode.isOwner) return;
+    // Any share route is isolated from the owner's personal cloud document.
+    if (shareMode) return;
 
     const unsubscribe = usePlanStore.subscribe((state, previousState) => {
       if (applyingCloudPlan.current) return;
@@ -198,10 +201,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     return unsubscribe;
   }, [shareMode, markCloudSyncPending, user]);
 
-  // Share edit sync: sync store changes to the share API for any editor (owner or partner).
-  // For owners this runs alongside cloud sync so both their plan and the share stay current.
+  // Share edit sync: partners save edits to the share document only.
   useEffect(() => {
-    if (!shareMode?.canEdit) return;
+    if (!shareMode?.canEdit || shareMode.isOwner) return;
     const { shareId } = shareMode;
 
     const unsubscribe = usePlanStore.subscribe((state, previousState) => {
@@ -231,8 +233,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   }, [shareMode]);
 
   useEffect(() => {
-    // Owners viewing their own share use normal cloud sync — skip only for non-owner share mode
-    if (shareMode && !shareMode.isOwner) return;
+    // Any share route is isolated from the owner's personal cloud document.
+    if (shareMode) return;
 
     const clearSyncTimers = () => {
       if (saveTimer.current) {
@@ -441,10 +443,29 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     setTimeout(() => window.print(), 100);
   }
 
+  function showToast(message: string) {
+    setToast({ message, visible: true });
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
+  }
+
   function handleResetToDefault() {
     if (window.confirm('האם לאפס את המערכת למומלצת? כל השינויים שלך יימחקו.')) {
       resetToDefault();
     }
+  }
+
+  function handleCopyShareReview() {
+    const result = copyShareReviewToEditableVersion();
+    if (!result.ok) {
+      showToast(result.reason === 'capacity_full'
+        ? 'אי אפשר ליצור עותק: הגעת למגבלת הגרסאות הפנימית'
+        : 'לא נמצאה גרסת שיתוף להעתקה');
+      return;
+    }
+
+    showToast('נוצר עותק לעריכה מהשיתוף');
+    window.location.hash = '';
   }
 
   return (
@@ -471,12 +492,32 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       {shareMode && (
         <div
           className={`sticky top-0 z-20 px-4 py-2 text-xs text-center flex flex-wrap items-center justify-center gap-3 ${
-            shareMode.canEdit
-              ? 'bg-amber-50 border-b border-amber-200 text-amber-800'
-              : 'bg-blue-50 border-b border-blue-200 text-blue-800'
+            shareMode.isShareReview
+              ? 'bg-indigo-50 border-b border-indigo-200 text-indigo-800'
+              : shareMode.canEdit
+                ? 'bg-amber-50 border-b border-amber-200 text-amber-800'
+                : 'bg-blue-50 border-b border-blue-200 text-blue-800'
           }`}
           dir="rtl"
         >
+          {shareMode.isShareReview && (
+            <>
+              <span className="font-semibold">
+                גרסת שיתוף לבדיקה{shareMode.isNewShareReview ? ' · עדכון חדש' : ''}
+              </span>
+              <span>
+                אתה צופה בגרסת שיתוף לבדיקה. אי אפשר לערוך אותה ישירות. כדי לעבוד עליה, צור עותק לעריכה.
+              </span>
+              <button
+                onClick={handleCopyShareReview}
+                className="rounded-lg border border-indigo-300 bg-white px-3 py-1 font-medium text-indigo-700 hover:border-indigo-500 hover:text-indigo-900 transition-colors"
+              >
+                צור עותק לעריכה
+              </button>
+            </>
+          )}
+          {!shareMode.isShareReview && (
+            <>
           <span>
             {shareMode.canEdit
               ? '⚠ אתה צופה בתוכנית משותפת במצב עריכה. שינויים ישמרו ישירות על הגרסה המשותפת.'
@@ -493,6 +534,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               כדי לעבוד על עותק נפרד,{' '}
               <a href={window.location.origin} className="underline hover:text-amber-900">פתח את המתכנן שלך</a>.
             </span>
+          )}
+            </>
           )}
           <a href={window.location.origin} className="underline font-medium hover:opacity-80">עבור לתוכנית שלי</a>
         </div>
@@ -612,6 +655,7 @@ function AppInner() {
   const hasPendingCloudSync = usePlanStore((s) => s.hasPendingCloudSync);
   const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
   const { user, loading: authLoading } = useAuth();
+  const shareMode = useShareMode();
 
   useEffect(() => {
     fetchCourses()
@@ -624,6 +668,7 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
+    if (shareMode) return;
     if (!user || trackId || isSwitchingTrack) return;
 
     return subscribeToCloudPlan(
@@ -641,7 +686,7 @@ function AppInner() {
       },
       () => undefined,
     );
-  }, [user, trackId, isSwitchingTrack, loadEnvelope, hasPendingCloudSync]);
+  }, [shareMode, user, trackId, isSwitchingTrack, loadEnvelope, hasPendingCloudSync]);
 
   if (authLoading || loading) {
     return (

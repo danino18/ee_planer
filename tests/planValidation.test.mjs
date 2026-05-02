@@ -20,7 +20,7 @@ function loadTranspiledModule(relativePath) {
   return import(`data:text/javascript;base64,${Buffer.from(transpiled).toString('base64')}`);
 }
 
-const { sanitizeStudentPlan } = await loadTranspiledModule('src/services/planValidation.ts');
+const { sanitizeStudentPlan, sanitizeEnvelope: sanitizeEnvelopeForClient } = await loadTranspiledModule('src/services/planValidation.ts');
 const { validateStudentPlanPayload } = await loadTranspiledModule('functions/src/security/planValidation.ts');
 const { sanitizePlanPayload } = await loadTranspiledModule('functions/src/services/planValidation.ts');
 
@@ -100,6 +100,22 @@ function createPlanPayload() {
   };
 }
 
+function createEnvelopePayload(versionCount) {
+  const versions = Array.from({ length: versionCount }, (_, index) => ({
+    id: `version-${index + 1}`,
+    name: `גרסה ${index + 1}`,
+    plan: createPlanPayload(),
+    createdAt: 100 + index,
+    updatedAt: 100 + index,
+  }));
+
+  return {
+    schemaVersion: 2,
+    versions,
+    activeVersionId: versions[0].id,
+  };
+}
+
 test('client sanitizer accepts current StudentPlan fields in plan and savedTracks payloads', () => {
   const sanitized = sanitizeStudentPlan(createPlanPayload());
 
@@ -124,6 +140,19 @@ test('client sanitizer accepts current StudentPlan fields in plan and savedTrack
   assert.equal(sanitized.savedTracks.cs.targetGraduationSemesterId, 8);
   assert.equal(sanitized.loadProfile, 'working');
   assert.equal(sanitized.savedTracks.cs.loadProfile, 'working');
+});
+
+test('client and server validators accept 6 internal versions and reject 7', () => {
+  assert.ok(sanitizeStudentPlan(createPlanPayload()), 'baseline plan should sanitize');
+
+  const sixVersions = createEnvelopePayload(6);
+  const sevenVersions = createEnvelopePayload(7);
+
+  assert.ok(sanitizeEnvelopeForClient(sixVersions), 'client should accept 6-version envelopes');
+  assert.equal(sanitizeEnvelopeForClient(sevenVersions), null, 'client should reject 7-version envelopes');
+
+  assert.equal(validateStudentPlanPayload(sixVersions).ok, true, 'server should accept 6-version envelopes');
+  assert.equal(validateStudentPlanPayload(sevenVersions).ok, false, 'server should reject 7-version envelopes');
 });
 
 test('client sanitizer accepts nested savedTracks (real-world multi-track-switch data)', () => {

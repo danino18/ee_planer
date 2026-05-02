@@ -5,6 +5,7 @@ import type { SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
 import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
+import { useShareMode } from '../context/ShareModeContext';
 
 const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
   english: [
@@ -65,6 +66,8 @@ type PickerPosition = {
 };
 
 export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded }: Props) {
+  const shareMode = useShareMode();
+  const isReadOnly = shareMode?.isShareReview ?? false;
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'search' | 'favorites'>('search');
@@ -248,6 +251,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   }, [pickerFor]);
 
   function renderAddButton(courseId: string) {
+    if (isReadOnly) return null;
     const isPickerOpen = pickerFor === courseId;
     return (
       <div className="relative shrink-0">

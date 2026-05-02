@@ -239,6 +239,14 @@ export interface VersionedPlanEnvelope {
   activeVersionId: string;
 }
 
+export interface ShareReviewState {
+  shareId: string;
+  shareUpdatedAt: number;
+  envelope: VersionedPlanEnvelope;
+  loadedAt: number;
+  isNew: boolean;
+}
+
 export interface StudentPlan {
   trackId: TrackId | null;
   semesters: Record<number, string[]>;

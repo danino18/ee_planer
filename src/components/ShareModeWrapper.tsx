@@ -14,7 +14,15 @@ const PLANNER_STORAGE_KEY = 'technion-ee-planner';
 type ShareLoadState =
   | { status: 'loading' }
   | { status: 'error'; reason: 'not_found' | 'revoked' | 'expired' | 'auth_required' | 'forbidden' | 'network' }
-  | { status: 'ready'; share: ShareDoc; canEdit: boolean; isOwner: boolean; envelopeLoaded: boolean };
+  | {
+      status: 'ready';
+      share: ShareDoc;
+      canEdit: boolean;
+      isOwner: boolean;
+      envelopeLoaded: boolean;
+      shareUpdatedAt: number;
+      isNewShareReview: boolean;
+    };
 
 function ShareErrorScreen({ reason }: { reason: string }) {
   const { user, signInWithGoogle, error: authError } = useAuth();
@@ -72,6 +80,7 @@ function ShareErrorScreen({ reason }: { reason: string }) {
 
 export default function ShareModeWrapper({ shareId }: { shareId: string }) {
   const [state, setState] = useState<ShareLoadState>({ status: 'loading' });
+  const stateRef = useRef<ShareLoadState>({ status: 'loading' });
   const originalEnvelopeRef = useRef<VersionedPlanEnvelope | null>(null);
   const originalStorageRef = useRef<string | null>(null);
 
@@ -89,43 +98,51 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
       .then((response) => {
         if (!response || cancelled) return;
         if (!response.ok) {
-          setState({ status: 'error', reason: response.reason });
+          stateRef.current = { status: 'error', reason: response.reason };
+          setState(stateRef.current);
           return;
         }
 
-        // Detect ownership after auth is fully initialized so auth.currentUser is reliable.
+        // Owners see the share document as a separate read-only review state.
+        // Freshness comes from the share document updatedAt, not version timestamps.
         const currentUid = auth.currentUser?.uid ?? null;
         const isOwner = currentUid !== null && currentUid === response.share.ownerUid;
+        const shareUpdatedAt = response.share.updatedAt;
+        const lastSeenKey = `share-last-seen-${shareId}`;
+        const lastSeen = Number(localStorage.getItem(lastSeenKey) ?? '0');
+        const isNewShareReview = isOwner && shareUpdatedAt > lastSeen;
 
         let envelopeLoaded = false;
-        if (!isOwner) {
-          usePlanStore.getState().loadEnvelope(response.share.envelope);
+        if (isOwner) {
+          usePlanStore.getState().loadShareReviewEnvelope(
+            shareId,
+            shareUpdatedAt,
+            response.share.envelope,
+            isNewShareReview,
+          );
+          localStorage.setItem(lastSeenKey, String(shareUpdatedAt));
           envelopeLoaded = true;
         } else {
-          // Owner: load the share snapshot only if it's newer than the local plan.
-          // This makes partner edits visible when the owner opens their share link,
-          // while preventing a stale share snapshot from overwriting fresher local edits.
-          const shareUpdatedAt = Math.max(...response.share.envelope.versions.map((v) => v.updatedAt));
-          const localUpdatedAt = Math.max(
-            ...buildEnvelopeFromState(usePlanStore.getState()).versions.map((v) => v.updatedAt),
-          );
-          if (shareUpdatedAt > localUpdatedAt) {
-            usePlanStore.getState().loadEnvelope(response.share.envelope);
-            usePlanStore.getState().markCloudSyncPending(shareUpdatedAt);
-            envelopeLoaded = true;
-          }
+          usePlanStore.getState().loadEnvelope(response.share.envelope);
+          envelopeLoaded = true;
         }
 
-        setState({
+        stateRef.current = {
           status: 'ready',
           share: response.share,
-          canEdit: response.canEdit,
+          canEdit: isOwner ? false : response.canEdit,
           isOwner,
           envelopeLoaded,
-        });
+          shareUpdatedAt,
+          isNewShareReview,
+        };
+        setState(stateRef.current);
       })
       .catch(() => {
-        if (!cancelled) setState({ status: 'error', reason: 'network' });
+        if (!cancelled) {
+          stateRef.current = { status: 'error', reason: 'network' };
+          setState(stateRef.current);
+        }
       });
 
     const restoreStorage = () => {
@@ -140,17 +157,22 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
     return () => {
       cancelled = true;
       window.removeEventListener('beforeunload', restoreStorage);
+      const finalState = stateRef.current;
+      const shouldRestoreOwnerReview =
+        finalState.status === 'ready' &&
+        finalState.isOwner &&
+        usePlanStore.getState().shareReview !== null;
       // Only restore the store if we actually overwrote it with the share snapshot
       if (
-        state.status === 'ready' &&
-        state.envelopeLoaded &&
+        finalState.status === 'ready' &&
+        finalState.envelopeLoaded &&
+        (!finalState.isOwner || shouldRestoreOwnerReview) &&
         originalEnvelopeRef.current
       ) {
         usePlanStore.getState().loadEnvelope(originalEnvelopeRef.current);
         restoreStorage();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);
 
   if (state.status === 'loading') {
@@ -175,6 +197,9 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
         canEdit: state.canEdit,
         share: state.share,
         isOwner: state.isOwner,
+        isShareReview: state.isOwner,
+        shareUpdatedAt: state.shareUpdatedAt,
+        isNewShareReview: state.isNewShareReview,
       }}
     >
       <App />

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope, ElectiveCreditArea } from '../types';
+import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope, ElectiveCreditArea, ShareReviewState } from '../types';
 import { eeTrack } from '../data/tracks/ee';
 import { csTrack } from '../data/tracks/cs';
 import { eeMathTrack } from '../data/tracks/ee_math';
@@ -32,6 +32,7 @@ interface PlanState extends StudentPlan {
   savedTracks: Record<string, StudentPlan>;
   versions: PlanVersion[];
   activeVersionId: string;
+  shareReview: ShareReviewState | null;
   hasPendingCloudSync: boolean;
   lastLocalEditAt: number;
 
@@ -83,9 +84,22 @@ interface PlanState extends StudentPlan {
   switchVersion: (id: string) => void;
   renameVersion: (id: string, name: string) => void;
   deleteVersion: (id: string) => void;
+  loadShareReviewEnvelope: (
+    shareId: string,
+    shareUpdatedAt: number,
+    envelope: VersionedPlanEnvelope,
+    isNew: boolean,
+  ) => void;
+  clearShareReview: () => void;
+  copyShareReviewToEditableVersion: () =>
+    | { ok: true; versionId: string }
+    | { ok: false; reason: 'no_share_review' | 'capacity_full' };
   markCloudSyncPending: (editedAt?: number) => void;
   markCloudSyncSettled: (syncedAt?: number) => void;
 }
+
+export const NORMAL_VERSION_LIMIT = 4;
+export const INTERNAL_VERSION_LIMIT = 6;
 
 // Maximum number of semesters a student can have (including summer semesters)
 export const MAX_SEMESTERS = 16;
@@ -374,6 +388,10 @@ function pushHistory(state: PlanState): StudentPlan[] {
   return [...(state._history ?? []).slice(-19), captureSnapshot(state)];
 }
 
+function isShareReviewReadOnly(state: PlanState): boolean {
+  return state.shareReview !== null;
+}
+
 export const usePlanStore = create<PlanState>()(
   persist(
     (set) => ({
@@ -384,11 +402,13 @@ export const usePlanStore = create<PlanState>()(
       savedTracks: {},
       versions: [],
       activeVersionId: '',
+      shareReview: null,
       hasPendingCloudSync: false,
       lastLocalEditAt: 0,
 
       setTrack: (newTrackId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           // Save current track state
           const savedTracks = { ...state.savedTracks };
           if (state.trackId) {
@@ -423,6 +443,7 @@ export const usePlanStore = create<PlanState>()(
 
       beginTrackSwitch: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const savedTracks = { ...state.savedTracks };
           if (state.trackId) {
             savedTracks[state.trackId] = captureSnapshot(state);
@@ -439,10 +460,14 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
-      finishTrackSwitch: () => set(() => ({ isSwitchingTrack: false })),
+      finishTrackSwitch: () =>
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { isSwitchingTrack: false }
+        )),
 
       addCourseToSemester: (courseId, semester) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const history = pushHistory(state);
           const newSemesters: Record<number, string[]> = {};
           if (REPEATABLE_COURSES.has(courseId)) {
@@ -467,6 +492,7 @@ export const usePlanStore = create<PlanState>()(
 
       removeCourseFromSemester: (courseId, semester, instanceKey) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const history = pushHistory(state);
           const list = state.semesters[semester] ?? [];
           let newList: string[];
@@ -518,6 +544,7 @@ export const usePlanStore = create<PlanState>()(
 
       moveCourse: (courseId, from, toSemester) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const history = pushHistory(state);
           const newSemesters: Record<number, string[]> = {};
           if (REPEATABLE_COURSES.has(courseId)) {
@@ -553,6 +580,7 @@ export const usePlanStore = create<PlanState>()(
 
       toggleCompleted: (courseId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const history = pushHistory(state);
           const isCompleted = state.completedCourses.includes(courseId);
           if (isCompleted) {
@@ -574,6 +602,7 @@ export const usePlanStore = create<PlanState>()(
 
       toggleCompletedInstance: (instanceKey) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const list = state.completedInstances ?? [];
           return {
             completedInstances: list.includes(instanceKey)
@@ -584,6 +613,7 @@ export const usePlanStore = create<PlanState>()(
 
       toggleSpecialization: (groupId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const isSelected = state.selectedSpecializations.includes(groupId);
           const selectedSpecializations = isSelected
             ? state.selectedSpecializations.filter((id) => id !== groupId)
@@ -598,14 +628,19 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       toggleFavorite: (courseId) =>
-        set((state) => ({
-          favorites: state.favorites.includes(courseId)
-            ? state.favorites.filter((id) => id !== courseId)
-            : [...state.favorites, courseId],
-        })),
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : {
+                favorites: state.favorites.includes(courseId)
+                  ? state.favorites.filter((id) => id !== courseId)
+                  : [...state.favorites, courseId],
+              }
+        )),
 
       setGrade: (courseId, grade, semester) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const key = gradeKey(courseId, semester);
           const newGrades = { ...state.grades };
           const newBinaryPass = { ...(state.binaryPass ?? {}) };
@@ -642,6 +677,7 @@ export const usePlanStore = create<PlanState>()(
 
       setSubstitution: (fromId, toId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const s = { ...state.substitutions };
           if (toId === null) delete s[fromId];
           else s[fromId] = toId;
@@ -650,6 +686,7 @@ export const usePlanStore = create<PlanState>()(
 
       setSelectedPrereqGroup: (courseId, group) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const g = { ...state.selectedPrereqGroups };
           if (group === null) delete g[courseId];
           else g[courseId] = group;
@@ -658,6 +695,7 @@ export const usePlanStore = create<PlanState>()(
 
       addSemester: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const next = state.maxSemester + 1;
           if (next > MAX_SEMESTERS) return state;
           const history = pushHistory(state);
@@ -671,6 +709,7 @@ export const usePlanStore = create<PlanState>()(
 
       addSummerSemester: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const next = state.maxSemester + 1;
           if (next > MAX_SEMESTERS) return state;
           const history = pushHistory(state);
@@ -698,6 +737,7 @@ export const usePlanStore = create<PlanState>()(
 
       removeSemester: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const lastRegular = [...state.semesterOrder].reverse().find(
             (s) => !state.summerSemesters.includes(s)
           );
@@ -722,6 +762,7 @@ export const usePlanStore = create<PlanState>()(
 
       removeSummerSemester: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           if (state.summerSemesters.length === 0) return state;
           const history = pushHistory(state);
           const lastSummer = state.summerSemesters[state.summerSemesters.length - 1];
@@ -742,10 +783,14 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
-      setCurrentSemester: (n) => set(() => ({ currentSemester: n })),
+      setCurrentSemester: (n) =>
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { currentSemester: n }
+        )),
 
       moveSemesterInOrder: (sem, direction) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const order = [...state.semesterOrder];
           const idx = order.indexOf(sem);
           if (idx < 0) return state;
@@ -756,12 +801,15 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       setSemesterType: (sem, type) =>
-        set((state) => ({
-          semesterTypeOverrides: { ...(state.semesterTypeOverrides ?? {}), [sem]: type },
-        })),
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : { semesterTypeOverrides: { ...(state.semesterTypeOverrides ?? {}), [sem]: type } }
+        )),
 
       toggleSemesterWarnings: (sem) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const ignored = state.semesterWarningsIgnored ?? [];
           return {
             semesterWarningsIgnored: ignored.includes(sem)
@@ -772,6 +820,7 @@ export const usePlanStore = create<PlanState>()(
 
       toggleDoubleSpecialization: (groupId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           if (!state.trackId) return state;
           const catalog = getTrackSpecializationCatalog(state.trackId);
           if (catalog.interactionDisabled) return state;
@@ -786,16 +835,27 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       toggleEnglishExemption: () =>
-        set((state) => ({ hasEnglishExemption: !state.hasEnglishExemption })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { hasEnglishExemption: !state.hasEnglishExemption }
+        )),
 
       setMiluimCredits: (n) =>
-        set(() => ({ miluimCredits: n === null ? undefined : Math.max(0, Math.min(10, n)) })),
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : { miluimCredits: n === null ? undefined : Math.max(0, Math.min(10, n)) }
+        )),
 
       setEnglishScore: (score) =>
-        set(() => ({ englishScore: score === null ? undefined : score })),
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : { englishScore: score === null ? undefined : score }
+        )),
 
       toggleEnglishTaughtCourse: (courseId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const list = state.englishTaughtCourses ?? [];
           return {
             englishTaughtCourses: list.includes(courseId)
@@ -805,10 +865,13 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       setCoreToChainOverrides: (ids) =>
-        set(() => ({ coreToChainOverrides: ids })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { coreToChainOverrides: ids }
+        )),
 
       setCourseChainAssignment: (courseId, chainGroupId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const current = state.courseChainAssignments ?? {};
           if (chainGroupId === null) {
             const rest = { ...current };
@@ -820,6 +883,7 @@ export const usePlanStore = create<PlanState>()(
 
       setElectiveCreditAssignment: (courseId, area) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const current = state.electiveCreditAssignments ?? {};
           if (area === null) {
             const rest = { ...current };
@@ -831,6 +895,7 @@ export const usePlanStore = create<PlanState>()(
 
       setNoAdditionalCreditOverride: (pairKey, courseId) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const current = state.noAdditionalCreditOverrides ?? {};
           if (courseId === null) {
             const rest = { ...current };
@@ -841,27 +906,40 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       toggleRoboticsMinor: () =>
-        set((state) => ({ roboticsMinorEnabled: !state.roboticsMinorEnabled })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { roboticsMinorEnabled: !state.roboticsMinorEnabled }
+        )),
 
       toggleEntrepreneurshipMinor: () =>
-        set((state) => ({ entrepreneurshipMinorEnabled: !state.entrepreneurshipMinorEnabled })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { entrepreneurshipMinorEnabled: !state.entrepreneurshipMinorEnabled }
+        )),
 
       toggleQuantumComputingMinor: () =>
-        set((state) => ({ quantumComputingMinorEnabled: !state.quantumComputingMinorEnabled })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { quantumComputingMinorEnabled: !state.quantumComputingMinorEnabled }
+        )),
 
       setTargetGraduationSemesterId: (semId) =>
-        set(() => ({ targetGraduationSemesterId: semId })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { targetGraduationSemesterId: semId }
+        )),
 
       setLoadProfile: (profile) =>
-        set(() => ({ loadProfile: profile })),
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { loadProfile: profile }
+        )),
 
       setFacultyColorOverride: (faculty, colorKey) =>
-        set((state) => ({
-          facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}), [faculty]: colorKey },
-        })),
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : { facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}), [faculty]: colorKey } }
+        )),
 
       setBinaryPass: (courseId, value) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const bp = { ...(state.binaryPass ?? {}) };
           const newGrades = { ...state.grades };
           if (value === null) {
@@ -895,12 +973,16 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
-      reorderSemesters: (newOrder) => set(() => ({ semesterOrder: newOrder })),
+      reorderSemesters: (newOrder) =>
+        set((state) => (
+          isShareReviewReadOnly(state) ? state : { semesterOrder: newOrder }
+        )),
 
       loadPlan: (plan) => set((state) => ({
         ...planToStateFields(plan, state),
         versions: state.versions,
         activeVersionId: state.activeVersionId,
+        shareReview: null,
         hasPendingCloudSync: false,
       })),
 
@@ -912,12 +994,14 @@ export const usePlanStore = create<PlanState>()(
         savedTracks: {},
         versions: [],
         activeVersionId: '',
+        shareReview: null,
         hasPendingCloudSync: false,
         lastLocalEditAt: 0,
       })),
 
       resetToDefault: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           // Remove saved state for current track so it re-initializes fresh
           const savedTracks = { ...state.savedTracks };
           if (state.trackId) delete savedTracks[state.trackId];
@@ -964,14 +1048,19 @@ export const usePlanStore = create<PlanState>()(
         }),
 
       markTrackInitialized: (trackId) =>
-        set((state) => ({
-          initializedTracks: (state.initializedTracks ?? []).includes(trackId)
-            ? state.initializedTracks
-            : [...(state.initializedTracks ?? []), trackId],
-        })),
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : {
+                initializedTracks: (state.initializedTracks ?? []).includes(trackId)
+                  ? state.initializedTracks
+                  : [...(state.initializedTracks ?? []), trackId],
+              }
+        )),
 
       undo: () =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const history = state._history ?? [];
           if (history.length === 0) return state;
           const prev = history[history.length - 1];
@@ -990,7 +1079,8 @@ export const usePlanStore = create<PlanState>()(
 
       createVersion: () =>
         set((state) => {
-          if (state.versions.length >= 4) return state;
+          if (isShareReviewReadOnly(state)) return state;
+          if (state.versions.length >= NORMAL_VERSION_LIMIT) return state;
           const now = Date.now();
           const newId = crypto.randomUUID();
           const snapshot = captureSnapshot(state);
@@ -1014,6 +1104,7 @@ export const usePlanStore = create<PlanState>()(
 
       switchVersion: (id) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           if (id === state.activeVersionId) return state;
           const target = state.versions.find((v) => v.id === id);
           if (!target) return state;
@@ -1033,6 +1124,7 @@ export const usePlanStore = create<PlanState>()(
 
       renameVersion: (id, name) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const trimmedName = name.trim();
           if (!trimmedName) return state;
           const now = Date.now();
@@ -1045,6 +1137,7 @@ export const usePlanStore = create<PlanState>()(
 
       deleteVersion: (id) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           if (state.versions.length <= 1) return state;
           const remaining = state.versions.filter((v) => v.id !== id);
           if (state.activeVersionId !== id) {
@@ -1070,12 +1163,99 @@ export const usePlanStore = create<PlanState>()(
             ...planToStateFields(active.plan, state),
             versions: envelope.versions,
             activeVersionId: envelope.activeVersionId,
+            shareReview: null,
             hasPendingCloudSync: false,
           };
         }),
 
+      loadShareReviewEnvelope: (shareId, shareUpdatedAt, envelope, isNew) =>
+        set((state) => {
+          const active =
+            envelope.versions.find((v) => v.id === envelope.activeVersionId) ??
+            envelope.versions[0];
+          if (!active) return state;
+
+          const now = Date.now();
+          const currentSnapshot = state.shareReview ? null : captureSnapshot(state);
+          const versions = currentSnapshot
+            ? state.versions.map((version) => (
+                version.id === state.activeVersionId
+                  ? { ...version, plan: currentSnapshot, updatedAt: Math.max(version.updatedAt, now) }
+                  : version
+              ))
+            : state.versions;
+
+          return {
+            ...planToStateFields(active.plan, state),
+            versions,
+            activeVersionId: state.activeVersionId,
+            shareReview: {
+              shareId,
+              shareUpdatedAt,
+              envelope,
+              loadedAt: now,
+              isNew,
+            },
+            _history: [],
+            hasPendingCloudSync: state.hasPendingCloudSync,
+            lastLocalEditAt: state.lastLocalEditAt,
+          };
+        }),
+
+      clearShareReview: () => set(() => ({ shareReview: null })),
+
+      copyShareReviewToEditableVersion: () => {
+        let result:
+          | { ok: true; versionId: string }
+          | { ok: false; reason: 'no_share_review' | 'capacity_full' } = { ok: false, reason: 'no_share_review' };
+
+        set((state) => {
+          if (!state.shareReview) {
+            result = { ok: false, reason: 'no_share_review' };
+            return state;
+          }
+          if (state.versions.length >= INTERNAL_VERSION_LIMIT) {
+            result = { ok: false, reason: 'capacity_full' };
+            return state;
+          }
+
+          const source =
+            state.shareReview.envelope.versions.find((v) => v.id === state.shareReview?.envelope.activeVersionId) ??
+            state.shareReview.envelope.versions[0];
+          if (!source) {
+            result = { ok: false, reason: 'no_share_review' };
+            return state;
+          }
+
+          const now = Date.now();
+          const newId = crypto.randomUUID();
+          const dateLabel = new Date(now).toLocaleDateString('he-IL');
+          const newVersion: PlanVersion = {
+            id: newId,
+            name: `עותק משיתוף - ${dateLabel}`,
+            plan: source.plan,
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          result = { ok: true, versionId: newId };
+          return {
+            ...planToStateFields(source.plan, state),
+            versions: [...state.versions, newVersion],
+            activeVersionId: newId,
+            shareReview: null,
+            _history: [],
+            hasPendingCloudSync: true,
+            lastLocalEditAt: Math.max(state.lastLocalEditAt ?? 0, now),
+          };
+        });
+
+        return result;
+      },
+
       markCloudSyncPending: (editedAt) =>
         set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
           const nextEditedAt = editedAt ?? Date.now();
           if (state.hasPendingCloudSync && state.lastLocalEditAt === nextEditedAt) return state;
           return {
@@ -1109,6 +1289,7 @@ export const usePlanStore = create<PlanState>()(
         const s = persistedState as PlanState;
         const migratedBase = {
           ...s,
+          shareReview: null,
           hasPendingCloudSync: s.hasPendingCloudSync ?? false,
           lastLocalEditAt: s.lastLocalEditAt ?? 0,
         };
@@ -1141,11 +1322,12 @@ export const usePlanStore = create<PlanState>()(
           _history: _h,
           _initKey: _ik,
           isSwitchingTrack: _st,
+          shareReview: _sr,
           hasPendingCloudSync: _hp,
           lastLocalEditAt: _le,
           ...rest
         } = state as PlanState;
-        void _h; void _ik; void _st; void _hp; void _le;
+        void _h; void _ik; void _st; void _sr; void _hp; void _le;
         return rest;
       },
     }

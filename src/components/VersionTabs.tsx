@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { usePlanStore } from '../store/planStore';
-
-const MAX_VERSIONS = 4;
+import { NORMAL_VERSION_LIMIT, usePlanStore } from '../store/planStore';
+import { useShareMode } from '../context/ShareModeContext';
 
 export function VersionTabs({ onCompare }: { onCompare: () => void }) {
+  const shareMode = useShareMode();
   const { versions, activeVersionId, createVersion, switchVersion, renameVersion, deleteVersion } =
     usePlanStore(
       useShallow((s) => ({
@@ -20,6 +20,16 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  if (shareMode?.isShareReview) {
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm select-none border bg-indigo-600 text-white border-indigo-600 font-medium">
+          <span className="max-w-40 truncate">גרסת שיתוף לבדיקה</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!versions || versions.length === 0) return null;
 
@@ -109,7 +119,7 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
         );
       })}
 
-      {versions.length < MAX_VERSIONS && (
+      {versions.length < NORMAL_VERSION_LIMIT && (
         <button
           onClick={createVersion}
           className="px-2 py-1 rounded-lg text-sm border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors"

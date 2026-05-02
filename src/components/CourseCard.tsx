@@ -7,6 +7,7 @@ import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
 import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
+import { useShareMode } from '../context/ShareModeContext';
 
 interface Props {
   course: SapCourse;
@@ -48,11 +49,14 @@ export const CourseCard = memo(function CourseCard({
   draggable = true,
   showActions = true,
 }: Props) {
+  const shareMode = useShareMode();
+  const isReadOnly = shareMode?.isShareReview ?? false;
+  const effectiveDraggable = draggable && !isReadOnly;
   const draggableId = instanceKey ?? course.id;
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: draggableId,
     data: { course },
-    disabled: !draggable,
+    disabled: !effectiveDraggable,
   });
   const {
     toggleFavorite,
@@ -84,13 +88,13 @@ export const CourseCard = memo(function CourseCard({
   const [modalOpen, setModalOpen] = useState(false);
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
   const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id);
-  const showCardActions = showActions && !isDragging;
+  const showCardActions = showActions && !isDragging && !isReadOnly;
   const hasNoAdditionalCreditWarning = noAdditionalCreditConflicts.length > 0;
   const displayedCredits = recognizedCredits ?? course.credits;
 
   const style: React.CSSProperties = {
-    ...(draggable ? { touchAction: 'none' } : {}),
-    ...(draggable && transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
+    ...(effectiveDraggable ? { touchAction: 'none' } : {}),
+    ...(effectiveDraggable && transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
   };
 
   let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
@@ -117,17 +121,17 @@ export const CourseCard = memo(function CourseCard({
   return (
     <>
       <div
-        ref={draggable ? setNodeRef : undefined}
+        ref={effectiveDraggable ? setNodeRef : undefined}
         style={style}
-        {...(draggable ? listeners : {})}
-        {...(draggable ? attributes : {})}
+        {...(effectiveDraggable ? listeners : {})}
+        {...(effectiveDraggable ? attributes : {})}
         onClick={() => {
-          if (draggable) setModalOpen(true);
+          if (effectiveDraggable) setModalOpen(true);
         }}
         className={`
           ${colorClass} border rounded-lg p-2.5 relative overflow-hidden
-          ${draggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} select-none
-          ${isDragging ? 'opacity-50 shadow-2xl scale-105' : draggable ? 'hover:shadow-sm active:scale-95' : ''}
+          ${effectiveDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} select-none
+          ${isDragging ? 'opacity-50 shadow-2xl scale-105' : effectiveDraggable ? 'hover:shadow-sm active:scale-95' : ''}
           ${isPlanned && !isDragging ? 'opacity-60' : ''}
           transition-all duration-100
         `}

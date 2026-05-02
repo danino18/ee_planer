@@ -568,7 +568,7 @@ export function sanitizeStudentPlan(value: unknown): StudentPlan | null {
 export function sanitizeEnvelope(value: unknown): VersionedPlanEnvelope | null {
   if (!isPlainObject(value)) return null;
   if (value.schemaVersion !== 2) return null;
-  if (!Array.isArray(value.versions) || value.versions.length === 0 || value.versions.length > 4) return null;
+  if (!Array.isArray(value.versions) || value.versions.length === 0 || value.versions.length > 6) return null;
   if (typeof value.activeVersionId !== 'string' || value.activeVersionId.length === 0) return null;
 
   const versions: PlanVersion[] = [];

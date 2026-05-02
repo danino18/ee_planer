@@ -40,6 +40,7 @@ interface Props {
   mutualExclusionWarnings?: string[];
   noAdditionalCreditConflicts?: Map<string, NoAdditionalCreditConflict[]>;
   noAdditionalCreditCourseIds?: ReadonlySet<string>;
+  readOnly?: boolean;
 }
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -61,13 +62,14 @@ export const SemesterColumn = memo(function SemesterColumn({
   mutualExclusionWarnings = [],
   noAdditionalCreditConflicts = new Map(),
   noAdditionalCreditCourseIds = new Set(),
+  readOnly = false,
 }: Props) {
-  const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}` });
+  const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}`, disabled: readOnly });
   const {
     attributes, listeners,
     setNodeRef: setSortableRef,
     transform, transition, isDragging,
-  } = useSortable({ id: `col-${semester}` });
+  } = useSortable({ id: `col-${semester}`, disabled: readOnly || semester === 0 });
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
 
@@ -117,7 +119,7 @@ export const SemesterColumn = memo(function SemesterColumn({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {/* Drag handle for reordering */}
-            {semester > 0 && (
+            {semester > 0 && !readOnly && (
               <div
                 {...attributes}
                 {...listeners}
@@ -127,7 +129,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               >⠿</div>
             )}
             {isSummer && <span className="text-sm">☀️</span>}
-            {!isSummer && semester > 0 && semesterType && semesterType !== 'summer' && (
+            {!isSummer && semester > 0 && !readOnly && semesterType && semesterType !== 'summer' && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); onSetSemesterType?.(semesterType === 'winter' ? 'spring' : 'winter'); }}
@@ -155,7 +157,7 @@ export const SemesterColumn = memo(function SemesterColumn({
                 ∅ {semesterAverage.toFixed(1)}
               </span>
             )}
-            {isSummer && (
+            {isSummer && !readOnly && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => { e.stopPropagation(); onToggleWarnings?.(); }}
@@ -163,7 +165,7 @@ export const SemesterColumn = memo(function SemesterColumn({
                 title={warningsIgnored ? 'הצג אזהרות עונה' : 'התעלם מאזהרות עונה'}
               >⚠️</button>
             )}
-            {semester > 0 && (
+            {semester > 0 && !readOnly && (
               <button
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => {
@@ -250,6 +252,8 @@ export const SemesterColumn = memo(function SemesterColumn({
               instanceKey={`${id}__${semester}__${idx}`}
               wrongSemesterType={wrongSemesterType}
               chainName={courseChainMap?.get(id)}
+              draggable={!readOnly}
+              showActions={!readOnly}
             />
           );
         })}
