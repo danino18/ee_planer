@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { fetchCourses } from './services/sapApi';
 import { isRetryableSyncError, savePlanToCloud, subscribeToCloudPlan } from './services/cloudSync';
-import { updateSharedEnvelope } from './services/shareApi';
+import { subscribeToMyShares, subscribeToShare, updateSharedEnvelope, type ShareSnapshot } from './services/shareApi';
 import { usePlanStore } from './store/planStore';
 import { buildEnvelopeFromState, getPlanSignature, shouldApplyCloudEnvelope } from './services/planSync';
 import { VersionTabs } from './components/VersionTabs';
@@ -119,6 +119,11 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   const [syncErrorMessage, setSyncErrorMessage] = useState<string | null>(null);
   const [shareSaveStatus, setShareSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Latest envelope received from the live share subscription. Used by the
+  // owner's "accept changes" action to copy the current share state into
+  // plans/{uid}. Stays in sync with what the user is actually looking at.
+  const latestShareEnvelopeRef = useRef<VersionedPlanEnvelope | null>(null);
+  const [pendingShareUpdates, setPendingShareUpdates] = useState<ShareSnapshot[]>([]);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -127,6 +132,14 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     setToast({ message: `${courseName} נוסף ל${semesterLabel}`, visible: true });
     toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), TOAST_DURATION_MS);
   }, []);
+
+  // Regular-app variant: accept a specific owned share's envelope into the
+  // personal plan. Optimistically clears the indicator for that share.
+  const handleAcceptOwnedShareUpdate = useCallback(async (snapshot: ShareSnapshot) => {
+    if (!user || user.uid !== snapshot.ownerUid) return;
+    await savePlanToCloud(user.uid, snapshot.envelope);
+    setPendingShareUpdates((prev) => prev.filter((s) => s.shareId !== snapshot.shareId));
+  }, [user]);
 
   useEffect(() => {
     reportTrackSpecializationDiagnostics(trackDef.id);
@@ -231,6 +244,87 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       if (shareTimer.current) clearTimeout(shareTimer.current);
     };
   }, [shareMode]);
+
+  // Live share snapshot: mirror remote shares/{shareId} changes into the
+  // local store so all participants see each other in real time.
+  // - Partners: apply via loadEnvelope (they own the store in share mode).
+  // - Owners (isShareReview): apply via loadShareReviewEnvelope so the
+  //   personal plan is never overwritten.
+  // Echo-loop guard: skip when a local debounce is in flight (shareTimer) or
+  // the signatures already match; apply under applyingCloudPlan so the
+  // share-edit subscription doesn't echo it back as a PUT.
+  useEffect(() => {
+    if (!shareMode) return;
+    const { shareId, isShareReview } = shareMode;
+
+    const unsubscribe = subscribeToShare(
+      shareId,
+      (snapshot) => {
+        latestShareEnvelopeRef.current = snapshot.envelope;
+        if (shareTimer.current) return;
+        if (isShareReview) {
+          // Owner review: update the shareReview slice only.
+          const current = usePlanStore.getState().shareReview;
+          const currentSig = current ? getPlanSignature(current.envelope) : '';
+          const remoteSig = getPlanSignature(snapshot.envelope);
+          if (currentSig === remoteSig) return;
+          applyingCloudPlan.current = true;
+          try {
+            usePlanStore.getState().loadShareReviewEnvelope(
+              shareId,
+              snapshot.updatedAt,
+              snapshot.envelope,
+              true,
+            );
+          } finally {
+            applyingCloudPlan.current = false;
+          }
+        } else {
+          const localSig = getPlanSignature(extractEnvelope(usePlanStore.getState()));
+          const remoteSig = getPlanSignature(snapshot.envelope);
+          if (localSig === remoteSig) return;
+          applyingCloudPlan.current = true;
+          try {
+            loadEnvelope(snapshot.envelope);
+          } finally {
+            applyingCloudPlan.current = false;
+          }
+        }
+      },
+      (error) => {
+        console.warn('[shareSync] subscribeToShare error:', error);
+      },
+    );
+
+    return () => {
+      unsubscribe();
+      latestShareEnvelopeRef.current = null;
+    };
+  }, [shareMode, loadEnvelope]);
+
+  // Owner-only: while in the regular app (not in share mode), watch the
+  // shares this user owns so we can surface "there are pending updates from
+  // a collaborator" hints. Updates are NEVER auto-applied — the owner must
+  // explicitly accept them via ExportShareModal.
+  useEffect(() => {
+    if (shareMode || !user) {
+      setPendingShareUpdates([]);
+      return;
+    }
+    const unsubscribe = subscribeToMyShares(
+      user.uid,
+      (shares) => {
+        const localSig = getPlanSignature(extractEnvelope(usePlanStore.getState()));
+        setPendingShareUpdates(
+          shares.filter((s) => getPlanSignature(s.envelope) !== localSig),
+        );
+      },
+      (error) => {
+        console.warn('[shareSync] subscribeToMyShares error:', error);
+      },
+    );
+    return unsubscribe;
+  }, [shareMode, user]);
 
   useEffect(() => {
     // Any share route is isolated from the owner's personal cloud document.
@@ -487,6 +581,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           courses={courses}
           trackDef={trackDef}
           catalog={specializationCatalog}
+          pendingShareUpdates={pendingShareUpdates}
+          onAcceptShareUpdate={handleAcceptOwnedShareUpdate}
         />
       )}
       {shareMode && (
@@ -529,7 +625,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               {shareSaveStatus === 'saving' ? 'שומר...' : shareSaveStatus === 'saved' ? '✓ נשמר' : 'שגיאה בשמירה'}
             </span>
           )}
-          {shareMode.canEdit && (
+          {shareMode.canEdit && !shareMode.isOwner && (
             <span className="text-amber-600">
               כדי לעבוד על עותק נפרד,{' '}
               <a href={window.location.origin} className="underline hover:text-amber-900">פתח את המתכנן שלך</a>.
@@ -559,10 +655,20 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               {(!shareMode || shareMode.isOwner) && (
                 <button
                   onClick={() => setShowExport(true)}
-                  className="text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
-                  title="ייצוא, שיתוף, או ייבוא של המערכת"
+                  className="relative text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
+                  title={pendingShareUpdates.length > 0
+                    ? `יש ${pendingShareUpdates.length} עדכון מהשיתוף ממתינים לאישור`
+                    : 'ייצוא, שיתוף, או ייבוא של המערכת'}
                 >
                   <span>⇪</span><span className="hidden sm:inline"> שיתוף</span>
+                  {pendingShareUpdates.length > 0 && (
+                    <span
+                      className="absolute -top-1 -left-1 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow"
+                      aria-label={`${pendingShareUpdates.length} עדכוני שיתוף ממתינים`}
+                    >
+                      {pendingShareUpdates.length}
+                    </span>
+                  )}
                 </button>
               )}
               <button

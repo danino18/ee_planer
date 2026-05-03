@@ -112,6 +112,9 @@ export default function ShareModeWrapper({ shareId }: { shareId: string }) {
         const lastSeen = Number(localStorage.getItem(lastSeenKey) ?? '0');
         const isNewShareReview = isOwner && shareUpdatedAt > lastSeen;
 
+        // Owner: load as a read-only review so the personal plan isn't
+        // touched. Partners: load into the main store so they can edit.
+        // App.tsx then opens an onSnapshot listener for real-time updates.
         let envelopeLoaded = false;
         if (isOwner) {
           usePlanStore.getState().loadShareReviewEnvelope(
