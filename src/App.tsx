@@ -123,6 +123,9 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
   // owner's "accept changes" action to copy the current share state into
   // plans/{uid}. Stays in sync with what the user is actually looking at.
   const latestShareEnvelopeRef = useRef<VersionedPlanEnvelope | null>(null);
+  // Holds a remote snapshot that arrived while a local debounce was in flight.
+  // Applied after the PUT completes so we don't silently drop concurrent edits.
+  const pendingRemoteSnapshotRef = useRef<import('./services/shareApi').ShareSnapshot | null>(null);
   const [pendingShareUpdates, setPendingShareUpdates] = useState<ShareSnapshot[]>([]);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -228,11 +231,24 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
       if (shareTimer.current) clearTimeout(shareTimer.current);
       setShareSaveStatus('saving');
       shareTimer.current = window.setTimeout(async () => {
+        shareTimer.current = null;
         try {
           const envelope = extractEnvelope(usePlanStore.getState(), Date.now());
           await updateSharedEnvelope(shareId, envelope);
           setShareSaveStatus('saved');
           window.setTimeout(() => setShareSaveStatus('idle'), 2000);
+          // Apply any remote snapshot that arrived while the debounce was in
+          // flight, so concurrent collaborator edits are not silently lost.
+          const pending = pendingRemoteSnapshotRef.current;
+          if (pending) {
+            pendingRemoteSnapshotRef.current = null;
+            const localSig = getPlanSignature(extractEnvelope(usePlanStore.getState()));
+            if (localSig !== getPlanSignature(pending.envelope)) {
+              applyingCloudPlan.current = true;
+              try { loadEnvelope(pending.envelope); }
+              finally { applyingCloudPlan.current = false; }
+            }
+          }
         } catch {
           setShareSaveStatus('error');
         }
@@ -257,39 +273,44 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     if (!shareMode) return;
     const { shareId, isShareReview } = shareMode;
 
+    function applySnapshot(snapshot: import('./services/shareApi').ShareSnapshot) {
+      latestShareEnvelopeRef.current = snapshot.envelope;
+      if (isShareReview) {
+        const current = usePlanStore.getState().shareReview;
+        const currentSig = current ? getPlanSignature(current.envelope) : '';
+        if (currentSig === getPlanSignature(snapshot.envelope)) return;
+        applyingCloudPlan.current = true;
+        try {
+          usePlanStore.getState().loadShareReviewEnvelope(
+            shareId, snapshot.updatedAt, snapshot.envelope, true,
+          );
+        } finally {
+          applyingCloudPlan.current = false;
+        }
+      } else {
+        const localSig = getPlanSignature(extractEnvelope(usePlanStore.getState()));
+        if (localSig === getPlanSignature(snapshot.envelope)) return;
+        applyingCloudPlan.current = true;
+        try {
+          loadEnvelope(snapshot.envelope);
+        } finally {
+          applyingCloudPlan.current = false;
+        }
+      }
+    }
+
     const unsubscribe = subscribeToShare(
       shareId,
       (snapshot) => {
         latestShareEnvelopeRef.current = snapshot.envelope;
-        if (shareTimer.current) return;
-        if (isShareReview) {
-          // Owner review: update the shareReview slice only.
-          const current = usePlanStore.getState().shareReview;
-          const currentSig = current ? getPlanSignature(current.envelope) : '';
-          const remoteSig = getPlanSignature(snapshot.envelope);
-          if (currentSig === remoteSig) return;
-          applyingCloudPlan.current = true;
-          try {
-            usePlanStore.getState().loadShareReviewEnvelope(
-              shareId,
-              snapshot.updatedAt,
-              snapshot.envelope,
-              true,
-            );
-          } finally {
-            applyingCloudPlan.current = false;
-          }
-        } else {
-          const localSig = getPlanSignature(extractEnvelope(usePlanStore.getState()));
-          const remoteSig = getPlanSignature(snapshot.envelope);
-          if (localSig === remoteSig) return;
-          applyingCloudPlan.current = true;
-          try {
-            loadEnvelope(snapshot.envelope);
-          } finally {
-            applyingCloudPlan.current = false;
-          }
+        if (shareTimer.current) {
+          // Local edit is debouncing — park the remote snapshot and apply it
+          // after the PUT completes so we don't lose concurrent edits.
+          pendingRemoteSnapshotRef.current = snapshot;
+          return;
         }
+        pendingRemoteSnapshotRef.current = null;
+        applySnapshot(snapshot);
       },
       (error) => {
         console.warn('[shareSync] subscribeToShare error:', error);
@@ -299,6 +320,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     return () => {
       unsubscribe();
       latestShareEnvelopeRef.current = null;
+      pendingRemoteSnapshotRef.current = null;
     };
   }, [shareMode, loadEnvelope]);
 
