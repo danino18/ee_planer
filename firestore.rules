@@ -18,11 +18,33 @@ service cloud.firestore {
       allow read, write: if isSignedInOwner(uid);
     }
 
-    // Shares are managed exclusively through Cloud Functions (Admin SDK).
-    // Clients must not access shares/* directly — public/restricted access is
-    // enforced server-side after token-based email checks.
+    // Writes still go exclusively through Cloud Functions (Admin SDK) so
+    // server-side validation, sanitization and audit can happen.
+    // Reads are allowed directly so clients can use onSnapshot for real-time
+    // collaboration. The conditions mirror the GET /shares/:id Cloud Function.
     match /shares/{shareId} {
-      allow read, write: if false;
+      // Owner may read (or list) their own shares without revoked/expiry guards
+      // so that subscribeToMyShares collection queries succeed even when the
+      // result set contains revoked or expired documents.  Filtering is done
+      // client-side inside subscribeToMyShares.
+      allow read: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+
+      // Non-owners: public shares and allowed-email restricted shares, with
+      // the same revoked/expiry guards the Cloud Function applies.
+      allow read: if (
+        !resource.data.revoked
+        && (resource.data.expiresAt == null || request.time.toMillis() < resource.data.expiresAt)
+        && (
+          resource.data.access == 'public'
+          || (
+            resource.data.access == 'restricted'
+            && request.auth != null
+            && request.auth.token.email is string
+            && (request.auth.token.email.lower() in resource.data.allowedEmails)
+          )
+        )
+      );
+      allow write: if false;
     }
   }
 }

@@ -16,7 +16,7 @@ import {
 } from '../services/planExport';
 import { useAuth } from '../context/AuthContext';
 import { useShareMode } from '../context/ShareModeContext';
-import { createShare, buildShareUrl } from '../services/shareApi';
+import { createShare, buildShareUrl, type ShareSnapshot } from '../services/shareApi';
 import type { ShareAccess, SharePermission } from '../types/share';
 import { ApiRequestError } from '../services/apiClient';
 
@@ -26,6 +26,8 @@ interface Props {
   courses: Map<string, SapCourse>;
   trackDef: TrackDefinition | null;
   catalog: TrackSpecializationCatalog | null;
+  pendingShareUpdates?: ShareSnapshot[];
+  onAcceptShareUpdate?: (snapshot: ShareSnapshot) => Promise<void>;
 }
 
 type Tab = 'export' | 'import' | 'share';
@@ -33,7 +35,15 @@ type VersionScope = 'current' | 'all' | 'select';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog }: Props) {
+export function ExportShareModal({
+  onClose,
+  onPrint,
+  courses,
+  trackDef,
+  catalog,
+  pendingShareUpdates = [],
+  onAcceptShareUpdate,
+}: Props) {
   const versions = usePlanStore((s) => s.versions);
   const activeVersionId = usePlanStore((s) => s.activeVersionId);
   const loadEnvelope = usePlanStore((s) => s.loadEnvelope);
@@ -292,6 +302,8 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
 
   const localVersionsWillBeLost = !!importPreview && versions.length > importPreview.versions.length;
 
+  const showShareUpdates = !shareMode && pendingShareUpdates.length > 0;
+
   return (
     <div
       className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
@@ -343,6 +355,13 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
             >שיתוף קישור</button>
           )}
         </div>
+
+        {showShareUpdates && (
+          <ShareUpdatesPanel
+            updates={pendingShareUpdates}
+            onAccept={onAcceptShareUpdate}
+          />
+        )}
 
         {tab === 'export' && (
           <div className="space-y-4">
@@ -693,6 +712,76 @@ export function ExportShareModal({ onClose, onPrint, courses, trackDef, catalog 
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+interface ShareUpdatesPanelProps {
+  updates: ShareSnapshot[];
+  onAccept?: (snapshot: ShareSnapshot) => Promise<void>;
+}
+
+function ShareUpdatesPanel({ updates, onAccept }: ShareUpdatesPanelProps) {
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
+
+  async function handleAccept(snapshot: ShareSnapshot) {
+    if (!onAccept) return;
+    if (!window.confirm(
+      'הפעולה תחליף את התוכנית האישית שלך במצב הנוכחי של השיתוף. לא ניתן לבטל את הפעולה. להמשיך?'
+    )) return;
+    setPendingId(snapshot.shareId);
+    setErrorId(null);
+    try {
+      await onAccept(snapshot);
+    } catch {
+      setErrorId(snapshot.shareId);
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  return (
+    <div className="mb-4 border border-emerald-300 bg-emerald-50 rounded-lg p-3" dir="rtl">
+      <p className="text-sm font-semibold text-emerald-900 mb-1">
+        עדכונים מהשיתוף ({updates.length})
+      </p>
+      <p className="text-xs text-emerald-800 mb-3">
+        קישורי שיתוף שלך כוללים שינויים שלא נכנסו לתוכנית האישית. שותפים לא יכולים לעדכן את התוכנית האישית בלי האישור שלך.
+      </p>
+      <ul className="space-y-2">
+        {updates.map((u) => {
+          const updatedAt = new Date(u.updatedAt);
+          const dateLabel = isNaN(updatedAt.getTime())
+            ? '—'
+            : updatedAt.toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' });
+          const isPending = pendingId === u.shareId;
+          const isError = errorId === u.shareId;
+          return (
+            <li
+              key={u.shareId}
+              className="flex flex-wrap items-center justify-between gap-2 bg-white border border-emerald-200 rounded-md px-3 py-2"
+            >
+              <div className="flex flex-col text-xs text-gray-700 min-w-0">
+                <span className="font-mono text-[11px] text-gray-500 truncate" title={u.shareId}>
+                  {u.shareId}
+                </span>
+                <span>עודכן לאחרונה: {dateLabel}</span>
+                {isError && (
+                  <span className="text-red-600">שגיאה בהחלת השינויים. נסה שוב.</span>
+                )}
+              </div>
+              <button
+                onClick={() => void handleAccept(u)}
+                disabled={isPending || !onAccept}
+                className="text-xs bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white font-medium px-3 py-1.5 rounded-md transition-colors"
+              >
+                {isPending ? 'מחיל...' : 'קבל לתוכנית האישית'}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
