@@ -76,7 +76,14 @@ export const eePhysicsTrack: TrackDefinition = {
     },
     {
       semester: 7,
-      courses: ['00440169','01140252'],
+      courses: [],
+      alternativeGroups: [
+        {
+          courseIds: ['00440169', '01140252'],
+          showBoth: true,
+          warningText: '⚠️ יש לבחור רק אחד: פרויקט ב׳ (00440169) או פרויקט ת (01140252). שים לב: ב-00440169 ייחשבו 3.0 נק״ז כחובה ו-1.0 נק״ז כבחירה פקולטית — ללא זיכוי נוסף מעבר ל-4.0 נק״ז',
+        },
+      ],
     },
   ],
 };
