@@ -793,6 +793,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
       )}
 
       <ProgressRow label='נק"ז שהושלמו ✓' earned={progress.completedCredits} required={progress.total.required} color="bg-green-500" />
+      <ProgressRow label={'סה"כ נקודות'} earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
       <ElectiveBreakdown
@@ -889,7 +890,6 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           </div>
         );
       })()}
-      <ProgressRow label={'סה"כ נקודות'} earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
 
       <div className="mb-2 flex items-center gap-2">
         <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
