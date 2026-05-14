@@ -1,7 +1,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
-import type { SapCourse } from '../types';
+import type { CourseFacultyArea, SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
 import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
@@ -42,6 +42,14 @@ const FILTER_LINKS: Partial<Record<string, { href: string; label: string; toolti
   ],
 };
 
+const FACULTY_FILTER_OPTIONS: { key: CourseFacultyArea; label: string; prefix: string; activeClass: string; hoverClass: string }[] = [
+  { key: 'ee',         label: 'חשמל',     prefix: '004', activeClass: 'bg-blue-100 text-blue-700 border-blue-300',     hoverClass: 'hover:border-blue-300'   },
+  { key: 'math',       label: 'מתמטיקה',  prefix: '010', activeClass: 'bg-green-100 text-green-700 border-green-300',  hoverClass: 'hover:border-green-300'  },
+  { key: 'physics',    label: 'פיזיקה',   prefix: '011', activeClass: 'bg-orange-100 text-orange-700 border-orange-300', hoverClass: 'hover:border-orange-300' },
+  { key: 'cs',         label: 'מחשבים',   prefix: '023', activeClass: 'bg-purple-100 text-purple-700 border-purple-300', hoverClass: 'hover:border-purple-300' },
+  { key: 'humanities', label: 'הומניסטי', prefix: '032', activeClass: 'bg-yellow-100 text-yellow-700 border-yellow-300', hoverClass: 'hover:border-yellow-300' },
+];
+
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
@@ -80,6 +88,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     winter: false,
     spring: false,
   });
+  const [selectedFaculty, setSelectedFaculty] = useState<CourseFacultyArea | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const pickerMenuRef = useRef<HTMLDivElement>(null);
   const {
@@ -135,7 +144,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   }, []);
 
   const q = deferredQuery.trim().toLowerCase();
-  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring;
+  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring || selectedFaculty !== null;
 
   const matchesFilters = useCallback((course: SapCourse): boolean => {
     if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) {
@@ -158,8 +167,13 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
       );
     }
 
+    if (selectedFaculty) {
+      const opt = FACULTY_FILTER_OPTIONS.find(o => o.key === selectedFaculty);
+      if (opt && !course.id.startsWith(opt.prefix)) return false;
+    }
+
     return true;
-  }, [englishTaughtCourses, filters]);
+  }, [englishTaughtCourses, filters, selectedFaculty]);
 
   const searchResults = useMemo(() => {
     if (q.length < 2 && !hasActiveFilters) return [];
@@ -169,7 +183,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
       if (!matchesFilters(course)) continue;
       if (q.length >= 2 && !course.id.includes(q) && !lowerName.includes(q)) continue;
       results.push(course);
-      if (results.length >= 12) break;
+      if (results.length >= 50) break;
     }
 
     return results;
@@ -280,6 +294,14 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     );
   }
 
+  function toggleFacultyFilter(key: CourseFacultyArea) {
+    setSelectedFaculty(prev => prev === key ? null : key);
+    setOpen(true);
+    setTab('search');
+    setPickerFor(null);
+    setPickerPosition(null);
+  }
+
   function toggleFilter(filterKey: keyof typeof filters) {
     setFilters((current) => ({
       ...current,
@@ -378,6 +400,21 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             אביב
           </button>
           <a href={FILTER_LINKS.winter![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.winter![0].tooltip} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">{FILTER_LINKS.winter![0].label} ↗</a>
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          {FACULTY_FILTER_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => toggleFacultyFilter(opt.key)}
+              className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+                selectedFaculty === opt.key
+                  ? opt.activeClass
+                  : `bg-white text-gray-500 border-gray-200 ${opt.hoverClass}`
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
