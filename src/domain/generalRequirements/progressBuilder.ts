@@ -29,6 +29,9 @@ export interface BuildGeneralRequirementsParams {
   generalElectiveCourseIds?: Iterable<string>;
   generalElectiveCredits?: Iterable<[string, number]>;
   noAdditionalCreditCourseIds?: Iterable<string>;
+  grades?: Record<string, number>;
+  binaryPass?: Record<string, boolean>;
+  countOnlyCompleted?: boolean;
 }
 
 function buildCourseRef(
@@ -60,6 +63,9 @@ export function buildGeneralRequirementsProgress({
   generalElectiveCourseIds = [],
   generalElectiveCredits = [],
   noAdditionalCreditCourseIds = [],
+  grades,
+  binaryPass,
+  countOnlyCompleted,
 }: BuildGeneralRequirementsParams): GeneralRequirementsResult {
   const labPoolSet = new Set(trackDef.labPool?.courses ?? []);
   const generalElectiveCourseIdSet = new Set(generalElectiveCourseIds);
@@ -68,6 +74,15 @@ export function buildGeneralRequirementsProgress({
   const courseRefs: CourseRef[] = [];
   const specialCourseRefs: CourseRef[] = [];
   const nonRepeatableSeen = new Set<string>([...completedCourses]);
+
+  const doneSet: Set<string> | null = countOnlyCompleted
+    ? (() => {
+        const s = new Set<string>(completedCourses);
+        for (const key of Object.keys(grades ?? {})) s.add(key.split('__')[0]);
+        for (const [id, val] of Object.entries(binaryPass ?? {})) { if (val) s.add(id); }
+        return s;
+      })()
+    : null;
 
   const pushCourseRef = (id: string, credits: number): void => {
     if (noAdditionalCreditCourseIdSet.has(id)) return;
@@ -89,6 +104,7 @@ export function buildGeneralRequirementsProgress({
 
   for (const semCourses of Object.values(semesters)) {
     for (const id of semCourses) {
+      if (doneSet && !doneSet.has(id)) continue;
       const sap = courses.get(id);
       if (!sap) continue;
       if (REPEATABLE_COURSES.has(id)) {

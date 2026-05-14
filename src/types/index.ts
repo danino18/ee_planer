@@ -284,4 +284,5 @@ export interface StudentPlan {
   initializedTracks?: string[];  // trackIds that have been fully initialized at least once
   targetGraduationSemesterId?: number | null;  // semesterId from semesterOrder the student wants to graduate in
   loadProfile?: 'working' | 'fulltime';  // student's load preference for smart scheduling
+  countOnlyCompletedCourses?: boolean;  // when true, only completed/graded courses count toward requirements
 }

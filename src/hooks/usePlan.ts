@@ -83,6 +83,17 @@ function getRequirement(
   return requirements.find((requirement) => requirement.requirementId === requirementId);
 }
 
+function buildDoneSet(
+  completedCourses: string[],
+  grades: Record<string, number>,
+  binaryPass: Record<string, boolean>,
+): Set<string> {
+  const s = new Set<string>(completedCourses);
+  for (const key of Object.keys(grades)) s.add(key.split('__')[0]);
+  for (const [id, val] of Object.entries(binaryPass)) { if (val) s.add(id); }
+  return s;
+}
+
 function getCountedTotalCredits(
   completedCourses: string[],
   semesters: Record<number, string[]>,
@@ -370,6 +381,8 @@ export function computeRequirementsProgress(
   const {
     semesters,
     completedCourses,
+    grades: inputGrades,
+    binaryPass: inputBinaryPass,
     selectedSpecializations,
     doubleSpecializations,
     hasEnglishExemption,
@@ -384,13 +397,24 @@ export function computeRequirementsProgress(
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
     quantumComputingMinorEnabled,
+    countOnlyCompleted,
   } = input;
 
   if (!trackDef) return null;
 
+  const doneSet = countOnlyCompleted
+    ? buildDoneSet(completedCourses, inputGrades, inputBinaryPass)
+    : null;
+
+  const effectiveSemesters: Record<number, string[]> = doneSet
+    ? Object.fromEntries(
+        Object.entries(semesters).map(([sem, ids]) => [sem, ids.filter((id) => doneSet.has(id))]),
+      )
+    : semesters;
+
     const allPlaced = new Set<string>([
       ...completedCourses,
-      ...Object.values(semesters).flat(),
+      ...Object.values(effectiveSemesters).flat(),
     ]);
     const mandatoryCreditsRequired = getEffectiveMandatoryCreditsRequired(trackDef, allPlaced, courses);
     const electiveCreditsRequired = getEffectiveElectiveCreditsRequired(trackDef, allPlaced, courses);
@@ -423,7 +447,7 @@ export function computeRequirementsProgress(
       }
 
       for (const sem of semesterOrder) {
-        for (const id of semesters[sem] ?? []) {
+        for (const id of effectiveSemesters[sem] ?? []) {
           if (labSet.has(id) && !seen.has(id)) {
             orderedLabPool.push(id);
             seen.add(id);
@@ -503,7 +527,7 @@ export function computeRequirementsProgress(
       generalElectiveCredits.set(id, (generalElectiveCredits.get(id) ?? 0) + credits);
     };
 
-    for (const id of iteratePlacedCourseIds(completedCourses, semesters, semesterOrder)) {
+    for (const id of iteratePlacedCourseIds(completedCourses, effectiveSemesters, semesterOrder)) {
       const isMandatoryForElectiveExclusion =
         mandatoryIds.has(id) &&
         !(trackDef.id === 'ce' && (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID) && !ceMandatoryProjectIds.has(id));
@@ -609,7 +633,7 @@ export function computeRequirementsProgress(
 
     const totalCredits = getCountedTotalCredits(
       completedCourses,
-      semesters,
+      effectiveSemesters,
       courses,
       noAdditionalCreditCourseIds,
     );
@@ -654,7 +678,7 @@ export function computeRequirementsProgress(
     const { progress: generalRequirements, generalElectivesBreakdown } = buildGeneralRequirementsProgress({
       courses,
       trackDef,
-      semesters,
+      semesters: effectiveSemesters,
       completedCourses,
       miluimCredits,
       englishTaughtCourses,
@@ -662,6 +686,9 @@ export function computeRequirementsProgress(
       generalElectiveCourseIds,
       generalElectiveCredits,
       noAdditionalCreditCourseIds,
+      grades: inputGrades,
+      binaryPass: inputBinaryPass,
+      countOnlyCompleted,
     });
     const generalElectivesRequirement = getRequirement(generalRequirements, 'general_electives');
     const englishRequirement = getRequirement(generalRequirements, 'english');
@@ -893,6 +920,7 @@ export function useRequirementsProgress(
   const roboticsMinorEnabled = usePlanStore((s) => s.roboticsMinorEnabled ?? false);
   const entrepreneurshipMinorEnabled = usePlanStore((s) => s.entrepreneurshipMinorEnabled ?? false);
   const quantumComputingMinorEnabled = usePlanStore((s) => s.quantumComputingMinorEnabled ?? false);
+  const countOnlyCompletedCourses = usePlanStore((s) => s.countOnlyCompletedCourses ?? false);
 
   return useMemo(
     () =>
@@ -917,13 +945,14 @@ export function useRequirementsProgress(
           roboticsMinorEnabled,
           entrepreneurshipMinorEnabled,
           quantumComputingMinorEnabled,
+          countOnlyCompleted: countOnlyCompletedCourses,
         },
         courses,
         trackDef,
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, weightedAverage],
+    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, countOnlyCompletedCourses, weightedAverage],
   );
 }
 

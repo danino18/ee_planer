@@ -628,6 +628,8 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     summerSemesters,
     semesters,
     completedCourses,
+    countOnlyCompletedCourses,
+    toggleCountOnlyCompleted,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     setMiluimCredits: state.setMiluimCredits,
@@ -649,6 +651,8 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     summerSemesters: state.summerSemesters,
     semesters: state.semesters,
     completedCourses: state.completedCourses,
+    countOnlyCompletedCourses: state.countOnlyCompletedCourses ?? false,
+    toggleCountOnlyCompleted: state.toggleCountOnlyCompleted,
   })));
   const [expandedRoboticsList, setExpandedRoboticsList] = useState<number | null>(null);
   const [expandedQuantumGroup, setExpandedQuantumGroup] = useState<string | null>(null);
@@ -754,7 +758,33 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <h2 className="text-base font-bold text-gray-900 mb-4">מעקב דרישות</h2>
+      <h2 className="text-base font-bold text-gray-900 mb-3">מעקב דרישות</h2>
+
+      <div className="mb-4 flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+        <button
+          type="button"
+          onClick={() => countOnlyCompletedCourses && toggleCountOnlyCompleted()}
+          className={`flex-1 py-1.5 px-2 transition-colors ${
+            !countOnlyCompletedCourses
+              ? 'bg-blue-500 text-white font-medium'
+              : 'bg-white text-gray-500 hover:bg-gray-50'
+          }`}
+        >
+          כל הקורסים
+        </button>
+        <button
+          type="button"
+          onClick={() => !countOnlyCompletedCourses && toggleCountOnlyCompleted()}
+          className={`flex-1 py-1.5 px-2 transition-colors border-r border-gray-200 ${
+            countOnlyCompletedCourses
+              ? 'bg-blue-500 text-white font-medium'
+              : 'bg-white text-gray-500 hover:bg-gray-50'
+          }`}
+        >
+          הושלמו בלבד ✓
+        </button>
+      </div>
+
       {progress.isReady && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 mb-4 text-center">
           <p className="text-green-700 font-semibold text-sm">עמדת בכל הדרישות!</p>

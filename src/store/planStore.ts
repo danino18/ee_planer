@@ -71,6 +71,7 @@ interface PlanState extends StudentPlan {
   setEnglishScore: (score: number | null) => void;
   setTargetGraduationSemesterId: (semId: number | null) => void;
   setLoadProfile: (profile: 'working' | 'fulltime') => void;
+  toggleCountOnlyCompleted: () => void;
   toggleEnglishTaughtCourse: (courseId: string) => void;
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
@@ -928,6 +929,13 @@ export const usePlanStore = create<PlanState>()(
       setLoadProfile: (profile) =>
         set((state) => (
           isShareReviewReadOnly(state) ? state : { loadProfile: profile }
+        )),
+
+      toggleCountOnlyCompleted: () =>
+        set((state) => (
+          isShareReviewReadOnly(state)
+            ? state
+            : { countOnlyCompletedCourses: !(state.countOnlyCompletedCourses ?? false) }
         )),
 
       setFacultyColorOverride: (faculty, colorKey) =>

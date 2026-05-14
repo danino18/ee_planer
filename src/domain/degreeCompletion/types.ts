@@ -20,6 +20,7 @@ export interface RequirementsInput {
   roboticsMinorEnabled: boolean;
   entrepreneurshipMinorEnabled: boolean;
   quantumComputingMinorEnabled: boolean;
+  countOnlyCompleted?: boolean;
 }
 
 export type DegreeBucket =

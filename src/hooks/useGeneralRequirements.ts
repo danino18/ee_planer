@@ -41,6 +41,9 @@ export function useGeneralRequirements(
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
   const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
   const englishScore = usePlanStore((s) => s.englishScore);
+  const grades = usePlanStore((s) => s.grades);
+  const binaryPass = usePlanStore((s) => s.binaryPass ?? {});
+  const countOnlyCompleted = usePlanStore((s) => s.countOnlyCompletedCourses ?? false);
 
   return useMemo(() => {
     if (!trackDef) return EMPTY_RESULT;
@@ -53,6 +56,9 @@ export function useGeneralRequirements(
       englishTaughtCourses,
       miluimCredits,
       englishScore,
+      grades,
+      binaryPass,
+      countOnlyCompleted,
     });
-  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses, miluimCredits, englishScore]);
+  }, [courses, trackDef, semesters, completedCourses, englishTaughtCourses, miluimCredits, englishScore, grades, binaryPass, countOnlyCompleted]);
 }
