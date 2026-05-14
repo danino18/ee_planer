@@ -46,7 +46,7 @@ const FACULTY_FILTER_OPTIONS: { key: CourseFacultyArea; label: string; prefix: s
   { key: 'ee',         label: 'חשמל',     prefix: '004', activeClass: 'bg-blue-100 text-blue-700 border-blue-300',     hoverClass: 'hover:border-blue-300'   },
   { key: 'math',       label: 'מתמטיקה',  prefix: '010', activeClass: 'bg-green-100 text-green-700 border-green-300',  hoverClass: 'hover:border-green-300'  },
   { key: 'physics',    label: 'פיזיקה',   prefix: '011', activeClass: 'bg-orange-100 text-orange-700 border-orange-300', hoverClass: 'hover:border-orange-300' },
-  { key: 'cs',         label: 'מחשבים',   prefix: '023', activeClass: 'bg-purple-100 text-purple-700 border-purple-300', hoverClass: 'hover:border-purple-300' },
+  { key: 'cs',         label: 'מדמ"ח',    prefix: '023', activeClass: 'bg-purple-100 text-purple-700 border-purple-300', hoverClass: 'hover:border-purple-300' },
   { key: 'humanities', label: 'הומניסטי', prefix: '032', activeClass: 'bg-yellow-100 text-yellow-700 border-yellow-300', hoverClass: 'hover:border-yellow-300' },
 ];
 
