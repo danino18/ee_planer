@@ -562,6 +562,7 @@ interface Props {
       };
     };
     total: { earned: number; required: number };
+    completedCredits: number;
     specializationGroups: {
       completed: number;
       required: number;
@@ -791,6 +792,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         </div>
       )}
 
+      <ProgressRow label='נק"ז שהושלמו ✓' earned={progress.completedCredits} required={progress.total.required} color="bg-green-500" />
       <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
       <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
       <ElectiveBreakdown

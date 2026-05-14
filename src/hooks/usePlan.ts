@@ -406,6 +406,9 @@ export function computeRequirementsProgress(
     ? buildDoneSet(completedCourses, inputGrades, inputBinaryPass)
     : null;
 
+  // Always compute the "actually completed" set for the completedCredits display row
+  const alwaysDoneSet = doneSet ?? buildDoneSet(completedCourses, inputGrades, inputBinaryPass);
+
   const effectiveSemesters: Record<number, string[]> = doneSet
     ? Object.fromEntries(
         Object.entries(semesters).map(([sem, ids]) => [sem, ids.filter((id) => doneSet.has(id))]),
@@ -634,6 +637,16 @@ export function computeRequirementsProgress(
     const totalCredits = getCountedTotalCredits(
       completedCourses,
       effectiveSemesters,
+      courses,
+      noAdditionalCreditCourseIds,
+    );
+
+    const completedSemesters: Record<number, string[]> = Object.fromEntries(
+      Object.entries(semesters).map(([sem, ids]) => [sem, ids.filter((id) => alwaysDoneSet.has(id))]),
+    );
+    const completedCredits = getCountedTotalCredits(
+      completedCourses,
+      completedSemesters,
       courses,
       noAdditionalCreditCourseIds,
     );
@@ -883,6 +896,7 @@ export function computeRequirementsProgress(
       roboticsMinorProgress,
       entrepreneurshipMinorProgress,
       quantumComputingMinorProgress,
+      completedCredits,
       isReady:
         mandatoryDone >= mandatoryCreditsRequired &&
         electiveCredits >= electiveCreditsRequired &&
