@@ -22,6 +22,10 @@
 /* ═══════════════════════════════════════════════════════════
    BASE
    ═══════════════════════════════════════════════════════════ */
+html {
+  font-size: 17px; /* bumps all rem-based Tailwind sizes ~6% — text-xs→13px, text-sm→15px, text-base→17px */
+}
+
 html, body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
