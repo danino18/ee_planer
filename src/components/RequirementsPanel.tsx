@@ -137,7 +137,7 @@ function ElectiveBreakdown({
                   />
                 </div>
                 {requirement.requiredAnyOfCourseIds && (
-                  <div className="mt-1.5 flex items-start gap-1.5 text-[11px] text-gray-600">
+                  <div className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-600">
                     <span className={`font-bold shrink-0 ${requirement.requiredAnyOfDone ? 'text-green-600' : 'text-gray-400'}`}>
                       {requirement.requiredAnyOfDone ? '\u2713' : '\u25cb'}
                     </span>
@@ -159,7 +159,7 @@ function ElectiveBreakdown({
             <label key={choice.courseId} className="flex items-center justify-between gap-2 text-xs text-gray-600">
               <span className="min-w-0 truncate">{choice.courseName}</span>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[11px] text-gray-400">{CREDIT_ASSIGNMENT_LABEL}</span>
+                <span className="text-xs text-gray-400">{CREDIT_ASSIGNMENT_LABEL}</span>
                 <select
                   value={choice.selectedArea}
                   onChange={(event) => onSelectAssignment(choice.courseId, event.target.value as ElectiveCreditArea)}
@@ -222,8 +222,8 @@ function SubBar({ label, recognized, target }: SubBarProps) {
   return (
     <div>
       <div className="flex justify-between items-center gap-3 mb-0.5">
-        <span className={`text-[11px] ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
-        <span className={`text-[11px] font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600'}`}>
+        <span className={`text-xs ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
+        <span className={`text-xs font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600'}`}>
           {formatCredits(recognized)} / {formatCredits(target)}
         </span>
       </div>
@@ -311,12 +311,12 @@ function GeneralElectivesRow({
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className="text-[11px] text-gray-500 hover:text-gray-700"
+            className="text-xs text-gray-500 hover:text-gray-700"
           >
             {showDetails ? '▲ הסתר פירוט' : '▼ פירוט מקורות'}
           </button>
           {showDetails && (
-            <div className="mt-1.5 space-y-1 text-[11px] text-gray-600">
+            <div className="mt-1.5 space-y-1 text-xs text-gray-600">
               {c.regularSportToFloor > 0 && (
                 <p>ספורט רגיל ← רצפת ספורט: {formatCredits(c.regularSportToFloor)} נק"ז</p>
               )}
@@ -378,7 +378,7 @@ function GeneralElectivesRow({
         return (
           <div className="mt-2 flex flex-wrap gap-1">
             {Array.from(grouped.values()).map(({ name, count }) => (
-              <span key={`general-electives-${name}`} className="text-[11px] rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+              <span key={`general-electives-${name}`} className="text-xs rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
                 {count > 1 ? `${name} ×${count}` : name}
               </span>
             ))}
@@ -514,7 +514,7 @@ function CompactRequirementRow({
         return (
           <div className="mt-2 flex flex-wrap gap-1">
             {Array.from(grouped.values()).map(({ name, count }) => (
-              <span key={`${req.requirementId}-${name}`} className="text-[11px] rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+              <span key={`${req.requirementId}-${name}`} className="text-xs rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
                 {count > 1 ? `${name} ×${count}` : name}
               </span>
             ))}
@@ -724,7 +724,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             event.stopPropagation();
             setPickerFor(isPickerOpen ? null : courseId);
           }}
-          className={`text-[10px] border px-1 py-0.5 rounded transition-colors ${
+          className={`text-xs border px-1 py-0.5 rounded transition-colors ${
             isPickerOpen
               ? 'bg-blue-500 text-white border-blue-500'
               : 'text-blue-500 hover:text-blue-700 border-blue-200 hover:border-blue-400'
@@ -743,7 +743,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   addCourseToSemester(courseId, value);
                   setPickerFor(null);
                 }}
-                className="w-full text-right text-[11px] px-2.5 py-1 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors"
+                className="w-full text-right text-xs px-2.5 py-1 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors"
               >
                 {label}
               </button>
@@ -975,7 +975,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   <div key={lp.listNumber}>
                     <button
                       onClick={() => setExpandedRoboticsList(isExpanded ? null : lp.listNumber)}
-                      className={`text-[11px] px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
+                      className={`text-xs px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
                         lp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}
                     >
@@ -987,7 +987,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                         {listData.courses.map((course) => {
                           const placed = allPlaced.has(course.id);
                           return (
-                            <div key={course.id} className="flex items-center gap-1 text-[11px]">
+                            <div key={course.id} className="flex items-center gap-1 text-xs">
                               <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
                                 {placed ? '✓' : '○'}
                               </span>
@@ -1077,7 +1077,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   <div key={gp.id}>
                     <button
                       onClick={() => setExpandedQuantumGroup(isExpanded ? null : gp.id)}
-                      className={`text-[11px] px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
+                      className={`text-xs px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
                         gp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                       }`}
                     >
@@ -1089,7 +1089,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                         {groupData.courses.map((course) => {
                           const placed = allPlaced.has(course.id);
                           return (
-                            <div key={course.id} className="flex items-center gap-1 text-[11px]">
+                            <div key={course.id} className="flex items-center gap-1 text-xs">
                               <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
                                 {placed ? '✓' : '○'}
                               </span>
@@ -1114,14 +1114,14 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 const optionData = QUANTUM_MINOR_G2_OPTIONS.find((entry) => entry.id === option.id)!;
                 return (
                   <div key={option.id} className={`rounded-md px-2 py-1 ${option.satisfied ? 'bg-green-100' : 'bg-white'}`}>
-                    <div className={`text-[11px] font-medium ${option.satisfied ? 'text-green-700' : 'text-gray-600'}`}>
+                    <div className={`text-xs font-medium ${option.satisfied ? 'text-green-700' : 'text-gray-600'}`}>
                       {option.title}{option.satisfied ? ' ✓' : ` ${option.matchedCourseIds.length}/${option.requiredCourseIds.length}`}
                     </div>
                     <div className="mt-0.5 space-y-0.5">
                       {optionData.courses.map((course) => {
                         const placed = allPlaced.has(course.id);
                         return (
-                          <div key={course.id} className="flex items-center gap-1 text-[11px]">
+                          <div key={course.id} className="flex items-center gap-1 text-xs">
                             <span className={placed ? 'text-green-600 font-bold' : 'text-gray-400'}>
                               {placed ? '✓' : '○'}
                             </span>

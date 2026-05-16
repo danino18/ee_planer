@@ -158,7 +158,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
                       {evaluation.ruleBlocks.map((block) => (
                         <span
                           key={block.id}
-                          className={`text-[11px] px-1.5 py-0.5 rounded-full ${
+                          className={`text-xs px-1.5 py-0.5 rounded-full ${
                             block.isSatisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                           }`}
                         >
@@ -167,7 +167,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
                       ))}
                     </div>
                     {evaluation.issues.length > 0 && (
-                      <p className="text-[11px] text-amber-700 mt-2 line-clamp-2">{evaluation.issues[0]}</p>
+                      <p className="text-xs text-amber-700 mt-2 line-clamp-2">{evaluation.issues[0]}</p>
                     )}
                   </div>
                 </div>

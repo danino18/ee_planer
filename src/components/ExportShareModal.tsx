@@ -763,7 +763,7 @@ function ShareUpdatesPanel({ updates, onAccept }: ShareUpdatesPanelProps) {
               className="flex flex-wrap items-center justify-between gap-2 bg-white border border-emerald-200 rounded-md px-3 py-2"
             >
               <div className="flex flex-col text-xs text-gray-700 min-w-0">
-                <span className="font-mono text-[11px] text-gray-500 truncate" title={u.shareId}>
+                <span className="font-mono text-xs text-gray-500 truncate" title={u.shareId}>
                   {u.shareId}
                 </span>
                 <span>עודכן לאחרונה: {dateLabel}</span>
