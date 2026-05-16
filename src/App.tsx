@@ -586,7 +586,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
 
   return (
     <>
-    <div className="min-h-screen bg-gray-100">
+    <div className="app-bg">
       <Toast message={toast.message} visible={toast.visible} />
       {showCompare && (
         <VersionCompareModal
@@ -658,17 +658,18 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           <a href={window.location.origin} className="underline font-medium hover:opacity-80">עבור לתוכנית שלי</a>
         </div>
       )}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-screen-2xl mx-auto px-5 py-3 flex flex-col gap-2">
+      <header className="app-header sticky top-0 z-10">
+        <div className="max-w-screen-2xl mx-auto px-5 py-3.5 flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-gray-900">מתכנן לימודים – הטכניון</h1>
-              <p className="text-sm text-gray-500">{trackDef.name}</p>
+              <h1 className="text-lg font-bold text-white tracking-tight">מתכנן לימודים – הטכניון</h1>
+              <p className="text-sm font-light" style={{ color: 'rgba(147,197,253,0.8)' }}>{trackDef.name}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2 justify-end">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="md:hidden text-sm text-gray-600 border border-gray-200 px-2 py-1.5 rounded-lg"
+                className="md:hidden text-sm border px-2 py-1.5 rounded-lg transition-colors"
+                style={{ color: 'rgba(255,255,255,0.75)', borderColor: 'rgba(255,255,255,0.2)' }}
                 aria-label="פתח תפריט"
                 aria-expanded={sidebarOpen}
                 aria-controls="sidebar-drawer"
@@ -677,7 +678,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               {(!shareMode || shareMode.isOwner) && (
                 <button
                   onClick={() => setShowExport(true)}
-                  className="relative text-sm text-blue-600 hover:text-blue-800 border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
+                  className="relative text-sm font-medium text-white bg-white/15 hover:bg-white/25 border border-white/25 hover:border-white/50 px-3 py-1.5 rounded-lg transition-colors"
                   title={pendingShareUpdates.length > 0
                     ? `יש ${pendingShareUpdates.length} עדכון מהשיתוף ממתינים לאישור`
                     : 'ייצוא, שיתוף, או ייבוא של המערכת'}
@@ -685,7 +686,7 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
                   <span>⇪</span><span className="hidden sm:inline"> שיתוף</span>
                   {pendingShareUpdates.length > 0 && (
                     <span
-                      className="absolute -top-1 -left-1 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold shadow"
+                      className="absolute -top-1 -left-1 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-emerald-400 text-white text-[10px] font-bold shadow"
                       aria-label={`${pendingShareUpdates.length} עדכוני שיתוף ממתינים`}
                     >
                       {pendingShareUpdates.length}
@@ -696,24 +697,26 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               <button
                 onClick={undo}
                 disabled={_history.length === 0}
-                className="text-sm text-gray-500 hover:text-gray-800 border border-gray-200 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="text-sm border px-3 py-1.5 rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+                style={{ color: 'rgba(255,255,255,0.65)', borderColor: 'rgba(255,255,255,0.18)' }}
                 title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
               >
                 <span>↩</span><span className="hidden sm:inline"> בטל</span>
               </button>
               <button
                 onClick={handleResetToDefault}
-                className="text-sm text-amber-600 hover:text-amber-800 border border-amber-200 hover:border-amber-400 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm border px-3 py-1.5 rounded-lg transition-colors"
+                style={{ color: 'rgba(252,211,77,0.9)', borderColor: 'rgba(252,211,77,0.35)' }}
                 title="החזר את המערכת לתכנית הלימודים המומלצת"
               >
                 <span>⟳</span><span className="hidden sm:inline"> מומלצת</span>
               </button>
               <button
                 onClick={() => setShowDegreeCheck(true)}
-                className={`text-sm border px-3 py-1.5 rounded-lg transition-colors ${
+                className={`text-sm border px-3 py-1.5 rounded-lg transition-colors font-medium ${
                   degreeCompletion?.result.isComplete
-                    ? 'text-green-700 border-green-300 hover:border-green-500 bg-green-50'
-                    : 'text-purple-700 border-purple-300 hover:border-purple-500 hover:text-purple-900'
+                    ? 'text-emerald-300 border-emerald-400/40 bg-emerald-400/10'
+                    : 'text-violet-300 border-violet-400/40 hover:bg-violet-400/10'
                 }`}
                 title="בדיקת גמר תואר והמלצות"
               >
@@ -726,7 +729,8 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
               </button>
               <button
                 onClick={beginTrackSwitch}
-                className="text-sm text-red-500 hover:text-red-700 border border-red-300 hover:border-red-500 px-3 py-1.5 rounded-lg transition-colors"
+                className="text-sm border px-3 py-1.5 rounded-lg transition-colors"
+                style={{ color: 'rgba(252,165,165,0.9)', borderColor: 'rgba(252,165,165,0.3)' }}
               >
                 <span className="hidden sm:inline">החלף מסלול</span><span className="sm:hidden">מסלול</span>
               </button>
@@ -735,10 +739,10 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
           <VersionTabs onCompare={() => setShowCompare(true)} />
         </div>
       </header>
-      <main className="max-w-screen-2xl mx-auto px-3 sm:px-4 py-4 md:py-5">
-        <div className="flex flex-col md:flex-row md:gap-4">
+      <main className="max-w-screen-2xl mx-auto px-3 sm:px-4 py-5 md:py-6">
+        <div className="flex flex-col md:flex-row md:gap-5">
           {/* Desktop sidebar — hidden on mobile */}
-          <aside className="hidden md:flex md:w-64 shrink-0 flex-col gap-4 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
+          <aside className="hidden md:flex md:w-64 shrink-0 flex-col gap-3.5 sticky top-20 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
             <RequirementsPanel progress={progress} weightedAverage={weightedAverage} />
             <SpecializationPanel catalog={specializationCatalog} courses={courses} />
             <ChainRecommendations catalog={specializationCatalog} courses={courses} trackDef={trackDef} />

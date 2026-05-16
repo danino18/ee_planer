@@ -44,13 +44,13 @@ interface Props {
 }
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
-  if (isOver)     return 'border-blue-500 bg-blue-100/70 ring-2 ring-blue-400 ring-offset-1';
-  if (isDragging) return isSummer ? 'border-amber-400 border-dashed bg-amber-50/60' : 'border-blue-300 border-dashed bg-blue-50/20';
-  if (isSummer)   return 'border-amber-300 bg-amber-50/40';
-  if (isCurrent)  return 'border-blue-500 bg-blue-50/30';
-  if (isPast)     return 'border-green-300 bg-green-50/30';
-  if (isFuture)   return 'border-gray-200 bg-gray-50/20 opacity-80';
-  return 'border-gray-200 bg-gray-50/50';
+  if (isOver)     return 'sem-col-over';
+  if (isDragging) return isSummer ? 'border-amber-400 border-dashed bg-amber-50/60' : 'border-blue-300 border-dashed bg-blue-50/10';
+  if (isSummer)   return 'sem-col-summer';
+  if (isCurrent)  return 'sem-col-current';
+  if (isPast)     return 'sem-col-past';
+  if (isFuture)   return 'sem-col-future';
+  return 'sem-col-default';
 }
 
 export const SemesterColumn = memo(function SemesterColumn({
@@ -113,9 +113,9 @@ export const SemesterColumn = memo(function SemesterColumn({
       ref={setColumnRef}
       style={sortableStyle}
       data-print-col
-      className={`flex flex-col rounded-xl border-2 min-h-40 transition-colors ${columnStyle}`}
+      className={`flex flex-col rounded-2xl border-2 min-h-44 transition-all duration-200 ${columnStyle}`}
     >
-      <div className={`px-3 py-2 rounded-t-xl border-b border-gray-200 ${isSummer ? 'bg-amber-50' : 'bg-white'}`}>
+      <div className={`px-3 py-2.5 rounded-t-2xl border-b ${isSummer ? 'bg-amber-50/80 border-amber-200/70' : 'bg-white/90 border-slate-200'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {/* Drag handle for reordering */}
@@ -139,21 +139,21 @@ export const SemesterColumn = memo(function SemesterColumn({
                 {semesterType === 'winter' ? '❄️' : '🌸'}
               </button>
             )}
-            <span className="font-semibold text-gray-800 text-sm">{semesterLabel}</span>
+            <span className="font-semibold text-slate-700 text-sm tracking-tight">{semesterLabel}</span>
             {isCurrent && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
+              <span className="text-xs text-white px-2 py-0.5 rounded-full font-semibold" style={{ background: '#2c61ad' }}>
                 נוכחי
               </span>
             )}
           </div>
           <div className="flex items-center gap-1">
             {semester > 0 && (
-              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium tabular-nums">
                 {totalCredits.toFixed(1)} נ״ז
               </span>
             )}
             {semester > 0 && semesterAverage !== null && semesterAverage !== undefined && (
-              <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full" title="ממוצע סמסטר משוקלל">
+              <span className="text-xs px-2 py-0.5 rounded-full font-semibold tabular-nums" style={{ background: '#eff4fb', color: '#1e4d93' }} title="ממוצע סמסטר משוקלל">
                 ∅ {semesterAverage.toFixed(1)}
               </span>
             )}

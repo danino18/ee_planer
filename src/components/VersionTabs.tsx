@@ -24,7 +24,7 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
   if (shareMode?.isShareReview) {
     return (
       <div className="flex items-center gap-1 flex-wrap">
-        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm select-none border bg-indigo-600 text-white border-indigo-600 font-medium">
+        <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-sm select-none border font-semibold" style={{ background: 'rgba(255,255,255,0.15)', borderColor: 'rgba(255,255,255,0.3)', color: 'white' }}>
           <span className="max-w-40 truncate">גרסת שיתוף לבדיקה</span>
         </div>
       </div>
@@ -70,9 +70,12 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
             className={[
               'flex items-center gap-1 px-2 py-1 rounded-lg text-sm cursor-pointer select-none transition-colors border',
               isActive
-                ? 'bg-blue-600 text-white border-blue-600 font-medium'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-600',
+                ? 'font-semibold text-white'
+                : 'text-white/60 hover:text-white/90',
             ].join(' ')}
+            style={isActive
+              ? { background: 'rgba(255,255,255,0.2)', borderColor: 'rgba(255,255,255,0.4)' }
+              : { background: 'transparent', borderColor: 'rgba(255,255,255,0.15)' }}
           >
             {isEditing ? (
               <input
@@ -122,7 +125,8 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
       {versions.length < NORMAL_VERSION_LIMIT && (
         <button
           onClick={createVersion}
-          className="px-2 py-1 rounded-lg text-sm border border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-600 transition-colors"
+          className="px-2 py-1 rounded-lg text-sm border border-dashed transition-colors text-white/50 hover:text-white/80"
+          style={{ borderColor: 'rgba(255,255,255,0.25)' }}
           title="שכפל גרסה נוכחית כגרסה חדשה"
         >
           + גרסה
@@ -132,7 +136,8 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
       {versions.length > 1 && (
         <button
           onClick={onCompare}
-          className="px-2 py-1 rounded-lg text-sm border border-gray-200 text-gray-500 hover:border-purple-400 hover:text-purple-600 transition-colors"
+          className="px-2 py-1 rounded-lg text-sm border transition-colors text-white/50 hover:text-purple-300"
+          style={{ borderColor: 'rgba(255,255,255,0.15)' }}
           title="השווה גרסאות"
         >
           ⇄ השווה

@@ -69,7 +69,7 @@ function ProgressRow({ label, earned, required, color }: ProgressRowProps) {
           {earned.toFixed(1)} / {required} {done ? 'נק"ז' : ''}
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
+      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
         <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -758,44 +758,46 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   const shouldShowCoreAddButton = trackId === 'ce' || trackId === 'cs';
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <h2 className="text-base font-bold text-gray-900 mb-3">מעקב דרישות</h2>
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sidebar-panel">
+      <h2 className="text-base font-bold text-slate-800 mb-3 tracking-tight">מעקב דרישות</h2>
 
-      <div className="mb-4 flex rounded-lg border border-gray-200 overflow-hidden text-xs">
+      <div className="mb-4 flex rounded-xl border border-slate-200 overflow-hidden text-xs">
         <button
           type="button"
           onClick={() => countOnlyCompletedCourses && toggleCountOnlyCompleted()}
           className={`flex-1 py-1.5 px-2 transition-colors ${
             !countOnlyCompletedCourses
-              ? 'bg-blue-500 text-white font-medium'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
+              ? 'font-semibold text-white'
+              : 'bg-white text-slate-500 hover:bg-slate-50'
           }`}
+          style={!countOnlyCompletedCourses ? { background: '#1e4d93' } : {}}
         >
           כל הקורסים
         </button>
         <button
           type="button"
           onClick={() => !countOnlyCompletedCourses && toggleCountOnlyCompleted()}
-          className={`flex-1 py-1.5 px-2 transition-colors border-r border-gray-200 ${
+          className={`flex-1 py-1.5 px-2 transition-colors border-r border-slate-200 ${
             countOnlyCompletedCourses
-              ? 'bg-blue-500 text-white font-medium'
-              : 'bg-white text-gray-500 hover:bg-gray-50'
+              ? 'font-semibold text-white'
+              : 'bg-white text-slate-500 hover:bg-slate-50'
           }`}
+          style={countOnlyCompletedCourses ? { background: '#1e4d93' } : {}}
         >
           הושלמו בלבד ✓
         </button>
       </div>
 
       {progress.isReady && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 mb-4 text-center">
-          <p className="text-green-700 font-semibold text-sm">עמדת בכל הדרישות!</p>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center">
+          <p className="text-emerald-700 font-semibold text-sm">עמדת בכל הדרישות!</p>
         </div>
       )}
 
-      <ProgressRow label='נק"ז שהושלמו ✓' earned={progress.completedCredits} required={progress.total.required} color="bg-green-500" />
-      <ProgressRow label={'סה"כ נקודות'} earned={progress.total.earned} required={progress.total.required} color="bg-gray-400" />
-      <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="bg-blue-500" />
-      <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="bg-purple-500" />
+      <ProgressRow label='נק"ז שהושלמו ✓' earned={progress.completedCredits} required={progress.total.required} color="progress-green" />
+      <ProgressRow label={'סה"כ נקודות'} earned={progress.total.earned} required={progress.total.required} color="progress-gray" />
+      <ProgressRow label="קורסי חובה" earned={progress.mandatory.earned} required={progress.mandatory.required} color="progress-blue" />
+      <ProgressRow label="קורסי בחירה פקולטית" earned={progress.elective.earned} required={progress.elective.required} color="progress-purple" />
       <ElectiveBreakdown
         areaRequirements={progress.electiveBreakdown.areaRequirements}
         assignmentChoices={progress.electiveBreakdown.assignmentChoices}
@@ -807,15 +809,15 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         const done = completed >= required;
         const pct = Math.min(100, required > 0 ? (completed / required) * 100 : 0);
         return (
-          <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+          <div className="mb-3 rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2.5">
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-medium text-gray-800">קורסי ליבה</span>
               <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}`}>
                 {completed} / {required} {done ? 'קורסים ✓' : 'קורסים'}
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-              <div className={`h-2 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-orange-500'}`} style={{ width: `${pct}%` }} />
+            <div className="w-full bg-slate-200 rounded-full h-2 mb-2 overflow-hidden">
+              <div className={`h-2 rounded-full transition-all ${done ? 'progress-green' : 'progress-orange'}`} style={{ width: `${pct}%` }} />
             </div>
             <div className="space-y-1">
               {slots.map((slot) => (

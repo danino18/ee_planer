@@ -97,10 +97,10 @@ export const CourseCard = memo(function CourseCard({
     ...(effectiveDraggable && transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
   };
 
-  let colorClass = 'bg-white border-gray-200 hover:border-gray-300';
+  let colorClass = 'bg-white border-slate-200 hover:border-slate-300';
   if (wrongSemesterType) colorClass = 'bg-red-50 border-red-200 hover:border-red-300';
-  else if (effectiveIsCompleted) colorClass = 'bg-green-50 border-green-300';
-  else if (hasPrereqWarning || hasNoAdditionalCreditWarning) colorClass = 'bg-orange-50 border-orange-300';
+  else if (effectiveIsCompleted) colorClass = 'bg-emerald-50 border-emerald-200';
+  else if (hasPrereqWarning || hasNoAdditionalCreditWarning) colorClass = 'bg-amber-50 border-amber-200';
   else if (isMandatory) colorClass = 'bg-blue-50 border-blue-200 hover:border-blue-300';
 
   const namedGroups = missingPrereqGroups.filter((group) =>
@@ -129,11 +129,11 @@ export const CourseCard = memo(function CourseCard({
           if (effectiveDraggable) setModalOpen(true);
         }}
         className={`
-          ${colorClass} border rounded-lg p-2.5 relative overflow-hidden
+          ${colorClass} border rounded-xl p-2.5 relative overflow-hidden card-elevated
           ${effectiveDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} select-none
-          ${isDragging ? 'opacity-50 shadow-2xl scale-105' : effectiveDraggable ? 'hover:shadow-sm active:scale-95' : ''}
-          ${isPlanned && !isDragging ? 'opacity-60' : ''}
-          transition-all duration-100
+          ${isDragging ? 'opacity-50 shadow-2xl scale-105 rotate-1' : effectiveDraggable ? 'active:scale-95' : ''}
+          ${isPlanned && !isDragging ? 'opacity-55' : ''}
+          transition-all duration-150
         `}
       >
         {showCardActions && (
@@ -147,7 +147,7 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleFavorite(course.id);
             }}
-            className={`w-11 h-11 flex items-center justify-center text-sm leading-none ${isFavorite ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
+            className={`w-11 h-11 flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 hover:text-amber-400'}`}
             title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
           >
             {isFavorite ? '★' : '☆'}
@@ -186,14 +186,14 @@ export const CourseCard = memo(function CourseCard({
                 toggleCompleted(course.id);
               }
             }}
-            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold ${effectiveIsCompleted ? 'text-green-600' : 'text-gray-300 hover:text-green-500'}`}
+            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${effectiveIsCompleted ? 'text-emerald-500' : 'text-slate-300 hover:text-emerald-400'}`}
             title={effectiveIsCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
           >
             {effectiveIsCompleted ? '✓' : '○'}
           </button>
         )}
 
-        <p className={`text-xs font-medium text-gray-900 leading-snug pt-0.5 ${showCardActions ? 'pr-11 pl-[5.5rem]' : ''}`}>{course.name}</p>
+        <p className={`text-xs font-semibold text-slate-800 leading-snug pt-0.5 ${showCardActions ? 'pr-11 pl-[5.5rem]' : ''}`}>{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">
