@@ -1,11 +1,11 @@
-@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════
    DESIGN TOKENS
    ═══════════════════════════════════════════════════════════ */
 :root {
-  --font-sans: 'Heebo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --font-sans: 'Assistant', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
 
   /* Primary — midnight navy */
   --color-primary:       #1e4d93;
