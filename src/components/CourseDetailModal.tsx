@@ -365,7 +365,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                       />
                       <span>הקורס השני ללא זיכוי</span>
                     </label>
-                    <p className="text-[11px] text-orange-600">
+                    <p className="text-xs text-orange-600">
                       ברירת המחדל היא שהקורס המאוחר יותר בתוכנית לא יקבל נק"ז.
                     </p>
                   </div>

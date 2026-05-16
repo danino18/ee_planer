@@ -358,7 +358,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
           >
             אנגלית
           </button>
-          <a href={FILTER_LINKS.english![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.english![0].label} className="text-[10px] text-blue-400 hover:text-blue-600 shrink-0">↗</a>
+          <a href={FILTER_LINKS.english![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.english![0].label} className="text-xs text-blue-400 hover:text-blue-600 shrink-0">↗</a>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -369,7 +369,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
           >
             מל"ג
           </button>
-          <a href={FILTER_LINKS.melag![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.melag![0].label} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
+          <a href={FILTER_LINKS.melag![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.melag![0].label} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -380,7 +380,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
           >
             בחירה חופשית
           </button>
-          <a href={FILTER_LINKS.freeElective![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.freeElective![0].label} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
+          <a href={FILTER_LINKS.freeElective![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.freeElective![0].label} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -399,7 +399,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
           >
             אביב
           </button>
-          <a href={FILTER_LINKS.winter![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.winter![0].tooltip} className="text-[10px] text-blue-400 hover:text-blue-600 hover:underline shrink-0">{FILTER_LINKS.winter![0].label} ↗</a>
+          <a href={FILTER_LINKS.winter![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.winter![0].tooltip} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">{FILTER_LINKS.winter![0].label} ↗</a>
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           {FACULTY_FILTER_OPTIONS.map(opt => (

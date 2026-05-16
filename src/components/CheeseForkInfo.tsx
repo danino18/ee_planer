@@ -95,20 +95,20 @@ export function CheeseForkInfo({ courseId }: Props) {
         <>
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5 text-center">
-              <div className="text-[10px] text-gray-500">קושי</div>
+              <div className="text-xs text-gray-500">קושי</div>
               <div className="text-sm font-bold text-gray-800">
                 {difficultyAvg !== null ? `${difficultyAvg} / 5` : '—'}
               </div>
-              <div className="text-[10px] text-gray-400">
+              <div className="text-xs text-gray-400">
                 {difficultyValues.length} {difficultyValues.length === 1 ? 'ביקורת' : 'ביקורות'}
               </div>
             </div>
             <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5 text-center">
-              <div className="text-[10px] text-gray-500">כללי</div>
+              <div className="text-xs text-gray-500">כללי</div>
               <div className="text-sm font-bold text-gray-800">
                 {generalAvg !== null ? `${generalAvg} / 5` : '—'}
               </div>
-              <div className="text-[10px] text-gray-400">
+              <div className="text-xs text-gray-400">
                 {generalValues.length} {generalValues.length === 1 ? 'ביקורת' : 'ביקורות'}
               </div>
             </div>
@@ -126,7 +126,7 @@ export function CheeseForkInfo({ courseId }: Props) {
                 >
                   ◀
                 </button>
-                <span className="text-[11px] text-gray-500">
+                <span className="text-xs text-gray-500">
                   ביקורת {safeIndex + 1} מתוך {sortedPosts.length}
                 </span>
                 <button
@@ -141,12 +141,12 @@ export function CheeseForkInfo({ courseId }: Props) {
               </div>
 
               {currentPost.semester && (
-                <div className="text-[11px] font-medium text-gray-700">
+                <div className="text-xs font-medium text-gray-700">
                   {formatCheeseForkSemester(currentPost.semester)}
                 </div>
               )}
 
-              <div className="text-[10px] text-gray-500 mb-1.5">
+              <div className="text-xs text-gray-500 mb-1.5">
                 {currentPost.author && <span>מאת: {currentPost.author}</span>}
                 {currentPost.author && currentPost.timestamp > 0 && <span> · </span>}
                 {currentPost.timestamp > 0 && <span>{formatCheeseForkDate(currentPost.timestamp)}</span>}
@@ -159,7 +159,7 @@ export function CheeseForkInfo({ courseId }: Props) {
               )}
 
               {(currentPost.difficultyRank !== null || currentPost.generalRank !== null) && (
-                <div className="text-[10px] text-gray-500 mt-1.5 flex gap-3">
+                <div className="text-xs text-gray-500 mt-1.5 flex gap-3">
                   {currentPost.difficultyRank !== null && (
                     <span>קושי {currentPost.difficultyRank}/5</span>
                   )}

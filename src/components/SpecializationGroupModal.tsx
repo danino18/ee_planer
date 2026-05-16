@@ -82,7 +82,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
           </p>
           <div className="flex items-center gap-1 flex-wrap mt-0.5">
             {seasonBadge && (
-              <span className="text-[11px] leading-none" title={seasonBadge.title}>{seasonBadge.emoji}</span>
+              <span className="text-xs leading-none" title={seasonBadge.title}>{seasonBadge.emoji}</span>
             )}
             {showsEnglishBadge && (
               <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס באנגלית">
