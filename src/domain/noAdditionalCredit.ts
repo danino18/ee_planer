@@ -1,4 +1,5 @@
 import type { SapCourse } from '../types';
+import { isSportCourseId } from '../data/generalRequirements/courseClassification';
 
 export interface NoAdditionalCreditConflict {
   courseId: string;
@@ -86,6 +87,7 @@ export function computeNoAdditionalCreditConflicts(
     for (const previousCourseId of previousCourseIds) {
       const previousCourse = courses.get(previousCourseId);
       if (!hasNoAdditionalCreditConflict(course, previousCourse)) continue;
+      if (isSportCourseId(courseId) && isSportCourseId(previousCourseId)) continue;
 
       const pairKey = getNoAdditionalCreditPairKey(courseId, previousCourseId);
       const overrideCourseId = overrides[pairKey];
