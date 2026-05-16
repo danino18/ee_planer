@@ -12,33 +12,43 @@ export function TrackSelector({ tracks }: { tracks: TrackDefinition[] }) {
   const setTrack = usePlanStore((s) => s.setTrack);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col items-center justify-center p-8">
-      <div className="max-w-3xl w-full">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">מתכנן לימודים</h1>
-          <p className="text-lg text-gray-600">הפקולטה להנדסת חשמל ומחשבים – הטכניון</p>
-          <p className="text-sm text-gray-400 mt-1">תכנית לימודים 2025/2026</p>
+    <div className="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden" style={{ background: 'linear-gradient(145deg, #0f172a 0%, #1e3a5f 45%, #1e4d93 100%)' }}>
+      {/* Decorative radial glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(59,130,246,0.18) 0%, transparent 70%)' }} />
+      <div className="absolute bottom-0 left-0 right-0 h-64 pointer-events-none" style={{ background: 'radial-gradient(ellipse 60% 100% at 30% 100%, rgba(99,102,241,0.12) 0%, transparent 70%)' }} />
+
+      <div className="max-w-3xl w-full relative z-10">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <span className="text-3xl">🎓</span>
+          </div>
+          <h1 className="text-5xl font-black text-white mb-4 tracking-tight">מתכנן לימודים</h1>
+          <p className="text-xl font-light" style={{ color: 'rgba(147,197,253,0.9)' }}>הפקולטה להנדסת חשמל ומחשבים – הטכניון</p>
+          <p className="text-sm mt-2" style={{ color: 'rgba(147,197,253,0.6)' }}>תכנית לימודים 2025/2026</p>
         </div>
-        <h2 className="text-xl font-semibold text-gray-700 mb-6 text-center">בחר מסלול לימודים</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+        <p className="text-base font-medium text-center mb-8 tracking-wide" style={{ color: 'rgba(147,197,253,0.7)' }}>בחר מסלול לימודים</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {tracks.map((track) => (
             <button
               key={track.id}
               onClick={() => setTrack(track.id)}
-              className="bg-white rounded-2xl shadow hover:shadow-lg border-2 border-transparent hover:border-blue-400 transition-all p-7 text-right group"
+              className="track-card rounded-2xl p-7 text-right group"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)' }}
             >
               <div className="flex items-start gap-4">
-                <span className="text-4xl">{TRACK_ICONS[track.id] ?? '📚'}</span>
+                <span className="text-4xl leading-none mt-0.5">{TRACK_ICONS[track.id] ?? '📚'}</span>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-700 mb-1">
+                  <h3 className="text-lg font-bold mb-1.5 transition-colors" style={{ color: 'rgba(255,255,255,0.95)' }}>
                     {track.name}
                   </h3>
-                  <p className="text-sm text-gray-500 mb-4 leading-relaxed">{track.description}</p>
-                  <div className="flex gap-3 text-sm flex-wrap">
-                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full font-medium">
+                  <p className="text-sm mb-5 leading-relaxed" style={{ color: 'rgba(147,197,253,0.72)' }}>{track.description}</p>
+                  <div className="flex gap-2.5 text-sm flex-wrap">
+                    <span className="px-3 py-1 rounded-full font-semibold text-sm" style={{ background: 'rgba(59,130,246,0.22)', color: 'rgba(147,197,253,0.95)', border: '1px solid rgba(99,149,210,0.35)' }}>
                       {track.totalCreditsRequired} נ״ז
                     </span>
-                    <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full">
+                    <span className="px-3 py-1 rounded-full text-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'rgba(147,197,253,0.75)', border: '1px solid rgba(255,255,255,0.15)' }}>
                       7 סמסטרים
                     </span>
                   </div>

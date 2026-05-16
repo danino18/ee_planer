@@ -28,8 +28,8 @@ export function ChainRecommendations({ catalog, courses, trackDef }: Props) {
 
   if (catalog.interactionDisabled) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h2 className="text-base font-bold text-gray-900 mb-1">נ¯ ׳©׳¨׳©׳¨׳׳•׳× ׳׳•׳׳׳¦׳•׳×</h2>
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sidebar-panel">
+        <h2 className="text-base font-bold text-slate-800 mb-1 tracking-tight">נ¯ ׳©׳¨׳©׳¨׳׳•׳× ׳׳•׳׳׳¦׳•׳×</h2>
         <p className="text-xs text-amber-700">המלצות התמחות מושבתות עד שתוקנו קבצי ההתמחויות למסלול זה.</p>
       </div>
     );
@@ -37,8 +37,8 @@ export function ChainRecommendations({ catalog, courses, trackDef }: Props) {
 
   if (recommendations.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h2 className="text-base font-bold text-gray-900 mb-1">🎯 שרשראות מומלצות</h2>
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sidebar-panel">
+        <h2 className="text-base font-bold text-slate-800 mb-1 tracking-tight">🎯 שרשראות מומלצות</h2>
         <p className="text-xs text-gray-400">שבץ קורסים בתוכנית כדי לקבל המלצות</p>
       </div>
     );
@@ -48,7 +48,7 @@ export function ChainRecommendations({ catalog, courses, trackDef }: Props) {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <h2 className="text-base font-bold text-gray-900 mb-1">🎯 שרשראות מומלצות עבורך</h2>
+      <h2 className="text-base font-bold text-slate-800 mb-1 tracking-tight">🎯 שרשראות מומלצות עבורך</h2>
       {allAdded ? (
         <p className="text-xs text-green-600 mb-2">✓ כל ההמלצות נבחרו</p>
       ) : (

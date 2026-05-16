@@ -1,4 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   ═══════════════════════════════════════════════════════════ */
+:root {
+  --font-sans: 'Heebo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+
+  /* Primary — midnight navy */
+  --color-primary:       #1e4d93;
+  --color-primary-dark:  #1e3a5f;
+  --color-primary-light: #eff4fb;
+
+  /* Shadows */
+  --shadow-card:       0 1px 3px 0 rgb(0 0 0 / 0.07), 0 2px 6px -1px rgb(0 0 0 / 0.05);
+  --shadow-card-hover: 0 4px 14px -2px rgb(30 58 95 / 0.15), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+  --shadow-panel:      0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-header:     0 2px 20px -4px rgb(0 0 0 / 0.35), 0 1px 0 0 rgb(255 255 255 / 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BASE
+   ═══════════════════════════════════════════════════════════ */
+html, body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYOUT UTILITIES
+   ═══════════════════════════════════════════════════════════ */
+.app-bg {
+  background: linear-gradient(160deg, #f1f5f9 0%, #e8eef7 50%, #f0f4f9 100%);
+  min-height: 100vh;
+}
+
+.app-header {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e4d93 60%, #2c61ad 100%);
+  box-shadow: var(--shadow-header);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CARD & PANEL ELEVATION
+   ═══════════════════════════════════════════════════════════ */
+.card-elevated {
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease;
+}
+.card-elevated:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.sidebar-panel {
+  box-shadow: var(--shadow-panel);
+}
+
+.track-card {
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
+  box-shadow: 0 4px 20px -4px rgb(0 0 0 / 0.28), 0 1px 4px -1px rgb(0 0 0 / 0.18);
+}
+.track-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 36px -4px rgb(0 0 0 / 0.38), 0 2px 8px -1px rgb(0 0 0 / 0.2);
+  border-color: rgb(99 149 210 / 0.7);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SEMESTER COLUMN STATES
+   ═══════════════════════════════════════════════════════════ */
+.sem-col-default {
+  border-color: #e2e8f0;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+}
+.sem-col-current {
+  border-color: #2c61ad;
+  background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: inset 0 0 0 1px rgb(44 97 173 / 0.12);
+}
+.sem-col-past {
+  border-color: #6ee7b7;
+  background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+}
+.sem-col-future {
+  border-color: #e2e8f0;
+  background-color: #f8fafc;
+  opacity: 0.82;
+}
+.sem-col-summer {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fffbeb 0%, #fef3c7 100%);
+}
+.sem-col-over {
+  border-color: #2c61ad;
+  background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
+  box-shadow: 0 0 0 3px rgb(44 97 173 / 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PROGRESS BAR GRADIENTS
+   ═══════════════════════════════════════════════════════════ */
+.progress-blue   { background: linear-gradient(90deg, #2c61ad 0%, #60a5fa 100%); }
+.progress-green  { background: linear-gradient(90deg, #059669 0%, #34d399 100%); }
+.progress-purple { background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%); }
+.progress-gray   { background: linear-gradient(90deg, #64748b 0%, #94a3b8 100%); }
+.progress-orange { background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%); }
 
 /* ═══════════════════════════════════════════════════════════
    PRINT / PDF LAYOUT

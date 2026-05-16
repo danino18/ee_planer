@@ -32,9 +32,9 @@ export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: Lo
     return (
       <div className="flex items-center gap-2">
         {user.photoURL && (
-          <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border border-gray-200" />
+          <img src={user.photoURL} alt="" className="w-7 h-7 rounded-full border-2" style={{ borderColor: 'rgba(255,255,255,0.35)' }} />
         )}
-        <span className="text-sm text-gray-700 hidden sm:block max-w-[120px] truncate">
+        <span className="text-sm hidden sm:block max-w-[120px] truncate" style={{ color: 'rgba(255,255,255,0.85)' }}>
           {user.displayName ?? user.email}
         </span>
         <span className={`text-xs font-medium hidden sm:block ${SYNC_COLOR[syncStatus]}`}>
@@ -47,7 +47,8 @@ export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: Lo
         )}
         <button
           onClick={signOut}
-          className="text-sm text-gray-400 hover:text-gray-600 border border-gray-200 px-2 py-1 rounded-lg transition-colors"
+          className="text-sm border px-2 py-1 rounded-lg transition-colors"
+          style={{ color: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.2)' }}
         >
           יציאה
         </button>
@@ -68,7 +69,8 @@ export function LoginButton({ syncStatus = 'idle', syncErrorMessage = null }: Lo
         <button
           onClick={handleGoogle}
           disabled={signingIn !== null}
-          className="flex items-center gap-1.5 text-sm border border-gray-300 hover:border-blue-400 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 text-sm border px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ color: 'rgba(255,255,255,0.8)', borderColor: 'rgba(255,255,255,0.25)' }}
         >
           {signingIn === 'google' ? (
             <span className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />

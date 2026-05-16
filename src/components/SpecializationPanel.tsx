@@ -72,8 +72,8 @@ export function SpecializationPanel({ catalog, courses }: Props) {
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <h2 className="text-base font-bold text-gray-900 mb-1">התמחויות</h2>
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sidebar-panel">
+        <h2 className="text-base font-bold text-slate-800 mb-1 tracking-tight">התמחויות</h2>
         <p className="text-xs text-gray-400 mb-3">לחץ לפתיחת פרטי הקבוצה</p>
         {catalog.diagnostics.length > 0 && (
           <div className={`mb-3 rounded-lg border px-3 py-2 text-xs ${
