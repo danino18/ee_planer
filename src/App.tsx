@@ -545,6 +545,20 @@ function PlannerApp({ courses, trackDef }: { courses: Map<string, SapCourse>; tr
     };
   }, [shareMode, user, trackId, loadEnvelope, resetPlan, finishTrackSwitch, isSwitchingTrack, markCloudSyncSettled]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!((e.ctrlKey || e.metaKey) && e.key === 'z')) return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(tag)) return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+      if (_history.length === 0) return;
+      e.preventDefault();
+      undo();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [_history.length, undo]);
+
   const [showCompare, setShowCompare] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showExport, setShowExport] = useState(false);

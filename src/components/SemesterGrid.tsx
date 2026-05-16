@@ -41,7 +41,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   const shareMode = useShareMode();
   const isReadOnly = shareMode?.isShareReview ?? false;
   const {
-    semesters, moveCourse, addCourseToSemester, completedCourses, maxSemester,
+    semesters, moveCourse, addCourseToSemester, completedCourses, markSemesterComplete, maxSemester,
     addSemester, removeSemester, summerSemesters, currentSemester,
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, reorderSemesters,
@@ -53,6 +53,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     moveCourse: state.moveCourse,
     addCourseToSemester: state.addCourseToSemester,
     completedCourses: state.completedCourses,
+    markSemesterComplete: state.markSemesterComplete,
     maxSemester: state.maxSemester,
     addSemester: state.addSemester,
     removeSemester: state.removeSemester,
@@ -305,6 +306,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       isPast: currentSemester !== null && sem < currentSemester,
       isFuture: currentSemester !== null && sem > currentSemester,
       onSetCurrentSemester: setCurrentSemester,
+      onMarkSemesterComplete: sem > 0 ? () => markSemesterComplete(sem) : undefined,
       summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
       regularIndex: regularIndexMap.get(sem),
       isRowMode: viewMode === 'rows',

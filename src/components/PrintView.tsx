@@ -17,6 +17,8 @@ interface Props {
   versionIds?: string[];
 }
 
+const SEM_LABELS = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'יא׳', 'יב׳', 'יג׳', 'יד׳', 'טו׳', 'טז׳'];
+
 function seasonLabel(
   semester: number,
   summerSemesters: number[],
@@ -30,8 +32,12 @@ function seasonLabel(
   return semester % 2 === 1 ? 'חורף' : 'אביב';
 }
 
-function formatSemesterLabel(semester: number): string {
+function formatSemesterLabel(semester: number, isSummer: boolean, summerSemesters: number[]): string {
   if (semester === 0) return 'הושלם מראש';
+  if (isSummer) {
+    const idx = summerSemesters.indexOf(semester) + 1;
+    return `קיץ ${SEM_LABELS[idx] ?? String(idx)}`;
+  }
   return `סמסטר ${semester}`;
 }
 
@@ -196,7 +202,7 @@ function PrintPlanSection({ plan, courses, trackDef, catalog, includeGrades, ver
               <div className="print-semester-header">
                 <div className="print-semester-title">
                   {isSummer && <span className="print-summer-icon">☀</span>}
-                  <span>{formatSemesterLabel(sem)}</span>
+                  <span>{formatSemesterLabel(sem, isSummer, summerSemesters ?? [])}</span>
                   {season && !isSummer && (
                     <span className="print-season-badge">{season}</span>
                   )}

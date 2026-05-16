@@ -80,6 +80,7 @@ interface PlanState extends StudentPlan {
   resetPlan: () => void;
   resetToDefault: () => void;
   markTrackInitialized: (trackId: string) => void;
+  markSemesterComplete: (semesterId: number) => void;
   undo: () => void;
   createVersion: () => void;
   switchVersion: (id: string) => void;
@@ -599,6 +600,19 @@ export const usePlanStore = create<PlanState>()(
             semesters: newSemesters,
             _history: history,
           };
+        }),
+
+      markSemesterComplete: (semesterId) =>
+        set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
+          const courseIds = state.semesters[semesterId] ?? [];
+          if (courseIds.length === 0) return state;
+          const history = pushHistory(state);
+          const allDone = courseIds.every((id) => state.completedCourses.includes(id));
+          const newCompleted = allDone
+            ? state.completedCourses.filter((id) => !courseIds.includes(id))
+            : [...new Set([...state.completedCourses, ...courseIds])];
+          return { completedCourses: newCompleted, _history: history };
         }),
 
       toggleCompletedInstance: (instanceKey) =>

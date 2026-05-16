@@ -40,6 +40,7 @@ interface Props {
   mutualExclusionWarnings?: string[];
   noAdditionalCreditConflicts?: Map<string, NoAdditionalCreditConflict[]>;
   noAdditionalCreditCourseIds?: ReadonlySet<string>;
+  onMarkSemesterComplete?: () => void;
   readOnly?: boolean;
 }
 
@@ -62,6 +63,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   mutualExclusionWarnings = [],
   noAdditionalCreditConflicts = new Map(),
   noAdditionalCreditCourseIds = new Set(),
+  onMarkSemesterComplete,
   readOnly = false,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}`, disabled: readOnly });
@@ -147,6 +149,18 @@ export const SemesterColumn = memo(function SemesterColumn({
             )}
           </div>
           <div className="flex items-center gap-1">
+            {semester > 0 && !readOnly && courseIds.length > 0 && (
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onMarkSemesterComplete?.(); }}
+                className={`text-xs px-1 py-0.5 rounded border transition-colors ${
+                  courseIds.every((id) => completedCourses.has(id))
+                    ? 'text-green-600 border-green-300 bg-green-50 hover:bg-green-100'
+                    : 'text-gray-300 border-gray-200 hover:text-green-500'
+                }`}
+                title={courseIds.every((id) => completedCourses.has(id)) ? 'בטל סימון הושלם' : 'סמן הכל כהושלם'}
+              >✓</button>
+            )}
             {semester > 0 && (
               <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium tabular-nums">
                 {totalCredits.toFixed(1)} נ״ז
