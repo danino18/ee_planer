@@ -23,6 +23,7 @@ interface Props {
   instanceKey?: string;
   wrongSemesterType?: boolean;
   chainName?: string;
+  isCoreLocked?: boolean;
   draggable?: boolean;
   showActions?: boolean;
 }
@@ -46,6 +47,7 @@ export const CourseCard = memo(function CourseCard({
   instanceKey,
   wrongSemesterType,
   chainName,
+  isCoreLocked,
   draggable = true,
   showActions = true,
 }: Props) {
@@ -252,11 +254,11 @@ export const CourseCard = memo(function CourseCard({
             )}
             <span
               className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
-                isMandatory ? 'bg-blue-100 text-blue-600' : chainName ? 'bg-indigo-50 text-indigo-600' : 'bg-teal-50 text-teal-600'
+                isCoreLocked ? 'bg-amber-100 text-amber-700' : isMandatory ? 'bg-blue-100 text-blue-600' : chainName ? 'bg-indigo-50 text-indigo-600' : 'bg-teal-50 text-teal-600'
               }`}
-              title={!isMandatory && chainName ? chainName : undefined}
+              title={isCoreLocked ? 'קורס נספר כליבה' : (!isMandatory && chainName ? chainName : undefined)}
             >
-              {isMandatory ? 'חובה' : (chainName ?? 'בחירה')}
+              {isCoreLocked ? 'ליבה' : isMandatory ? 'חובה' : (chainName ?? 'בחירה')}
             </span>
             {isBinaryPass && (
               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">עובר</span>
@@ -294,6 +296,7 @@ export const CourseCard = memo(function CourseCard({
             semester={semester}
             instanceKey={instanceKey}
             noAdditionalCreditConflicts={noAdditionalCreditConflicts}
+            isCoreLocked={isCoreLocked}
             onClose={() => setModalOpen(false)}
           />
         </Suspense>

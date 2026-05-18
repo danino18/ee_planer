@@ -13,10 +13,11 @@ interface Props {
   instanceKey?: string;
   noAdditionalCreditConflicts?: NoAdditionalCreditConflict[];
   elevated?: boolean;
+  isCoreLocked?: boolean;
   onClose: () => void;
 }
 
-export function CourseDetailModal({ course, courses, semester, instanceKey, noAdditionalCreditConflicts = [], elevated, onClose }: Props) {
+export function CourseDetailModal({ course, courses, semester, instanceKey, noAdditionalCreditConflicts = [], elevated, isCoreLocked, onClose }: Props) {
   const {
     grades, setGrade,
     substitutions, setSubstitution,
@@ -424,7 +425,12 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         {chainMemberships.length > 0 && (
           <div className="mb-4 border border-gray-200 rounded-lg p-3">
             <p className="text-xs font-semibold text-gray-700 mb-2">נספר לשרשראות:</p>
-            <ul className="space-y-1.5">
+            {isCoreLocked && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-2">
+                קורס זה נספר כליבה ולכן אינו יכול להיות מוקצה לשרשרת. לשחרורו לשרשרת, השתמש באפשרות &quot;שחרור עודף לשרשרת&quot; בלוח הדרישות.
+              </p>
+            )}
+            <ul className={`space-y-1.5 ${isCoreLocked ? 'opacity-50' : ''}`}>
               {chainMemberships.map(({ id, name, role }) => {
                 const assignedChain = courseChainAssignments?.[course.id];
                 const isAssignedHere = assignedChain === id;
@@ -437,7 +443,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                       }`}>
                         {role === 'mandatory' ? 'חובה' : 'בחירה'}
                       </span>
-                      {chainMemberships.length > 1 && (
+                      {!isCoreLocked && chainMemberships.length > 1 && (
                         isAssignedHere ? (
                           <button
                             onClick={() => setCourseChainAssignment(course.id, null)}
@@ -462,7 +468,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                 );
               })}
             </ul>
-            {courseChainAssignments?.[course.id] && (
+            {!isCoreLocked && courseChainAssignments?.[course.id] && (
               <p className="text-xs text-gray-400 mt-1.5 border-t pt-1.5">הקורס נספר רק בשרשרת המוקצית</p>
             )}
           </div>

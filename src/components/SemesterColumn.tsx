@@ -35,6 +35,7 @@ interface Props {
   onToggleWarnings?: () => void;
   semesterAverage?: number | null;
   courseChainMap?: Map<string, string>;
+  coreLockedSet?: Set<string>;
   isDragging?: boolean;
   ruleWarnings?: ('melag' | 'sport')[];
   mutualExclusionWarnings?: string[];
@@ -58,7 +59,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   semester, courseIds, courses, mandatoryCourseIds, prereqStatus,
   completedCourses, effectiveCompleted, isSummer, regularIndex, isCurrent, isPast, isFuture, onSetCurrentSemester,
   summerIndex, isRowMode,
-  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, isDragging: isDraggingActive,
+  semesterType, onSetSemesterType, warningsIgnored, onToggleWarnings, semesterAverage, courseChainMap, coreLockedSet, isDragging: isDraggingActive,
   ruleWarnings = [],
   mutualExclusionWarnings = [],
   noAdditionalCreditConflicts = new Map(),
@@ -266,6 +267,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               instanceKey={`${id}__${semester}__${idx}`}
               wrongSemesterType={wrongSemesterType}
               chainName={courseChainMap?.get(id)}
+              isCoreLocked={coreLockedSet?.has(id) ?? false}
               draggable={!readOnly}
               showActions={!readOnly}
             />

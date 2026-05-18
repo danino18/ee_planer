@@ -21,6 +21,7 @@ import {
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
 import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
+import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
 import { useShareMode } from '../context/ShareModeContext';
 
@@ -47,7 +48,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
     grades, binaryPass, selectedSpecializations, courseChainAssignments, facultyColorOverrides, setFacultyColorOverride,
-    englishScore, noAdditionalCreditOverrides,
+    englishScore, noAdditionalCreditOverrides, coreToChainOverrides,
   } = usePlanStore(useShallow((state) => ({
     semesters: state.semesters,
     moveCourse: state.moveCourse,
@@ -76,6 +77,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     setFacultyColorOverride: state.setFacultyColorOverride,
     englishScore: state.englishScore,
     noAdditionalCreditOverrides: state.noAdditionalCreditOverrides,
+    coreToChainOverrides: state.coreToChainOverrides ?? [],
   })));
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const noAdditionalCreditConflicts = useMemo(
@@ -115,12 +117,18 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   ]), [trackDef, mandatoryLabIds, courses, englishScore]);
   const completedSet = useMemo(() => new Set(completedCourses), [completedCourses]);
 
-  // Map courseId → chain name for selected specializations
+  const coreLockedSet = useMemo(
+    () => buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides }, trackDef),
+    [semesters, completedCourses, coreToChainOverrides, trackDef],
+  );
+
+  // Map courseId → chain name for selected specializations (core-locked courses excluded)
   const courseChainMap = useMemo(() => {
     const map = new Map<string, string>();
     if (!specializations) return map;
     // First pass: explicitly assigned courses use their assigned chain name
     for (const [courseId, groupId] of Object.entries(courseChainAssignments ?? {})) {
+      if (coreLockedSet.has(courseId)) continue;
       const group = specializations.find((g) => g.id === groupId && selectedSpecializations.includes(g.id));
       if (group) {
         const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
@@ -132,11 +140,11 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       if (!selectedSpecializations.includes(group.id)) continue;
       const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
       for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) {
-        if (!map.has(id)) map.set(id, shortName);
+        if (!map.has(id) && !coreLockedSet.has(id)) map.set(id, shortName);
       }
     }
     return map;
-  }, [specializations, selectedSpecializations, courseChainAssignments]);
+  }, [specializations, selectedSpecializations, courseChainAssignments, coreLockedSet]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows'>('grid');
   const [showLegend, setShowLegend] = useState(false);
@@ -320,6 +328,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       noAdditionalCreditConflicts,
       noAdditionalCreditCourseIds,
       courseChainMap,
+      coreLockedSet,
       isDragging: !!activeCourseId,
       readOnly: isReadOnly,
       ruleWarnings: semesterRuleWarnings[sem] ?? [],
