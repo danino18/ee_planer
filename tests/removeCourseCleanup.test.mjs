@@ -68,27 +68,28 @@ function loadTranspiledModule(relativePath) {
 const { usePlanStore } = await loadTranspiledModule('src/store/planStore.ts');
 
 test('removing the last unassigned course occurrence clears related course metadata', () => {
+  // Load plan already in occurrence-ID format (as migration would produce)
   usePlanStore.getState().loadPlan({
     trackId: 'ee',
-    semesters: { 0: ['03940810'], 1: [] },
-    completedCourses: ['03940810'],
+    semesters: { 0: ['03940810~1'], 1: [] },
+    completedCourses: ['03940810~1'],
     selectedSpecializations: [],
     favorites: [],
-    grades: { '03940810_1': 95 },
+    grades: { '03940810~1': 95 },
     substitutions: {},
     maxSemester: 1,
-    selectedPrereqGroups: { '03940810': ['00440102'] },
+    selectedPrereqGroups: { '03940810~1': ['00440102'] },
     summerSemesters: [],
     currentSemester: null,
     semesterOrder: [1],
-    binaryPass: { '03940810': true },
-    completedInstances: ['03940810__0__0'],
-    englishTaughtCourses: ['03940810'],
-    courseChainAssignments: { '03940810': 'chain-a' },
-    electiveCreditAssignments: { '03940810': 'general' },
+    binaryPass: { '03940810~1': true },
+    completedInstances: [],
+    englishTaughtCourses: ['03940810~1'],
+    courseChainAssignments: { '03940810~1': 'chain-a' },
+    electiveCreditAssignments: { '03940810~1': 'general' },
   });
 
-  usePlanStore.getState().removeCourseFromSemester('03940810', 0, '03940810__0__0');
+  usePlanStore.getState().removeCourseFromSemester('03940810~1', 0);
 
   const state = usePlanStore.getState();
   assert.deepEqual(state.semesters[0], []);
@@ -103,10 +104,11 @@ test('removing the last unassigned course occurrence clears related course metad
 });
 
 test('removing a repeatable course instance from a regular semester removes that instance only', () => {
+  // Each occurrence is a distinct stable ID; removing ~2 leaves ~1 intact
   usePlanStore.getState().loadPlan({
     trackId: 'ee',
-    semesters: { 0: [], 1: ['03940810', '03940810'] },
-    completedCourses: ['03940810'],
+    semesters: { 0: [], 1: ['03940810~1', '03940810~2'] },
+    completedCourses: ['03940810~1'],
     selectedSpecializations: [],
     favorites: [],
     grades: {},
@@ -116,13 +118,13 @@ test('removing a repeatable course instance from a regular semester removes that
     summerSemesters: [],
     currentSemester: null,
     semesterOrder: [1],
-    completedInstances: ['03940810__1__0', '03940810__1__1'],
+    completedInstances: [],
   });
 
-  usePlanStore.getState().removeCourseFromSemester('03940810', 1, '03940810__1__1');
+  usePlanStore.getState().removeCourseFromSemester('03940810~2', 1);
 
   const state = usePlanStore.getState();
-  assert.deepEqual(state.semesters[1], ['03940810']);
-  assert.deepEqual(state.completedCourses, ['03940810']);
-  assert.deepEqual(state.completedInstances, ['03940810__1__0']);
+  assert.deepEqual(state.semesters[1], ['03940810~1']);
+  assert.deepEqual(state.completedCourses, ['03940810~1']);
+  assert.deepEqual(state.completedInstances, []);
 });
