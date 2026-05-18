@@ -109,7 +109,7 @@ function getPlacedGradeEntries(
       seenGradeKeys.add(key);
 
       const grade = input.grades[key];
-      const credits = courses.get(courseId)?.credits ?? 0;
+      const credits = courses.get(bareId(courseId))?.credits ?? 0;
       if (grade === undefined || credits <= 0) continue;
 
       entries.push({ grade, credits });
