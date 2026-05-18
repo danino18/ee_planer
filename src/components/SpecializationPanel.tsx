@@ -167,7 +167,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
                       ))}
                     </div>
                     {evaluation.issues.length > 0 && (
-                      <p className="text-xs text-amber-700 mt-2 line-clamp-2">{evaluation.issues[0]}</p>
+                      <p className="text-sm text-amber-700 mt-2 line-clamp-2">{evaluation.issues[0]}</p>
                     )}
                   </div>
                 </div>

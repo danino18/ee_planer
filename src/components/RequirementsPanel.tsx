@@ -222,8 +222,8 @@ function SubBar({ label, recognized, target }: SubBarProps) {
   return (
     <div>
       <div className="flex justify-between items-center gap-3 mb-0.5">
-        <span className={`text-xs ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
-        <span className={`text-xs font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600'}`}>
+        <span className={`text-sm ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
+        <span className={`text-sm font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600'}`}>
           {formatCredits(recognized)} / {formatCredits(target)}
         </span>
       </div>
@@ -286,7 +286,7 @@ function GeneralElectivesRow({
             <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">{missingText}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{missingText}</p>
         </div>
         <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600'}`}>
           {formatCredits(total.recognized)} / {formatCredits(total.target)} נק"ז
@@ -452,7 +452,7 @@ function CompactRequirementRow({
             <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">{missingText}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{missingText}</p>
         </div>
         <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600'}`}>
           {formatRequirementValue(req, targetValue)}
@@ -514,7 +514,7 @@ function CompactRequirementRow({
         return (
           <div className="mt-2 flex flex-wrap gap-1">
             {Array.from(grouped.values()).map(({ name, count }) => (
-              <span key={`${req.requirementId}-${name}`} className="text-xs rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+              <span key={`${req.requirementId}-${name}`} className="text-sm rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
                 {count > 1 ? `${name} ×${count}` : name}
               </span>
             ))}
