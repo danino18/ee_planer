@@ -46,7 +46,7 @@ interface PlanState extends StudentPlan {
   beginTrackSwitch: () => void;
   finishTrackSwitch: () => void;
   addCourseToSemester: (courseId: string, semester: number) => void;
-  removeCourseFromSemester: (courseId: string, semester: number, instanceKey?: string) => void;
+  removeCourseFromSemester: (courseId: string, semester: number) => void;
   moveCourse: (courseId: string, fromSemester: number, toSemester: number) => void;
   toggleCompleted: (courseId: string) => void;
   toggleCompletedInstance: (instanceKey: string) => void;
@@ -568,7 +568,7 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
-      removeCourseFromSemester: (courseId, semester, _instanceKey?) =>
+      removeCourseFromSemester: (courseId, semester) =>
         set((state) => {
           if (isShareReviewReadOnly(state)) return state;
           const history = pushHistory(state);
