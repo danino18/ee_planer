@@ -106,7 +106,7 @@ export function buildGeneralRequirementsProgress({
   for (const semCourses of Object.values(semesters)) {
     for (const id of semCourses) {
       if (doneSet && !doneSet.has(id)) continue;
-      const sap = courses.get(id);
+      const sap = courses.get(bareId(id));
       if (!sap) continue;
       if (REPEATABLE_COURSES.has(id)) {
         pushCourseRef(id, sap.credits);
