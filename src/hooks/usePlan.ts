@@ -436,8 +436,11 @@ export function computeRequirementsProgress(
 
     // Core-locked courses count toward core only. Released core courses are
     // removed from this set by buildCoreLockedSet and may count toward chains.
-    const coreLockedSet = buildCoreLockedSet(input, trackDef);
-    const chainEligibleCourseIds = buildChainEligibleCourseSet(input, trackDef);
+    // Use effectiveSemesters so that in completed-only mode unfinished planned
+    // courses are not counted toward core slots or specialization chains.
+    const effectiveInput = doneSet ? { ...input, semesters: effectiveSemesters } : input;
+    const coreLockedSet = buildCoreLockedSet(effectiveInput, trackDef);
+    const chainEligibleCourseIds = buildChainEligibleCourseSet(effectiveInput, trackDef);
     const orderedLabPool: string[] = [];
     if (trackDef.labPool) {
       const labSet = new Set(trackDef.labPool.courses);
