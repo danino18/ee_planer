@@ -17,6 +17,7 @@ import {
   resolveElectiveCreditArea,
 } from '../electives';
 import { REPEATABLE_COURSES } from '../../utils/courseGrades';
+import { bareId } from '../../utils/occurrenceId';
 import { calculateSpecialEnrichmentAllocation } from '../generalRequirements/specialAllocation';
 import type { GeneralElectivesBreakdown } from '../generalRequirements/types';
 import {
@@ -306,7 +307,7 @@ function buildSpecialRecognizedCreditsByCourseId(
   const specialOccurrences: Array<{ id: string; credits: number }> = [];
   const visit = (id: string): void => {
     if (!isChoirOrOrchestraCourseId(id) && !isSportsTeamCourseId(id)) return;
-    specialOccurrences.push({ id, credits: courses.get(id)?.credits ?? 0 });
+    specialOccurrences.push({ id, credits: courses.get(bareId(id))?.credits ?? 0 });
   };
 
   for (const id of input.completedCourses) {
@@ -395,7 +396,7 @@ export function buildCourseAssignments(
 
   for (const id of iterateAllPlacedOrdered(input)) {
     let bucket: DegreeBucket;
-    let credits = courses.get(id)?.credits ?? 0;
+    let credits = courses.get(bareId(id))?.credits ?? 0;
     const isMandatoryOnlyBecauseScheduledCeProject =
       trackDef.id === 'ce' &&
       (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID) &&

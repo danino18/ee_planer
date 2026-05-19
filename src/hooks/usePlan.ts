@@ -25,6 +25,7 @@ import {
   CE_PROJECT_B_ID,
   getCeProjectRequirementProfile,
 } from '../domain/ceProjectRequirements';
+import { bareId } from '../utils/occurrenceId';
 import {
   isCourseTaughtInEnglish,
   isChoirOrOrchestraCourseId,
@@ -107,7 +108,7 @@ function getCountedTotalCredits(
 
   const visit = (id: string): void => {
     if (noAdditionalCreditCourseIds.has(id)) return;
-    const credits = courses.get(id)?.credits ?? 0;
+    const credits = courses.get(bareId(id))?.credits ?? 0;
     if (isChoirOrOrchestraCourseId(id)) {
       choirOrOrchestraCredits += credits;
       return;
@@ -188,11 +189,12 @@ export function usePrerequisiteStatus(
     const missingMap = new Map<string, string[][]>();
     if (!trackDef) return missingMap;
 
-    const baseTaken = new Set<string>(completedCourses);
+    const baseTaken = new Set<string>();
+    for (const id of completedCourses) { baseTaken.add(id); baseTaken.add(bareId(id)); }
     if (currentSemester !== null) {
       const currentIdx = semesterOrder.indexOf(currentSemester);
       for (let i = 0; i < currentIdx; i++) {
-        for (const id of semesters[semesterOrder[i]] ?? []) baseTaken.add(id);
+        for (const id of semesters[semesterOrder[i]] ?? []) { baseTaken.add(id); baseTaken.add(bareId(id)); }
       }
     }
 
@@ -203,14 +205,14 @@ export function usePrerequisiteStatus(
       if (sem === 0) {
         for (const [k, ids] of Object.entries(semesters)) {
           if (Number(k) !== 0) {
-            for (const id of ids) alreadyTaken.add(id);
+            for (const id of ids) { alreadyTaken.add(id); alreadyTaken.add(bareId(id)); }
           }
         }
       } else {
         const semIdx = semesterOrder.indexOf(sem);
         for (let i = 0; i < semIdx; i++) {
           for (const id of semesters[semesterOrder[i]] ?? []) {
-            alreadyTaken.add(id);
+            alreadyTaken.add(id); alreadyTaken.add(bareId(id));
           }
         }
       }
@@ -223,7 +225,7 @@ export function usePrerequisiteStatus(
       for (const id of expanded) alreadyTaken.add(id);
 
       for (const courseId of courseIds) {
-        const course = courses.get(courseId);
+        const course = courses.get(bareId(courseId));
         if (!course || course.prerequisites.length === 0) {
           missingMap.set(courseId, []);
           continue;

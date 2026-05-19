@@ -3,80 +3,78 @@ import {
   isChoirOrOrchestraCourseId,
   isSportCourseId,
 } from '../data/generalRequirements/courseClassification';
+import { bareId, isOccurrenceId } from './occurrenceId';
 
 export const REPEATABLE_COURSES: Pick<Set<string>, 'has'> = {
-  has: (courseId) => isSportCourseId(courseId) || isChoirOrOrchestraCourseId(courseId),
+  has: (id) => {
+    const cid = bareId(id);
+    return isSportCourseId(cid) || isChoirOrOrchestraCourseId(cid);
+  },
 };
 
-export function gradeKey(courseId: string, semester?: number): string {
-  return REPEATABLE_COURSES.has(courseId) && semester !== undefined && semester > 0
-    ? `${courseId}_${semester}`
-    : courseId;
+/**
+ * Returns the grade-map key for a course.
+ * For occurrence IDs (repeatable courses), the occurrence ID itself is the
+ * stable key — no semester suffix needed.
+ * For regular courses, just the courseId.
+ */
+export function gradeKey(courseId: string, _semester?: number): string {
+  return courseId;
 }
 
+/** No-op: occurrence-ID grade keys are stable across semester moves. */
 export function moveRepeatableCourseGrade(
   grades: Record<string, number>,
-  courseId: string,
-  fromSemester: number,
-  toSemester: number,
+  _courseId: string,
+  _fromSemester: number,
+  _toSemester: number,
 ): Record<string, number> {
-  if (
-    !REPEATABLE_COURSES.has(courseId)
-    || fromSemester <= 0
-    || toSemester <= 0
-  ) {
-    return grades;
-  }
-
-  const fromKey = gradeKey(courseId, fromSemester);
-  const toKey = gradeKey(courseId, toSemester);
-  if (fromKey === toKey || grades[fromKey] === undefined) return grades;
-
-  const nextGrades = { ...grades };
-  nextGrades[toKey] = grades[fromKey];
-  delete nextGrades[fromKey];
-  return nextGrades;
+  return grades;
 }
 
+/** No-op: with occurrence IDs the grade key doesn't encode a semester. */
 export function clearRepeatableCourseSemesterGrade(
   grades: Record<string, number>,
-  courseId: string,
-  semester: number,
+  _courseId: string,
+  _semester: number,
 ): Record<string, number> {
-  if (!REPEATABLE_COURSES.has(courseId) || semester <= 0) return grades;
-
-  const key = gradeKey(courseId, semester);
-  if (grades[key] === undefined) return grades;
-
-  const nextGrades = { ...grades };
-  delete nextGrades[key];
-  return nextGrades;
+  return grades;
 }
 
+/**
+ * Removes grade entries whose occurrence ID is no longer present in any
+ * semester. Old-format `courseId_semester` keys are also cleaned up here.
+ */
 export function sanitizeRepeatableCourseGrades(
   semesters: Record<number, string[]>,
   grades: Record<string, number>,
 ): Record<string, number> {
-  const validGradeKeys = new Set<string>();
-  for (const [semesterKey, courseIds] of Object.entries(semesters)) {
-    const semester = Number(semesterKey);
-    if (semester <= 0) continue;
-
-    for (const courseId of courseIds) {
-      if (!REPEATABLE_COURSES.has(courseId)) continue;
-      validGradeKeys.add(gradeKey(courseId, semester));
+  const validOccurrenceIds = new Set<string>();
+  for (const ids of Object.values(semesters)) {
+    for (const id of ids) {
+      if (REPEATABLE_COURSES.has(id)) validOccurrenceIds.add(id);
     }
   }
 
   let changed = false;
   const nextGrades = { ...grades };
   for (const key of Object.keys(grades)) {
-    if (!key.includes('_')) continue;
-    const [courseId] = key.split('_');
-    if (!REPEATABLE_COURSES.has(courseId) || validGradeKeys.has(key)) continue;
+    if (!REPEATABLE_COURSES.has(key)) continue;
+    if (!validOccurrenceIds.has(key)) {
+      delete nextGrades[key];
+      changed = true;
+    }
+  }
 
-    delete nextGrades[key];
-    changed = true;
+  // Also purge legacy courseId_semester keys that may exist in migrated data.
+  for (const key of Object.keys(nextGrades)) {
+    if (key.includes('_') && !isOccurrenceId(key)) {
+      const [base] = key.split('_');
+      if (REPEATABLE_COURSES.has(base)) {
+        delete nextGrades[key];
+        changed = true;
+      }
+    }
   }
 
   return changed ? nextGrades : grades;
@@ -111,7 +109,7 @@ function getPlacedGradeEntries(
       seenGradeKeys.add(key);
 
       const grade = input.grades[key];
-      const credits = courses.get(courseId)?.credits ?? 0;
+      const credits = courses.get(bareId(courseId))?.credits ?? 0;
       if (grade === undefined || credits <= 0) continue;
 
       entries.push({ grade, credits });

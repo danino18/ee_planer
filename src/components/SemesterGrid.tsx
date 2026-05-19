@@ -24,6 +24,7 @@ import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
 import { useShareMode } from '../context/ShareModeContext';
+import { bareId } from '../utils/occurrenceId';
 
 interface Props {
   courses: Map<string, SapCourse>;
@@ -156,8 +157,8 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     const seen = new Map<string, string>(); // faculty → first courseId (for prefix lookup)
     for (const ids of Object.values(semesters)) {
       for (const id of ids) {
-        const f = courses.get(id)?.faculty;
-        if (f && !seen.has(f)) seen.set(f, id);
+        const f = courses.get(bareId(id))?.faculty;
+        if (f && !seen.has(f)) seen.set(f, bareId(id));
       }
     }
     return [...seen.entries()].map(([faculty, firstId]) => ({
@@ -183,21 +184,18 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     return completed;
   }, [completedCourses, currentSemester, semesters]);
 
-  function parseInstanceKey(rawId: string): { courseId: string; semFrom: number } {
-    // instanceKey format: `${courseId}__${semester}__${idx}`
-    const parts = rawId.split('__');
-    return {
-      courseId: parts[0],
-      semFrom: parts.length >= 2 ? parseInt(parts[1], 10) : 0,
-    };
+  function findSemesterOf(occId: string): number {
+    for (const [semStr, ids] of Object.entries(semesters)) {
+      if (ids.includes(occId)) return Number(semStr);
+    }
+    return 0;
   }
 
   function handleDragStart(event: DragStartEvent) {
     if (isReadOnly) return;
     const activeId = String(event.active.id);
-    if (activeId.startsWith('col-')) return; // column drag — no course overlay
-    const { courseId } = parseInstanceKey(activeId);
-    setActiveCourseId(courseId);
+    if (activeId.startsWith('col-')) return;
+    setActiveCourseId(activeId);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -220,16 +218,17 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       return;
     }
 
-    // Course card dragging
-    const { courseId, semFrom } = parseInstanceKey(activeId);
+    // Course card dragging — activeId is the occurrence ID (or bare ID for non-repeatable)
     if (!overId.startsWith('semester-')) return;
     const toSem = parseInt(overId.replace('semester-', ''), 10);
+    const semFrom = findSemesterOf(activeId);
     if (semFrom === toSem) return;
-    // Repeatable courses dragged from unassigned stay in unassigned (copy, not move)
+    const courseId = bareId(activeId);
+    // Repeatable courses dragged from unassigned: create a new occurrence in the target semester
     if (REPEATABLE_COURSES.has(courseId) && semFrom === 0) {
       addCourseToSemester(courseId, toSem);
     } else {
-      moveCourse(courseId, semFrom, toSem);
+      moveCourse(activeId, semFrom, toSem);
     }
   }
 
@@ -351,7 +350,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     }
   }
 
-  const activeCourse = activeCourseId ? courses.get(activeCourseId) : null;
+  const activeCourse = activeCourseId ? courses.get(bareId(activeCourseId)) : null;
   const hasSummers = summerSemesters.length > 0;
 
   const GRID_COLS_RESPONSIVE: Record<1|2|3|4|5|6|7|8, string> = {
@@ -517,7 +516,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
             <CourseCard
               course={activeCourse}
               courses={courses}
-              isMandatory={mandatoryIds.has(activeCourseId)}
+              isMandatory={mandatoryIds.has(bareId(activeCourseId))}
               isCompleted={completedSet.has(activeCourseId)}
               missingPrereqGroups={prereqStatus.get(activeCourseId) ?? []}
               noAdditionalCreditConflicts={noAdditionalCreditConflicts.get(activeCourseId) ?? []}

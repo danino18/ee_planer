@@ -75,6 +75,7 @@ function buildCourses(creditsByCourseId) {
 }
 
 test('single graded semester yields the same semester and overall weighted average as the screenshot scenario', () => {
+  // Repeatable courses now use occurrence IDs (e.g., '03940902~1') as grade keys
   const input = {
     semesters: {
       0: [],
@@ -86,7 +87,7 @@ test('single graded semester yields the same semester and overall weighted avera
         '03240033',
         '00450001',
         '00450002',
-        '03940902',
+        '03940902~1',
       ],
     },
     grades: {
@@ -97,7 +98,7 @@ test('single graded semester yields the same semester and overall weighted avera
       '03240033': 94,
       '00450001': 95,
       '00450002': 95,
-      '03940902_1': 98,
+      '03940902~1': 98,
     },
     binaryPass: {},
   };
@@ -167,49 +168,56 @@ test('binary pass courses are excluded from semester and overall weighted averag
 });
 
 test('moving a repeatable course between semesters carries its grade to the new semester key', () => {
-  const movedGrades = moveRepeatableCourseGrade({ '03940902_1': 95 }, '03940902', 1, 2);
+  // With occurrence IDs, grade keys are stable — moveRepeatableCourseGrade is a no-op
+  const grades = { '03940902~1': 95 };
+  const movedGrades = moveRepeatableCourseGrade(grades, '03940902~1', 1, 2);
 
-  assert.deepEqual(movedGrades, { '03940902_2': 95 });
+  assert.deepEqual(movedGrades, { '03940902~1': 95 });
 });
 
-test('sport courses in the 03940800-03940820 range use semester-scoped repeatable grade keys', () => {
-  const movedGrades = moveRepeatableCourseGrade({ '03940810_1': 91 }, '03940810', 1, 2);
+test('sport courses in the 03940800-03940820 range use occurrence-scoped repeatable grade keys', () => {
+  // Grade key is the occurrence ID itself; move is a no-op
+  const grades = { '03940810~1': 91 };
+  const movedGrades = moveRepeatableCourseGrade(grades, '03940810~1', 1, 2);
+  assert.deepEqual(movedGrades, { '03940810~1': 91 });
 
-  assert.deepEqual(movedGrades, { '03940810_2': 91 });
-
+  // sanitize removes grades whose occurrence ID is no longer in any semester
   const sanitized = sanitizeRepeatableCourseGrades(
-    { 0: ['03940810'], 1: ['03940810'], 2: [] },
-    { '03940810_1': 91, '03940810_2': 88, REGULAR: 77 },
+    { 0: ['03940810~1'], 1: ['03940810~1'], 2: [] },
+    { '03940810~1': 91, '03940810~2': 88, REGULAR: 77 },
   );
-
-  assert.deepEqual(sanitized, { '03940810_1': 91, REGULAR: 77 });
+  assert.deepEqual(sanitized, { '03940810~1': 91, REGULAR: 77 });
 });
 
-test('choir and orchestra courses use semester-scoped repeatable grade keys', () => {
-  const movedChoirGrades = moveRepeatableCourseGrade({ '03940587_1': 92 }, '03940587', 1, 2);
-  assert.deepEqual(movedChoirGrades, { '03940587_2': 92 });
+test('choir and orchestra courses use occurrence-scoped repeatable grade keys', () => {
+  // Grade key is the occurrence ID; move is a no-op
+  const movedChoirGrades = moveRepeatableCourseGrade({ '03940587~1': 92 }, '03940587~1', 1, 2);
+  assert.deepEqual(movedChoirGrades, { '03940587~1': 92 });
 
-  const movedOrchestraGrades = moveRepeatableCourseGrade({ '03940582_1': 88 }, '03940582', 1, 2);
-  assert.deepEqual(movedOrchestraGrades, { '03940582_2': 88 });
+  const movedOrchestraGrades = moveRepeatableCourseGrade({ '03940582~1': 88 }, '03940582~1', 1, 2);
+  assert.deepEqual(movedOrchestraGrades, { '03940582~1': 88 });
 
+  // sanitize removes occurrence IDs not found in any semester
   const sanitized = sanitizeRepeatableCourseGrades(
-    { 1: ['03940587'], 2: [] },
-    { '03940587_1': 92, '03940587_2': 80 },
+    { 1: ['03940587~1'], 2: [] },
+    { '03940587~1': 92, '03940587~2': 80 },
   );
-  assert.deepEqual(sanitized, { '03940587_1': 92 });
+  assert.deepEqual(sanitized, { '03940587~1': 92 });
 });
 
 test('clearing or sanitizing repeatable-course semester grades removes orphaned grade keys', () => {
+  // clearRepeatableCourseSemesterGrade is now a no-op (occurrence IDs are stable)
   const cleared = clearRepeatableCourseSemesterGrade(
-    { '03940902_1': 95, '03940902_2': 87 },
-    '03940902',
+    { '03940902~1': 95, '03940902~2': 87 },
+    '03940902~1',
     1,
   );
-  assert.deepEqual(cleared, { '03940902_2': 87 });
+  assert.deepEqual(cleared, { '03940902~1': 95, '03940902~2': 87 });
 
+  // sanitize removes occurrence IDs not present in any semester
   const sanitized = sanitizeRepeatableCourseGrades(
-    { 0: ['03940902'], 2: [] },
-    { '03940902_1': 95, '03940902_2': 87, REGULAR: 91 },
+    { 0: ['03940902~1'], 2: [] },
+    { '03940902~1': 95, '03940902~2': 87, REGULAR: 91 },
   );
-  assert.deepEqual(sanitized, { REGULAR: 91 });
+  assert.deepEqual(sanitized, { '03940902~1': 95, REGULAR: 91 });
 });

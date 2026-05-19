@@ -59,10 +59,11 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
       }));
   }, [trackId, course.id]);
 
-  const gKey = gradeKey(course.id, semester);
+  const effectiveId = instanceKey ?? course.id;
+  const gKey = gradeKey(effectiveId, semester);
   const currentGrade = grades[gKey];
   const currentSubTarget = substitutions[course.id];
-  const isBinaryPass = !!(binaryPass ?? {})[course.id];
+  const isBinaryPass = !!(binaryPass ?? {})[effectiveId];
   const [isBinaryMode, setIsBinaryMode] = useState(isBinaryPass);
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
   const [subSearch, setSubSearch] = useState('');
@@ -162,10 +163,10 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
 
   function handleSaveGrade() {
     if (isBinaryMode) {
-      setBinaryPass(course.id, true);
+      setBinaryPass(effectiveId, true);
     } else {
       const val = parseFloat(gradeInput);
-      if (!isNaN(val) && val >= 0 && val <= 100) setGrade(course.id, val, semester);
+      if (!isNaN(val) && val >= 0 && val <= 100) setGrade(effectiveId, val, semester);
     }
     onClose();
   }
@@ -520,7 +521,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         <div className="flex flex-col gap-2">
           {semester !== undefined && (
             <button
-              onClick={() => { removeCourseFromSemester(course.id, semester, instanceKey); onClose(); }}
+              onClick={() => { removeCourseFromSemester(effectiveId, semester); onClose(); }}
               className="w-full text-sm text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-400 px-4 py-2 rounded-lg transition-colors font-medium"
             >
               {semester === 0 ? '✕ הסר מהתכנית' : '✕ הסר מהסמסטר'}

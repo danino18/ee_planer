@@ -60,32 +60,33 @@ export const CourseCard = memo(function CourseCard({
     data: { course },
     disabled: !effectiveDraggable,
   });
+  const effectiveId = instanceKey ?? course.id;
   const {
     toggleFavorite,
     toggleCompleted,
-    toggleCompletedInstance,
     removeCourseFromSemester,
     isFavorite,
     grade,
     isBinaryPass,
-    isCompletedInstance,
+    isCompletedViaStore,
     facultyColorOverrides,
     englishTaughtCourses,
   } = usePlanStore(useShallow((state) => ({
     toggleFavorite: state.toggleFavorite,
     toggleCompleted: state.toggleCompleted,
-    toggleCompletedInstance: state.toggleCompletedInstance,
     removeCourseFromSemester: state.removeCourseFromSemester,
     isFavorite: state.favorites.includes(course.id),
-    grade: state.grades[gradeKey(course.id, semester)],
-    isBinaryPass: !!(state.binaryPass ?? {})[course.id],
-    isCompletedInstance: instanceKey ? (state.completedInstances ?? []).includes(instanceKey) : false,
+    grade: state.grades[gradeKey(effectiveId, semester)],
+    isBinaryPass: !!(state.binaryPass ?? {})[effectiveId],
+    isCompletedViaStore: REPEATABLE_COURSES.has(effectiveId)
+      ? (state.completedCourses ?? []).includes(effectiveId)
+      : false,
     facultyColorOverrides: state.facultyColorOverrides ?? {},
     englishTaughtCourses: state.englishTaughtCourses ?? [],
   })));
   const isRepeatable = REPEATABLE_COURSES.has(course.id);
   const effectiveIsCompleted = isRepeatable && instanceKey
-    ? isCompletedInstance
+    ? isCompletedViaStore
     : isCompleted;
   const [modalOpen, setModalOpen] = useState(false);
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
@@ -162,7 +163,7 @@ export const CourseCard = memo(function CourseCard({
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                removeCourseFromSemester(course.id, semester, instanceKey);
+                removeCourseFromSemester(effectiveId, semester);
               }}
               className="w-11 h-11 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 hover:text-red-500 transition-colors"
               title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
@@ -182,11 +183,7 @@ export const CourseCard = memo(function CourseCard({
             }}
             onClick={(e) => {
               e.stopPropagation();
-              if (isRepeatable && instanceKey) {
-                toggleCompletedInstance(instanceKey);
-              } else {
-                toggleCompleted(course.id);
-              }
+              toggleCompleted(effectiveId);
             }}
             className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${effectiveIsCompleted ? 'text-emerald-500' : 'text-slate-300 hover:text-emerald-400'}`}
             title={effectiveIsCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}

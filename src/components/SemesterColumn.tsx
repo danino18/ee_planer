@@ -4,6 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CourseCard } from './CourseCard';
 import type { SapCourse } from '../types';
+import { bareId } from '../utils/occurrenceId';
 import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import { getRecognizedCredits } from '../domain/noAdditionalCredit';
 
@@ -76,7 +77,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
 
-  const totalCredits = courseIds.reduce((s, id) => s + getRecognizedCredits(courses.get(id), noAdditionalCreditCourseIds), 0);
+  const totalCredits = courseIds.reduce((s, id) => s + getRecognizedCredits(courses.get(bareId(id)), noAdditionalCreditCourseIds), 0);
   const columnStyle = getColumnStyle(isOver, !!(isDraggingActive && semester > 0), isSummer, isCurrent, isPast, isFuture);
   const setColumnRef = (node: HTMLDivElement | null) => {
     setNodeRef(node);
@@ -100,8 +101,8 @@ export const SemesterColumn = memo(function SemesterColumn({
 
     const normalizedSearch = trimmedSearch.toLowerCase();
     return courseIds.filter((id) => {
-      const course = courses.get(id);
-      return id.includes(trimmedSearch) || course?.name.toLowerCase().includes(normalizedSearch);
+      const course = courses.get(bareId(id));
+      return bareId(id).includes(trimmedSearch) || course?.name.toLowerCase().includes(normalizedSearch);
     });
   }, [semester, deferredSearch, courseIds, courses]);
 
@@ -240,7 +241,7 @@ export const SemesterColumn = memo(function SemesterColumn({
 
       <div className={`gap-1.5 p-2 flex-1 ${isRowMode ? 'grid grid-cols-2 sm:grid-cols-3' : 'flex flex-col'}`}>
         {filteredIds.map((id, idx) => {
-          const course = courses.get(id);
+          const course = courses.get(bareId(id));
           if (!course) return null;
           const missingPrereqGroups = prereqStatus.get(id) ?? [];
           const courseNoAdditionalCreditConflicts = noAdditionalCreditConflicts.get(id) ?? [];
@@ -256,7 +257,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               key={`${id}_${idx}`}
               course={course}
               courses={courses}
-              isMandatory={mandatoryCourseIds.has(id)}
+              isMandatory={mandatoryCourseIds.has(bareId(id))}
               hasPrereqWarning={missingPrereqGroups.length > 0}
               missingPrereqGroups={missingPrereqGroups}
               noAdditionalCreditConflicts={courseNoAdditionalCreditConflicts}
@@ -264,7 +265,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               isCompleted={effectiveCompleted.has(id)}
               isPlanned={isFuture && !completedCourses.has(id)}
               semester={semester}
-              instanceKey={`${id}__${semester}__${idx}`}
+              instanceKey={id}
               wrongSemesterType={wrongSemesterType}
               chainName={courseChainMap?.get(id)}
               isCoreLocked={coreLockedSet?.has(id) ?? false}

@@ -11,10 +11,16 @@ import { getAllScheduledCourseIds } from '../data/tracks/semesterSchedule';
 import {
   clearRepeatableCourseSemesterGrade,
   gradeKey,
-  moveRepeatableCourseGrade,
   REPEATABLE_COURSES,
   sanitizeRepeatableCourseGrades,
 } from '../utils/courseGrades';
+import {
+  allSemesterIds,
+  bareId,
+  isOccurrenceId,
+  makeOccurrenceId,
+  nextOccurrenceId,
+} from '../utils/occurrenceId';
 import {
   getTrackSpecializationCatalog,
   sanitizeTrackSpecializationSelections,
@@ -40,7 +46,7 @@ interface PlanState extends StudentPlan {
   beginTrackSwitch: () => void;
   finishTrackSwitch: () => void;
   addCourseToSemester: (courseId: string, semester: number) => void;
-  removeCourseFromSemester: (courseId: string, semester: number, instanceKey?: string) => void;
+  removeCourseFromSemester: (courseId: string, semester: number) => void;
   moveCourse: (courseId: string, fromSemester: number, toSemester: number) => void;
   toggleCompleted: (courseId: string) => void;
   toggleCompletedInstance: (instanceKey: string) => void;
@@ -250,6 +256,70 @@ function addRecommendedCourses(
   }
 }
 
+function migrateSemestersToOccurrenceIds(semesters: Record<number, string[]>): {
+  semesters: Record<number, string[]>;
+  idMap: Map<string, string>;
+} {
+  const counter = new Map<string, number>();
+  const idMap = new Map<string, string>();
+  const result: Record<number, string[]> = {};
+  for (const [semStr, ids] of Object.entries(semesters)) {
+    const sem = Number(semStr);
+    result[sem] = ids.map((id) => {
+      if (isOccurrenceId(id)) return id;
+      if (!REPEATABLE_COURSES.has(id)) return id;
+      const n = (counter.get(id) ?? 0) + 1;
+      counter.set(id, n);
+      const occId = makeOccurrenceId(id, n);
+      idMap.set(`${id}_${sem}`, occId);
+      return occId;
+    });
+  }
+  return { semesters: result, idMap };
+}
+
+function migrateGradesToOccurrenceIds(
+  grades: Record<string, number>,
+  idMap: Map<string, string>,
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const [key, val] of Object.entries(grades)) {
+    result[idMap.get(key) ?? key] = val;
+  }
+  return result;
+}
+
+function migrateCompletedCoursesToOccurrenceIds(
+  completedCourses: string[],
+  completedInstances: string[],
+  idMap: Map<string, string>,
+  migratedSemesters: Record<number, string[]>,
+  migratedGrades: Record<string, number>,
+): string[] {
+  const result = new Set<string>();
+  for (const instanceKey of completedInstances) {
+    const parsed = parseInstanceKey(instanceKey);
+    if (!parsed) continue;
+    const occId = idMap.get(`${parsed.courseId}_${parsed.semester}`);
+    if (occId) result.add(occId);
+  }
+  for (const id of completedCourses) {
+    if (isOccurrenceId(id)) {
+      result.add(id);
+    } else if (REPEATABLE_COURSES.has(id)) {
+      const allOccIds = Object.values(migratedSemesters).flat().filter(
+        (oId) => isOccurrenceId(oId) && bareId(oId) === id,
+      );
+      const withGrades = allOccIds.filter((oId) => migratedGrades[oId] !== undefined);
+      const toAdd = withGrades.length > 0 ? withGrades : allOccIds.length > 0 ? [allOccIds[0]] : [];
+      for (const oId of toAdd) result.add(oId);
+    } else {
+      result.add(id);
+    }
+  }
+  return [...result];
+}
+
 function applyPlanMigrations(plan: StudentPlan): StudentPlan {
   const migrated: StudentPlan = {
     ...plan,
@@ -257,6 +327,20 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
     savedTracks: plan.savedTracks ? { ...plan.savedTracks } : plan.savedTracks,
     dismissedRecommendedCourses: { ...(plan.dismissedRecommendedCourses ?? {}) },
   };
+
+  // Migrate bare repeatable IDs in semesters to stable occurrence IDs (e.g., '03940810~1')
+  const { semesters: migratedSems, idMap } = migrateSemestersToOccurrenceIds(migrated.semesters);
+  const migratedGrades = migrateGradesToOccurrenceIds(migrated.grades ?? {}, idMap);
+  const migratedCompleted = migrateCompletedCoursesToOccurrenceIds(
+    migrated.completedCourses ?? [],
+    migrated.completedInstances ?? [],
+    idMap,
+    migratedSems,
+    migratedGrades,
+  );
+  migrated.semesters = migratedSems;
+  migrated.grades = migratedGrades;
+  migrated.completedCourses = migratedCompleted;
 
   if (migrated.trackId === 'ce') {
     addRecommendedCourses(migrated, 'ce', CE_ADDED_RECOMMENDED_COURSES);
@@ -310,15 +394,6 @@ function parseInstanceKey(instanceKey: string | undefined): { courseId: string; 
   return { courseId: parts[0], semester, index };
 }
 
-function removeCourseOccurrence(list: string[], courseId: string, instanceKey?: string): string[] {
-  const parsed = parseInstanceKey(instanceKey);
-  const explicitIndex = parsed?.courseId === courseId ? parsed.index : -1;
-  const index = explicitIndex >= 0 && list[explicitIndex] === courseId
-    ? explicitIndex
-    : list.indexOf(courseId);
-
-  return index >= 0 ? [...list.slice(0, index), ...list.slice(index + 1)] : list;
-}
 
 function clearCourseGrades(grades: Record<string, number>, courseId: string): Record<string, number> {
   const next = { ...grades };
@@ -474,7 +549,8 @@ export const usePlanStore = create<PlanState>()(
           const newSemesters: Record<number, string[]> = {};
           if (REPEATABLE_COURSES.has(courseId)) {
             for (const [k, v] of Object.entries(state.semesters)) newSemesters[Number(k)] = v;
-            newSemesters[semester] = [...(newSemesters[semester] ?? []), courseId];
+            const occId = nextOccurrenceId(courseId, allSemesterIds(state.semesters));
+            newSemesters[semester] = [...(newSemesters[semester] ?? []), occId];
           } else {
             for (const [k, v] of Object.entries(state.semesters)) {
               newSemesters[Number(k)] = v.filter((id) => id !== courseId);
@@ -492,17 +568,13 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
-      removeCourseFromSemester: (courseId, semester, instanceKey) =>
+      removeCourseFromSemester: (courseId, semester) =>
         set((state) => {
           if (isShareReviewReadOnly(state)) return state;
           const history = pushHistory(state);
           const list = state.semesters[semester] ?? [];
-          let newList: string[];
-          if (REPEATABLE_COURSES.has(courseId)) {
-            newList = removeCourseOccurrence(list, courseId, instanceKey);
-          } else {
-            newList = list.filter((id) => id !== courseId);
-          }
+          // courseId is the occurrence ID for repeatable courses — filter by exact match
+          const newList = list.filter((id) => id !== courseId);
           const nextSemesters = { ...state.semesters, [semester]: newList };
           const stillPlaced = Object.values(nextSemesters).some((ids) => ids.includes(courseId));
           const nextGrades = stillPlaced
@@ -561,13 +633,8 @@ export const usePlanStore = create<PlanState>()(
             }
             newSemesters[toSemester] = [...(newSemesters[toSemester] ?? []), courseId];
           }
-          let nextGrades = state.grades;
-          if (REPEATABLE_COURSES.has(courseId)) {
-            nextGrades = from > 0 && toSemester > 0
-              ? moveRepeatableCourseGrade(state.grades, courseId, from, toSemester)
-              : clearRepeatableCourseSemesterGrade(state.grades, courseId, from);
-          }
-          nextGrades = sanitizeRepeatableCourseGrades(newSemesters, nextGrades);
+          // Occurrence IDs are stable across semester moves — no grade migration needed
+          const nextGrades = sanitizeRepeatableCourseGrades(newSemesters, state.grades);
           return {
             semesters: newSemesters,
             grades: nextGrades,

@@ -5,6 +5,7 @@ import {
   melagCourseIds,
   sometimesEnglishMelagCourseIds,
 } from './generatedCourseLists';
+import { bareId } from '../../utils/occurrenceId';
 
 const SPORT_RANGE_START = '03940800';
 const SPORT_RANGE_END = '03940820';
@@ -36,8 +37,8 @@ export function isTechnicalEnglishCourseName(name: string): boolean {
   return isTechnicalEnglishAdvancedAName(name) || isTechnicalEnglishAdvancedBName(name);
 }
 
-export function isManualEnglishEligible(courseId: string): boolean {
-  return sometimesEnglishMelagCourseIds.has(courseId);
+export function isManualEnglishEligible(id: string): boolean {
+  return sometimesEnglishMelagCourseIds.has(bareId(id));
 }
 
 export function isCourseTaughtInEnglish(
@@ -50,37 +51,39 @@ export function isCourseTaughtInEnglish(
     );
 }
 
-export function isEnglishCourseId(courseId: string): boolean {
-  return englishCourseIds.has(courseId);
+export function isEnglishCourseId(id: string): boolean {
+  return englishCourseIds.has(bareId(id));
 }
 
-export function isMelagCourseId(courseId: string): boolean {
-  return melagCourseIds.has(courseId);
+export function isMelagCourseId(id: string): boolean {
+  return melagCourseIds.has(bareId(id));
 }
 
-export function isHumanitiesFreeElectiveCourseId(courseId: string): boolean {
-  return humanitiesFreeElectiveCourses.some((course) => course.id === courseId);
+export function isHumanitiesFreeElectiveCourseId(id: string): boolean {
+  const cid = bareId(id);
+  return humanitiesFreeElectiveCourses.some((course) => course.id === cid);
 }
 
-export function isFreeElectiveCourseId(courseId: string): boolean {
-  return isMelagCourseId(courseId) || isHumanitiesFreeElectiveCourseId(courseId);
+export function isFreeElectiveCourseId(id: string): boolean {
+  return isMelagCourseId(id) || isHumanitiesFreeElectiveCourseId(id);
 }
 
-export function isChoirOrOrchestraCourseId(courseId: string): boolean {
-  return CHOIR_ORCHESTRA_COURSE_IDS.has(courseId);
+export function isChoirOrOrchestraCourseId(id: string): boolean {
+  return CHOIR_ORCHESTRA_COURSE_IDS.has(bareId(id));
 }
 
-export function isSportsTeamCourseId(courseId: string): boolean {
-  return SPORTS_TEAM_COURSE_IDS.has(courseId);
+export function isSportsTeamCourseId(id: string): boolean {
+  return SPORTS_TEAM_COURSE_IDS.has(bareId(id));
 }
 
-export function isSportCourseId(courseId: string): boolean {
-  const isSportRangeCourse = isCourseIdInInclusiveRange(courseId, SPORT_RANGE_START, SPORT_RANGE_END);
-  return (isSportRangeCourse || /^039409/.test(courseId)) && !isHumanitiesFreeElectiveCourseId(courseId);
+export function isSportCourseId(id: string): boolean {
+  const cid = bareId(id);
+  const isSportRangeCourse = isCourseIdInInclusiveRange(cid, SPORT_RANGE_START, SPORT_RANGE_END);
+  return (isSportRangeCourse || /^039409/.test(cid)) && !isHumanitiesFreeElectiveCourseId(cid);
 }
 
-export function isRegularSportCourseId(courseId: string): boolean {
-  return isSportCourseId(courseId) && !isSportsTeamCourseId(courseId);
+export function isRegularSportCourseId(id: string): boolean {
+  return isSportCourseId(id) && !isSportsTeamCourseId(id);
 }
 
 export { humanitiesFreeElectiveCourses };

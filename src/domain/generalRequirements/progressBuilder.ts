@@ -1,4 +1,5 @@
 import type { SapCourse, TrackDefinition } from '../../types';
+import { bareId } from '../../utils/occurrenceId';
 import { GENERAL_REQUIREMENTS_RULES } from '../../data/generalRequirements/generalRules';
 import {
   isChoirOrOrchestraCourseId,
@@ -41,14 +42,14 @@ function buildCourseRef(
   englishTaughtCourses: string[],
   labPoolSet: Set<string>,
 ): CourseRef | null {
-  const sap = courses.get(id);
+  const sap = courses.get(bareId(id));
   if (!sap) return null;
   return {
     courseId: id,
     name: sap.name,
     credits,
     language: isCourseTaughtInEnglish(sap, englishTaughtCourses) ? 'EN' : 'HE',
-    isLab: labPoolSet.has(id),
+    isLab: labPoolSet.has(bareId(id)),
   };
 }
 
