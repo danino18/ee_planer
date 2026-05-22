@@ -7,6 +7,8 @@ import { usePlanStore } from '../store/planStore';
 import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
 import { CourseDetailModal } from './CourseDetailModal';
+import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
+import { getTrackDefinition } from '../data/tracks';
 
 interface Props {
   group: SpecializationGroup;
@@ -34,6 +36,8 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     englishTaughtCourses,
     doubleSpecializations,
     courseChainAssignments,
+    coreToChainOverrides,
+    trackId,
   } = usePlanStore(useShallow((state) => ({
     favorites: state.favorites,
     toggleFavorite: state.toggleFavorite,
@@ -43,6 +47,8 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     doubleSpecializations: state.doubleSpecializations ?? [],
     courseChainAssignments: state.courseChainAssignments,
+    coreToChainOverrides: state.coreToChainOverrides ?? [],
+    trackId: state.trackId,
   })));
   const [detailCourse, setDetailCourse] = useState<SapCourse | null>(null);
   const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
@@ -50,10 +56,19 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
     [completedCourses, semesters],
   );
+  const trackDef = useMemo(() => getTrackDefinition(trackId), [trackId]);
+  const coreLockedSet = useMemo(
+    () => trackDef ? buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef) : new Set<string>(),
+    [semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef],
+  );
+  const chainEligibleSet = useMemo(
+    () => new Set([...allPlaced].filter((id) => !coreLockedSet.has(id))),
+    [allPlaced, coreLockedSet],
+  );
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(
-    () => evaluateSpecializationGroup(group, allPlaced, mode, courseChainAssignments),
-    [allPlaced, group, mode, courseChainAssignments],
+    () => evaluateSpecializationGroup(group, chainEligibleSet, mode, courseChainAssignments),
+    [chainEligibleSet, group, mode, courseChainAssignments],
   );
   const displayedCourseNumbers = useMemo(
     () => new Set(evaluation.ruleBlocks.flatMap((block) => block.options.map((option) => option.courseNumber))),
@@ -67,7 +82,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
   const renderCourse = (courseRef: SpecializationCourseReference) => {
     const id = courseRef.courseNumber;
     const course = courses.get(id);
-    const inPlan = allPlaced.has(id);
+    const inPlan = chainEligibleSet.has(id);
     const isFav = favoriteSet.has(id);
     const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
     const seasonBadge = getTeachingSemesterBadge(course?.teachingSemester);

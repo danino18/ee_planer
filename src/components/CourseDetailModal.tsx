@@ -5,6 +5,7 @@ import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { CheeseForkInfo } from './CheeseForkInfo';
+import { getTrackDefinition } from '../data/tracks';
 
 interface Props {
   course: SapCourse;
@@ -57,6 +58,11 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         name: g.name,
         role: g.mandatoryCourses.includes(course.id) ? 'mandatory' as const : 'elective' as const,
       }));
+  }, [trackId, course.id]);
+
+  const isCoreCandidate = useMemo(() => {
+    const trackDef = getTrackDefinition(trackId);
+    return trackDef?.coreRequirement?.courses.includes(course.id) ?? false;
   }, [trackId, course.id]);
 
   const effectiveId = instanceKey ?? course.id;
@@ -449,7 +455,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                           <button
                             onClick={() => setCourseChainAssignment(course.id, null)}
                             className="text-xs px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 transition-colors"
-                            title="בטל הקצאה — יחזור לספור בכל השרשראות"
+                            title={isCoreCandidate ? 'בטל הקצאה — יחזור לספירת ליבה' : 'בטל הקצאה — יחזור לספור בכל השרשראות'}
                           >
                             ✓ מוקצה
                           </button>
@@ -470,7 +476,17 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
               })}
             </ul>
             {!isCoreLocked && courseChainAssignments?.[course.id] && (
-              <p className="text-xs text-gray-400 mt-1.5 border-t pt-1.5">הקורס נספר רק בשרשרת המוקצית</p>
+              <div className="mt-1.5 border-t pt-1.5 flex items-center justify-between gap-2">
+                <p className="text-xs text-gray-400">הקורס נספר רק בשרשרת המוקצית</p>
+                {isCoreCandidate && (
+                  <button
+                    onClick={() => setCourseChainAssignment(course.id, null)}
+                    className="text-xs px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors shrink-0"
+                  >
+                    החזר לליבה
+                  </button>
+                )}
+              </div>
             )}
           </div>
         )}
