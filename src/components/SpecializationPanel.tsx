@@ -3,6 +3,8 @@ import { useShallow } from 'zustand/react/shallow';
 import type { SpecializationGroup, SpecializationRuleBlock, SapCourse, TrackSpecializationCatalog } from '../types';
 import { evaluateSpecializationGroup } from '../domain/specializations';
 import { usePlanStore } from '../store/planStore';
+import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
+import { getTrackDefinition } from '../data/tracks';
 
 interface Props {
   catalog: TrackSpecializationCatalog;
@@ -34,7 +36,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
   const {
     selectedSpecializations, semesters, completedCourses,
     toggleSpecialization, doubleSpecializations, toggleDoubleSpecialization,
-    courseChainAssignments,
+    courseChainAssignments, coreToChainOverrides, trackId,
   } = usePlanStore(useShallow((state) => ({
     selectedSpecializations: state.selectedSpecializations,
     semesters: state.semesters,
@@ -43,12 +45,20 @@ export function SpecializationPanel({ catalog, courses }: Props) {
     doubleSpecializations: state.doubleSpecializations,
     toggleDoubleSpecialization: state.toggleDoubleSpecialization,
     courseChainAssignments: state.courseChainAssignments,
+    coreToChainOverrides: state.coreToChainOverrides ?? [],
+    trackId: state.trackId,
   })));
   const groups = catalog.groups;
   const allPlaced = useMemo(
     () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
     [completedCourses, semesters],
   );
+  const trackDef = useMemo(() => getTrackDefinition(trackId), [trackId]);
+  const chainEligibleSet = useMemo(() => {
+    if (!trackDef?.coreRequirement) return allPlaced;
+    const coreLockedSet = buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef);
+    return new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
+  }, [allPlaced, semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef]);
   const [openGroup, setOpenGroup] = useState<SpecializationGroup | null>(null);
   const doubles = doubleSpecializations ?? [];
   const interactionDisabled = catalog.interactionDisabled;
@@ -92,7 +102,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
             const isDouble = doubles.includes(group.id);
             const evaluation = evaluateSpecializationGroup(
               group,
-              allPlaced,
+              chainEligibleSet,
               isDouble && group.canBeDouble ? 'double' : 'single',
               courseChainAssignments,
             );
