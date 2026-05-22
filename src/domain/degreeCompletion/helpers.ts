@@ -36,7 +36,7 @@ import type {
   DegreeRequirementStatus,
 } from './types';
 
-type CoreLockInput = Pick<RequirementsInput, 'completedCourses' | 'semesters' | 'coreToChainOverrides'>;
+type CoreLockInput = Pick<RequirementsInput, 'completedCourses' | 'semesters' | 'coreToChainOverrides' | 'courseChainAssignments'>;
 
 /**
  * Structural shape of `computeRequirementsProgress` output that
@@ -206,7 +206,9 @@ export function buildCoreLockedSet(
   const allPlaced = buildAllPlaced(input);
   const { courses: coreCourseIds, orGroups = [] } = trackDef.coreRequirement;
   const corePlaced = coreCourseIds.filter((id) => allPlaced.has(id));
-  const coreLocked = corePlaced.filter((id) => !input.coreToChainOverrides.includes(id));
+  const coreLocked = corePlaced.filter((id) =>
+    !input.coreToChainOverrides.includes(id) && !input.courseChainAssignments?.[id],
+  );
 
   const blockedOrIds = new Set<string>();
   for (const group of orGroups) {

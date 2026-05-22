@@ -119,8 +119,8 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   const completedSet = useMemo(() => new Set(completedCourses), [completedCourses]);
 
   const coreLockedSet = useMemo(
-    () => buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides }, trackDef),
-    [semesters, completedCourses, coreToChainOverrides, trackDef],
+    () => buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef),
+    [semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef],
   );
 
   // Map courseId → chain name for selected specializations (core-locked courses excluded)
