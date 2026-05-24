@@ -527,7 +527,7 @@ export function buildRequirementChecks(
     unit: 'credits',
     status: deriveStatus(progress.elective.earned, progress.elective.required),
     missingValue: Math.max(0, progress.elective.required - progress.elective.earned),
-    countedCourseIds: idsForBuckets(assignments, ['faculty_elective', 'optional_lab']),
+    countedCourseIds: idsForBuckets(assignments, ['faculty_elective', 'optional_lab', 'core']),
   });
 
   checks.push({

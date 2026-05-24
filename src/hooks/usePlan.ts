@@ -880,9 +880,12 @@ export function computeRequirementsProgress(
       };
     }
 
+    const excessMandatoryCredits = Math.max(0, mandatoryDone - mandatoryCreditsRequired);
+    const electiveCreditsWithExcess = electiveCredits + excessMandatoryCredits;
+
     return {
       mandatory: { earned: mandatoryDone, required: mandatoryCreditsRequired },
-      elective: { earned: electiveCredits, required: electiveCreditsRequired },
+      elective: { earned: electiveCreditsWithExcess, required: electiveCreditsRequired },
       electiveBreakdown: {
         areaRequirements: electiveAreaRequirements,
         assignmentChoices: electiveAssignmentChoices,
