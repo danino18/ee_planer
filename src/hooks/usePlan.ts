@@ -598,7 +598,7 @@ export function computeRequirementsProgress(
           specializationCourseIds.has(id),
           trackDef.externalFacultyElectiveEnabled
             ? EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS - externalFacultyElectiveCredits
-            : 0,
+            : Number.MAX_SAFE_INTEGER,
         );
         electiveCredits += split.facultyCredits;
         addGeneralCredit(id, split.generalCredits);
@@ -890,7 +890,7 @@ export function computeRequirementsProgress(
         generalCreditsByCourseId: Object.fromEntries(generalElectiveCredits),
         externalFaculty: {
           earned: externalFacultyElectiveCredits,
-          limit: EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
+          limit: trackDef.externalFacultyElectiveEnabled ? EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS : 0,
           courseIds: [...externalFacultyElectiveCourseIds],
         },
       },
