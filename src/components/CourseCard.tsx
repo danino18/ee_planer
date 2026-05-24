@@ -143,7 +143,6 @@ export const CourseCard = memo(function CourseCard({
           <div className="absolute top-0 left-0 flex items-center">
           <button
             onPointerDown={(e) => {
-              e.preventDefault();
               e.stopPropagation();
             }}
             onClick={(e) => {
@@ -158,7 +157,6 @@ export const CourseCard = memo(function CourseCard({
           {semester !== undefined && (
             <button
               onPointerDown={(e) => {
-                e.preventDefault();
                 e.stopPropagation();
               }}
               onClick={(e) => {
@@ -178,7 +176,6 @@ export const CourseCard = memo(function CourseCard({
         {showCardActions && semester !== undefined && (
           <button
             onPointerDown={(e) => {
-              e.preventDefault();
               e.stopPropagation();
             }}
             onClick={(e) => {
