@@ -9,6 +9,7 @@ export const ceTrack: TrackDefinition = {
   electiveCreditsRequired: 27,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 2,
+  externalFacultyElectiveEnabled: true,
   electivePolicy: {
     facultyCourseAreas: ['ee', 'cs'],
   },

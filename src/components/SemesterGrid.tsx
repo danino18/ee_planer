@@ -261,35 +261,37 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       if (w.length > 0) warnings[sem] = w;
     }
 
-    // Advanced-degree (0048) count limit: ≤2 if total plan credits <86, ≤3 if ≥86
-    const seenCr = new Set<string>();
-    let roughTotal = 0;
-    const addCr = (id: string) => {
-      const bare = bareId(id);
-      if (seenCr.has(bare) || noAdditionalCreditCourseIds.has(bare)) return;
-      seenCr.add(bare);
-      roughTotal += courses.get(bare)?.credits ?? 0;
-    };
-    for (const id of completedCourses) addCr(id);
-    for (const ids of Object.values(semesters)) for (const id of ids) addCr(id);
-    const adLimit = roughTotal >= 86 ? 3 : 2;
+    // Advanced-degree (0048) count limit — only for ee/cs/ce tracks
+    if (trackDef.externalFacultyElectiveEnabled) {
+      const seenCr = new Set<string>();
+      let roughTotal = 0;
+      const addCr = (id: string) => {
+        const bare = bareId(id);
+        if (seenCr.has(bare) || noAdditionalCreditCourseIds.has(bare)) return;
+        seenCr.add(bare);
+        roughTotal += courses.get(bare)?.credits ?? 0;
+      };
+      for (const id of completedCourses) addCr(id);
+      for (const ids of Object.values(semesters)) for (const id of ids) addCr(id);
+      const adLimit = roughTotal >= 86 ? 3 : 2;
 
-    let totalAdvanced = 0;
-    const semsWithAdvanced = new Set<number>();
-    for (const [semStr, ids] of Object.entries(semesters)) {
-      const sem = Number(semStr);
-      if (sem === 0) continue;
-      const count = ids.filter((id) => isAdvancedDegreeCourseId(bareId(id))).length;
-      if (count > 0) { totalAdvanced += count; semsWithAdvanced.add(sem); }
-    }
-    if (totalAdvanced > adLimit) {
-      for (const sem of semsWithAdvanced) {
-        (warnings[sem] ??= []).push('advancedDegree');
+      let totalAdvanced = 0;
+      const semsWithAdvanced = new Set<number>();
+      for (const [semStr, ids] of Object.entries(semesters)) {
+        const sem = Number(semStr);
+        if (sem === 0) continue;
+        const count = ids.filter((id) => isAdvancedDegreeCourseId(bareId(id))).length;
+        if (count > 0) { totalAdvanced += count; semsWithAdvanced.add(sem); }
+      }
+      if (totalAdvanced > adLimit) {
+        for (const sem of semsWithAdvanced) {
+          (warnings[sem] ??= []).push('advancedDegree');
+        }
       }
     }
 
     return warnings;
-  }, [semesters, completedCourses, courses, noAdditionalCreditCourseIds]);
+  }, [semesters, completedCourses, courses, noAdditionalCreditCourseIds, trackDef.externalFacultyElectiveEnabled]);
 
   const semesterMutualExclusionWarnings = useMemo(() => {
     const warnings: Record<number, string[]> = {};

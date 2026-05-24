@@ -70,6 +70,7 @@ export interface TrackDefinition {
   specializationGroupsRequired: number;
   description: string;
   electivePolicy?: TrackElectivePolicy;
+  externalFacultyElectiveEnabled?: boolean;
   labPool?: {
     courses: string[];
     required: number;     // mandatory minimum (0 = purely optional)

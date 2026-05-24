@@ -9,6 +9,7 @@ export const eeTrack: TrackDefinition = {
   electiveCreditsRequired: 39.5,
   generalCreditsRequired: 12,
   specializationGroupsRequired: 3,
+  externalFacultyElectiveEnabled: true,
   electivePolicy: {
     facultyCourseAreas: ['ee'],
   },
