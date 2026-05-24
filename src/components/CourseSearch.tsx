@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { CourseFacultyArea, SapCourse } from '../types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
-import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
+import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { useShareMode } from '../context/ShareModeContext';
 
 const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
@@ -87,6 +87,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     freeElective: false,
     winter: false,
     spring: false,
+    advancedDegree: false,
   });
   const [selectedFaculty, setSelectedFaculty] = useState<CourseFacultyArea | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -144,7 +145,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   }, []);
 
   const q = deferredQuery.trim().toLowerCase();
-  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring || selectedFaculty !== null;
+  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring || filters.advancedDegree || selectedFaculty !== null;
 
   const matchesFilters = useCallback((course: SapCourse): boolean => {
     if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) {
@@ -156,6 +157,10 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     }
 
     if (filters.freeElective && !isHumanitiesFreeElectiveCourseId(course.id)) {
+      return false;
+    }
+
+    if (filters.advancedDegree && !isAdvancedDegreeCourseId(course.id)) {
       return false;
     }
 
@@ -381,6 +386,16 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             בחירה חופשית
           </button>
           <a href={FILTER_LINKS.freeElective![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.freeElective![0].label} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => toggleFilter('advancedDegree')}
+            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
+              filters.advancedDegree ? 'bg-indigo-100 text-indigo-700 border-indigo-300' : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'
+            }`}
+          >
+            תארים מתקדמים
+          </button>
         </div>
         <div className="flex items-center gap-1">
           <button

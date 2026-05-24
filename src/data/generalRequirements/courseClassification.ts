@@ -86,4 +86,8 @@ export function isRegularSportCourseId(id: string): boolean {
   return isSportCourseId(id) && !isSportsTeamCourseId(id);
 }
 
+export function isAdvancedDegreeCourseId(id: string): boolean {
+  return bareId(id).startsWith('0048');
+}
+
 export { humanitiesFreeElectiveCourses };

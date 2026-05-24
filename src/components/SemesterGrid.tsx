@@ -20,7 +20,7 @@ import {
   getRecognizedCredits,
 } from '../domain/noAdditionalCredit';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
-import { isFreeElectiveCourseId, isSportCourseId } from '../data/generalRequirements/courseClassification';
+import { isFreeElectiveCourseId, isSportCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
@@ -249,19 +249,47 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
 
   // Per-semester Technion rule warnings
   const semesterRuleWarnings = useMemo(() => {
-    const warnings: Record<number, ('melag' | 'sport')[]> = {};
+    const warnings: Record<number, ('melag' | 'sport' | 'advancedDegree')[]> = {};
     for (const [semStr, ids] of Object.entries(semesters)) {
       const sem = Number(semStr);
       if (sem === 0) continue; // skip unassigned pool
-      const w: ('melag' | 'sport')[] = [];
+      const w: ('melag' | 'sport' | 'advancedDegree')[] = [];
       const melagCount = ids.filter((id) => isFreeElectiveCourseId(id)).length;
       const sportCount = ids.filter((id) => isSportCourseId(id)).length;
       if (melagCount > 2) w.push('melag');
       if (sportCount > 1) w.push('sport');
       if (w.length > 0) warnings[sem] = w;
     }
+
+    // Advanced-degree (0048) count limit: ≤2 if total plan credits <86, ≤3 if ≥86
+    const seenCr = new Set<string>();
+    let roughTotal = 0;
+    const addCr = (id: string) => {
+      const bare = bareId(id);
+      if (seenCr.has(bare) || noAdditionalCreditCourseIds.has(bare)) return;
+      seenCr.add(bare);
+      roughTotal += courses.get(bare)?.credits ?? 0;
+    };
+    for (const id of completedCourses) addCr(id);
+    for (const ids of Object.values(semesters)) for (const id of ids) addCr(id);
+    const adLimit = roughTotal >= 86 ? 3 : 2;
+
+    let totalAdvanced = 0;
+    const semsWithAdvanced = new Set<number>();
+    for (const [semStr, ids] of Object.entries(semesters)) {
+      const sem = Number(semStr);
+      if (sem === 0) continue;
+      const count = ids.filter((id) => isAdvancedDegreeCourseId(bareId(id))).length;
+      if (count > 0) { totalAdvanced += count; semsWithAdvanced.add(sem); }
+    }
+    if (totalAdvanced > adLimit) {
+      for (const sem of semsWithAdvanced) {
+        (warnings[sem] ??= []).push('advancedDegree');
+      }
+    }
+
     return warnings;
-  }, [semesters]);
+  }, [semesters, completedCourses, courses, noAdditionalCreditCourseIds]);
 
   const semesterMutualExclusionWarnings = useMemo(() => {
     const warnings: Record<number, string[]> = {};

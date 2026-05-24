@@ -38,7 +38,7 @@ interface Props {
   courseChainMap?: Map<string, string>;
   coreLockedSet?: Set<string>;
   isDragging?: boolean;
-  ruleWarnings?: ('melag' | 'sport')[];
+  ruleWarnings?: ('melag' | 'sport' | 'advancedDegree')[];
   mutualExclusionWarnings?: string[];
   noAdditionalCreditConflicts?: Map<string, NoAdditionalCreditConflict[]>;
   noAdditionalCreditCourseIds?: ReadonlySet<string>;
@@ -224,6 +224,11 @@ export const SemesterColumn = memo(function SemesterColumn({
           {ruleWarnings.includes('sport') && (
             <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
               ⚠️ בטכניון ניתן לקחת קורס ספורט אחד בסמסטר
+            </p>
+          )}
+          {ruleWarnings.includes('advancedDegree') && (
+            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+              ⚠️ חרגת ממגבלת קורסי תארים מתקדמים (0048)
             </p>
           )}
         </div>
