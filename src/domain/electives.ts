@@ -82,6 +82,11 @@ export function getAutomaticElectiveCreditArea(
   const policy = getTrackElectivePolicy(trackDef);
   const facultyArea = getCourseFacultyArea(course);
 
+  // On pool-limited tracks, non-EE courses must go through the external-faculty pool.
+  if (trackDef.externalFacultyElectiveEnabled && facultyArea !== 'ee') {
+    return 'general';
+  }
+
   if (facultyArea === 'ee' && policy.facultyCourseAreas.includes('ee')) {
     return 'ee';
   }
