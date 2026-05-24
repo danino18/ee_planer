@@ -140,7 +140,7 @@ export const CourseCard = memo(function CourseCard({
         `}
       >
         {showCardActions && (
-          <div className="absolute top-0 left-0 flex items-center">
+          <div dir="ltr" className="absolute top-0 left-0 flex items-center">
           <button
             onPointerDown={(e) => {
               e.stopPropagation();
