@@ -23,7 +23,6 @@ import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/fa
 import { isFreeElectiveCourseId, isSportCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
-import { buildEffectiveChainAssignments } from '../domain/specializations/engine';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
 import { useShareMode } from '../context/ShareModeContext';
 import { bareId } from '../utils/occurrenceId';
@@ -125,29 +124,60 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     [semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef],
   );
 
-  // Map courseId → chain name for selected specializations (core-locked courses excluded)
+  // Map courseId → chain name for display on course cards (core-locked courses excluded)
   const courseChainMap = useMemo(() => {
     const map = new Map<string, string>();
     if (!specializations) return map;
     const allPlaced = new Set<string>([...completedCourses, ...Object.values(semesters).flat()]);
     const chainEligibleSet = new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
-    const selectedGroups = specializations.filter((g) => selectedSpecializations.includes(g.id));
-    const effective = buildEffectiveChainAssignments(chainEligibleSet, selectedGroups, courseChainAssignments);
-    // First pass: effective assignments (includes auto-assigned single-selected-chain courses)
-    for (const [courseId, groupId] of Object.entries(effective)) {
+
+    // Pass 1: explicitly assigned courses → show chain name regardless of selection status
+    for (const [courseId, groupId] of Object.entries(courseChainAssignments ?? {})) {
       if (coreLockedSet.has(courseId)) continue;
-      const group = specializations.find((g) => g.id === groupId && selectedSpecializations.includes(g.id));
+      const group = specializations.find((g) => g.id === groupId);
       if (group) {
         const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
         map.set(courseId, shortName);
       }
     }
-    // Second pass: chain-eligible courses appearing in 2+ selected chains without assignment → לא שובץ
-    for (const group of selectedGroups) {
+
+    // Build catalog-wide chain membership counts for unassigned courses
+    const catalogChainCount = new Map<string, number>();
+    const singleCatalogChain = new Map<string, string>(); // courseId → chain id when count === 1
+    for (const group of specializations) {
       for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) {
-        if (!map.has(id) && chainEligibleSet.has(id)) map.set(id, 'לא שובץ');
+        const prev = catalogChainCount.get(id) ?? 0;
+        if (prev === 0) singleCatalogChain.set(id, group.id);
+        else singleCatalogChain.delete(id); // more than one — remove auto-assign candidate
+        catalogChainCount.set(id, prev + 1);
       }
     }
+
+    // Pass 2: unassigned chain-eligible courses that appear in at least 1 selected chain
+    const selectedGroups = specializations.filter((g) => selectedSpecializations.includes(g.id));
+    const inSelectedChain = new Set<string>();
+    for (const group of selectedGroups) {
+      for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) inSelectedChain.add(id);
+    }
+
+    for (const id of inSelectedChain) {
+      if (map.has(id)) continue; // already assigned explicitly
+      if (!chainEligibleSet.has(id)) continue;
+      const count = catalogChainCount.get(id) ?? 0;
+      if (count === 1) {
+        // Single catalog chain → auto-assign display
+        const chainId = singleCatalogChain.get(id)!;
+        const group = specializations.find((g) => g.id === chainId);
+        if (group) {
+          const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
+          map.set(id, shortName);
+        }
+      } else {
+        // Multiple catalog chains → needs manual assignment
+        map.set(id, 'לא שובץ');
+      }
+    }
+
     return map;
   }, [specializations, selectedSpecializations, courseChainAssignments, coreLockedSet, completedCourses, semesters]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);

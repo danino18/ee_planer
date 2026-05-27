@@ -82,6 +82,16 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     () => buildEffectiveChainAssignments(chainEligibleSet, selectedGroupsForModal, courseChainAssignments),
     [chainEligibleSet, selectedGroupsForModal, courseChainAssignments],
   );
+  // Catalog-wide multi-chain set: courses that belong to 2+ catalog chains
+  const catalogMultiChainSet = useMemo(() => {
+    const count = new Map<string, number>();
+    for (const g of allGroups) {
+      for (const id of [...g.mandatoryCourses, ...g.electiveCourses]) {
+        count.set(id, (count.get(id) ?? 0) + 1);
+      }
+    }
+    return new Set([...count.entries()].filter(([, c]) => c > 1).map(([id]) => id));
+  }, [allGroups]);
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(
     () => evaluateSpecializationGroup(group, chainEligibleSet, mode, effectiveChainAssignments),
@@ -110,14 +120,12 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     const assignedElsewhereName = isAssignedElsewhere
       ? (allGroups.find((g) => g.id === effectiveAssignment)?.name ?? effectiveAssignment)
       : undefined;
-    const isMultiChain = allGroups.filter(
-      (g) => g.mandatoryCourses.includes(id) || g.electiveCourses.includes(id),
-    ).length > 1;
+    const isMultiChain = catalogMultiChainSet.has(id);
     const showAssignButton = isInPlan && (
       isCoreLockedCourse ||
       isManuallyAssignedHere ||
       isAssignedElsewhere ||
-      (isChainEligible && isMultiChain)
+      (isChainEligible && isMultiChain && !isAssignedHere)
     );
     const isFav = favoriteSet.has(id);
     const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
