@@ -127,11 +127,12 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
       isAssignedElsewhere ||
       (isChainEligible && isMultiChain && !isAssignedHere)
     );
+    const isNotCountedHere = isInPlan && !isAssignedHere;
     const isFav = favoriteSet.has(id);
     const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
     const seasonBadge = getTeachingSemesterBadge(course?.teachingSemester);
     return (
-      <div key={id} className="flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0">
+      <div key={id} className={`flex items-center justify-between py-1.5 border-b border-gray-100 last:border-0 ${isNotCountedHere ? 'opacity-50' : ''}`}>
         <div className="flex-1 min-w-0 ml-2">
           <p
             className={`text-sm truncate ${course ? 'text-blue-600 cursor-pointer hover:underline' : 'text-gray-800'}`}
@@ -174,6 +175,11 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
             {!isCoreLockedCourse && isChainEligible && !effectiveAssignment && (
               <span className="text-xs bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
                 לא שובץ
+              </span>
+            )}
+            {isNotCountedHere && (
+              <span className="text-xs bg-gray-100 text-gray-500 px-1 py-0.5 rounded font-semibold leading-none">
+                לא נספר
               </span>
             )}
           </div>

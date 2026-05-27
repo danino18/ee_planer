@@ -246,18 +246,28 @@ export const CourseCard = memo(function CourseCard({
                 ב"ח
               </span>
             )}
-            <span
-              className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
-                isCoreLocked ? 'bg-amber-100 text-amber-700'
-                : isMandatory ? 'bg-blue-100 text-blue-600'
-                : chainName === 'לא שובץ' ? 'bg-amber-50 text-amber-600'
-                : chainName ? 'bg-indigo-50 text-indigo-600'
-                : 'bg-teal-50 text-teal-600'
-              }`}
-              title={isCoreLocked ? 'קורס נספר כליבה' : chainName === 'לא שובץ' ? 'קורס שייך למספר שרשראות — יש לשבץ ידנית' : (!isMandatory && chainName ? chainName : undefined)}
-            >
-              {isCoreLocked ? 'ליבה' : isMandatory ? 'חובה' : (chainName ?? 'בחירה')}
-            </span>
+            {!isCoreLocked && !isMandatory && chainName === 'לא שובץ' ? (
+              <>
+                <span className="text-xs bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-medium leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
+                  לא שובץ
+                </span>
+                <span className="text-xs bg-teal-50 text-teal-600 px-1 py-0.5 rounded font-medium leading-none">
+                  בחירה
+                </span>
+              </>
+            ) : (
+              <span
+                className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
+                  isCoreLocked ? 'bg-amber-100 text-amber-700'
+                  : isMandatory ? 'bg-blue-100 text-blue-600'
+                  : chainName ? 'bg-indigo-50 text-indigo-600'
+                  : 'bg-teal-50 text-teal-600'
+                }`}
+                title={isCoreLocked ? 'קורס נספר כליבה' : (!isMandatory && chainName ? chainName : undefined)}
+              >
+                {isCoreLocked ? 'ליבה' : isMandatory ? 'חובה' : (chainName ?? 'בחירה')}
+              </span>
+            )}
             {isBinaryPass && (
               <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">עובר</span>
             )}

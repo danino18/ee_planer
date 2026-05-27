@@ -49,7 +49,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     setCurrentSemester, addSummerSemester, removeSummerSemester,
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
-    grades, binaryPass, selectedSpecializations, courseChainAssignments, facultyColorOverrides, setFacultyColorOverride,
+    grades, binaryPass, courseChainAssignments, facultyColorOverrides, setFacultyColorOverride,
     englishScore, noAdditionalCreditOverrides, coreToChainOverrides,
   } = usePlanStore(useShallow((state) => ({
     semesters: state.semesters,
@@ -73,7 +73,6 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     toggleSemesterWarnings: state.toggleSemesterWarnings,
     grades: state.grades,
     binaryPass: state.binaryPass,
-    selectedSpecializations: state.selectedSpecializations,
     courseChainAssignments: state.courseChainAssignments,
     facultyColorOverrides: state.facultyColorOverrides,
     setFacultyColorOverride: state.setFacultyColorOverride,
@@ -153,19 +152,13 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       }
     }
 
-    // Pass 2: unassigned chain-eligible courses that appear in at least 1 selected chain
-    const selectedGroups = specializations.filter((g) => selectedSpecializations.includes(g.id));
-    const inSelectedChain = new Set<string>();
-    for (const group of selectedGroups) {
-      for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) inSelectedChain.add(id);
-    }
-
-    for (const id of inSelectedChain) {
-      if (map.has(id)) continue; // already assigned explicitly
-      if (!chainEligibleSet.has(id)) continue;
+    // Pass 2: ALL chain-eligible placed courses — tag based on catalog-wide membership
+    for (const id of chainEligibleSet) {
+      if (map.has(id)) continue; // already assigned explicitly in Pass 1
       const count = catalogChainCount.get(id) ?? 0;
+      if (count === 0) continue; // not in any catalog chain → card shows "בחירה" by default
       if (count === 1) {
-        // Single catalog chain → auto-assign display
+        // Exactly one catalog chain → auto-assign display
         const chainId = singleCatalogChain.get(id)!;
         const group = specializations.find((g) => g.id === chainId);
         if (group) {
@@ -179,7 +172,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     }
 
     return map;
-  }, [specializations, selectedSpecializations, courseChainAssignments, coreLockedSet, completedCourses, semesters]);
+  }, [specializations, courseChainAssignments, coreLockedSet, completedCourses, semesters]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows' | 'buckets'>('grid');
   const [showLegend, setShowLegend] = useState(false);
