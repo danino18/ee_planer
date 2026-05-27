@@ -721,7 +721,7 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
                     ? `יש ${pendingShareUpdates.length} עדכון מהשיתוף ממתינים לאישור`
                     : 'ייצוא, שיתוף, או ייבוא של המערכת'}
                 >
-                  <span>⇪</span><span className="hidden sm:inline"> שיתוף</span>
+                  <span>⇪</span><span className="hidden sm:inline"> שיתוף/ייבוא</span>
                   {pendingShareUpdates.length > 0 && (
                     <span
                       className="absolute -top-1 -left-1 min-w-[1.1rem] h-[1.1rem] px-1 flex items-center justify-center rounded-full bg-emerald-400 text-white text-[10px] font-bold shadow"
