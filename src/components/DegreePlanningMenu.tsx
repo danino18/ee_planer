@@ -3,17 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 interface Props {
   onInitializeRecommended: () => void;
   onPlanFromScratch: () => void;
-  onScanGradeSheet: () => void;
   readOnly?: boolean;
 }
 
 const MENU_ITEMS = [
-  {
-    key: 'scan',
-    label: 'סריקת גיליון ציונים',
-    icon: '📋',
-    description: 'ייבא ציונים מהטכניון',
-  },
   {
     key: 'recommended',
     label: 'אתחול תכנית מומלצת',
@@ -28,7 +21,7 @@ const MENU_ITEMS = [
   },
 ] as const;
 
-export function DegreePlanningMenu({ onInitializeRecommended, onPlanFromScratch, onScanGradeSheet, readOnly = false }: Props) {
+export function DegreePlanningMenu({ onInitializeRecommended, onPlanFromScratch, readOnly = false }: Props) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -54,8 +47,7 @@ export function DegreePlanningMenu({ onInitializeRecommended, onPlanFromScratch,
 
   function handleSelect(key: typeof MENU_ITEMS[number]['key']) {
     setOpen(false);
-    if (key === 'scan') onScanGradeSheet();
-    else if (key === 'recommended') onInitializeRecommended();
+    if (key === 'recommended') onInitializeRecommended();
     else if (key === 'scratch') onPlanFromScratch();
   }
 
@@ -65,9 +57,9 @@ export function DegreePlanningMenu({ onInitializeRecommended, onPlanFromScratch,
         onClick={() => setOpen((v) => !v)}
         className="text-sm border px-3 py-1.5 rounded-lg transition-colors"
         style={{ color: 'rgba(147,197,253,0.9)', borderColor: 'rgba(147,197,253,0.3)' }}
-        title="תכנון לימודים"
+        title="אתחול מערכת"
       >
-        <span className="hidden sm:inline">תכנון לימודים </span>▾
+        <span className="hidden sm:inline">אתחול מערכת </span>▾
       </button>
 
       {open && (

@@ -28,6 +28,7 @@ interface Props {
   catalog: TrackSpecializationCatalog | null;
   pendingShareUpdates?: ShareSnapshot[];
   onAcceptShareUpdate?: (snapshot: ShareSnapshot) => Promise<void>;
+  onScanGradeSheet?: () => void;
 }
 
 type Tab = 'export' | 'import' | 'share';
@@ -43,6 +44,7 @@ export function ExportShareModal({
   catalog,
   pendingShareUpdates = [],
   onAcceptShareUpdate,
+  onScanGradeSheet,
 }: Props) {
   const versions = usePlanStore((s) => s.versions);
   const activeVersionId = usePlanStore((s) => s.activeVersionId);
@@ -464,6 +466,18 @@ export function ExportShareModal({
 
         {tab === 'import' && (
           <div className="space-y-4">
+            {onScanGradeSheet && (
+              <div className="border border-blue-200 rounded-lg p-3 bg-blue-50">
+                <p className="text-sm font-semibold text-blue-800 mb-1">ייבוא של גיליון הציונים</p>
+                <p className="text-xs text-blue-600 mb-2">ייבא ציונים מהטכניון (PDF)</p>
+                <button
+                  onClick={() => { onScanGradeSheet(); onClose(); }}
+                  className="text-sm text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-100 border border-blue-300 hover:border-blue-500 px-3 py-2 rounded-lg transition-colors font-medium"
+                >
+                  📋 פתח סורק גיליון ציונים
+                </button>
+              </div>
+            )}
             <div className="border border-gray-200 rounded-lg p-3">
               <p className="text-sm text-gray-700 mb-2">בחר קובץ JSON שיוצא בעבר מהמערכת:</p>
               <input
