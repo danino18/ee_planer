@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope, ElectiveCreditArea, ShareReviewState } from '../types';
+import type { TrackId, StudentPlan, PlanVersion, VersionedPlanEnvelope, ElectiveCreditArea, ShareReviewState, TrackDefinition } from '../types';
 import { eeTrack } from '../data/tracks/ee';
 import { csTrack } from '../data/tracks/cs';
 import { eeMathTrack } from '../data/tracks/ee_math';
@@ -109,12 +109,12 @@ const DEFAULT_ORDER = Array.from({ length: DEFAULT_SEMESTERS }, (_, i) => i + 1)
 const DEFAULT_SEMESTER_MAP: Record<number, string[]> = { 0: [] };
 for (let i = 1; i <= DEFAULT_SEMESTERS; i++) DEFAULT_SEMESTER_MAP[i] = [];
 
-const CE_ADDED_RECOMMENDED_COURSES: Record<number, string[]> = {
-  4: ['01140073'],
-};
-
 const CS_REMOVED_RECOMMENDED_COURSES: Record<number, string[]> = {
   1: ['01140032'],
+};
+
+const CE_ADDED_RECOMMENDED_COURSES: Record<number, string[]> = {
+  4: ['01140073'],
 };
 
 const CS_ADDED_RECOMMENDED_COURSES: Record<number, string[]> = {
@@ -122,6 +122,11 @@ const CS_ADDED_RECOMMENDED_COURSES: Record<number, string[]> = {
 };
 
 const TRACKS = [eeTrack, csTrack, eeMathTrack, eePhysicsTrack, eeCombinedTrack, ceTrack];
+const TRACKS_BY_ID = Object.fromEntries(TRACKS.map((track) => [track.id, track])) as Record<TrackId, TrackDefinition>;
+const TECHNICAL_ENGLISH_ADVANCED_B_ID = '03240033';
+interface PlanMigrationOptions {
+  restoreCatalog2526Recommended?: boolean;
+}
 
 // Sport/PE pool courses auto-placed in the unassigned column on first load.
 // Empty: sport appears in the recommended schedule (semesterSchedule); נבחרת users add it manually.
@@ -248,7 +253,41 @@ function addRecommendedCourses(
   }
 }
 
-function applyPlanMigrations(plan: StudentPlan): StudentPlan {
+function shouldSkipRecommendedCourseMigration(plan: StudentPlan, courseId: string): boolean {
+  return (
+    courseId === TECHNICAL_ENGLISH_ADVANCED_B_ID &&
+    plan.englishScore !== undefined &&
+    plan.englishScore >= 134 &&
+    plan.englishScore <= 150
+  );
+}
+
+function getDefaultRecommendedCourseIdsForEntry(
+  entry: TrackDefinition['semesterSchedule'][number],
+  plan: StudentPlan,
+): string[] {
+  const ids = [...entry.courses];
+
+  for (const group of entry.alternativeGroups ?? []) {
+    ids.push(...(group.showBoth ? group.courseIds : [group.defaultCourseId ?? group.courseIds[0]]));
+  }
+
+  return ids.filter((id) => !shouldSkipRecommendedCourseMigration(plan, id));
+}
+
+function getDefaultRecommendedCoursesBySemester(
+  trackDef: TrackDefinition,
+  plan: StudentPlan,
+): Record<number, string[]> {
+  return Object.fromEntries(
+    trackDef.semesterSchedule.map((entry) => [
+      entry.semester,
+      getDefaultRecommendedCourseIdsForEntry(entry, plan),
+    ]),
+  );
+}
+
+export function applyPlanMigrations(plan: StudentPlan, options: PlanMigrationOptions = {}): StudentPlan {
   const migrated: StudentPlan = {
     ...plan,
     semesters: { ...plan.semesters },
@@ -256,27 +295,32 @@ function applyPlanMigrations(plan: StudentPlan): StudentPlan {
     dismissedRecommendedCourses: { ...(plan.dismissedRecommendedCourses ?? {}) },
   };
 
-  if (migrated.trackId === 'ce') {
-    addRecommendedCourses(migrated, 'ce', CE_ADDED_RECOMMENDED_COURSES);
-  }
-
   if (migrated.trackId === 'cs') {
     removeRecommendedCourses(migrated.semesters, CS_REMOVED_RECOMMENDED_COURSES);
+  }
+
+  if (options.restoreCatalog2526Recommended && migrated.trackId) {
+    const trackDef = TRACKS_BY_ID[migrated.trackId];
+    if (trackDef) {
+      addRecommendedCourses(
+        migrated,
+        migrated.trackId,
+        getDefaultRecommendedCoursesBySemester(trackDef, migrated),
+      );
+    }
+  } else if (migrated.trackId === 'ce') {
+    addRecommendedCourses(migrated, 'ce', CE_ADDED_RECOMMENDED_COURSES);
+  } else if (migrated.trackId === 'cs') {
     addRecommendedCourses(migrated, 'cs', CS_ADDED_RECOMMENDED_COURSES);
   }
 
-  if (migrated.savedTracks?.ce) {
-    migrated.savedTracks.ce = applyPlanMigrations({
-      ...migrated.savedTracks.ce,
-      trackId: 'ce',
-    });
-  }
-
-  if (migrated.savedTracks?.cs) {
-    migrated.savedTracks.cs = applyPlanMigrations({
-      ...migrated.savedTracks.cs,
-      trackId: 'cs',
-    });
+  for (const track of TRACKS) {
+    if (migrated.savedTracks?.[track.id]) {
+      migrated.savedTracks[track.id] = applyPlanMigrations({
+        ...migrated.savedTracks[track.id],
+        trackId: track.id,
+      }, options);
+    }
   }
 
   return migrated;
@@ -1284,11 +1328,23 @@ export const usePlanStore = create<PlanState>()(
     }),
     {
       name: 'technion-ee-planner',
-      version: 2,
+      version: 3,
       migrate: (persistedState, fromVersion) => {
         const s = persistedState as PlanState;
+        const migratedPlan = applyPlanMigrations(
+          { ...initialState, ...s },
+          { restoreCatalog2526Recommended: true },
+        );
         const migratedBase = {
           ...s,
+          ...migratedPlan,
+          versions: (s.versions ?? []).map((version) => ({
+            ...version,
+            plan: applyPlanMigrations(
+              { ...initialState, ...version.plan },
+              { restoreCatalog2526Recommended: true },
+            ),
+          })),
           shareReview: null,
           hasPendingCloudSync: s.hasPendingCloudSync ?? false,
           lastLocalEditAt: s.lastLocalEditAt ?? 0,
@@ -1296,7 +1352,7 @@ export const usePlanStore = create<PlanState>()(
         if (fromVersion === 0 || !s.versions || s.versions.length === 0) {
           // Wrap existing plan as the first version
           const vId = crypto.randomUUID();
-          const plan: StudentPlan = { ...initialState, ...s };
+          const plan: StudentPlan = migratedPlan;
           return {
             ...migratedBase,
             versions: [{
