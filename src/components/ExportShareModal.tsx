@@ -28,6 +28,7 @@ interface Props {
   catalog: TrackSpecializationCatalog | null;
   pendingShareUpdates?: ShareSnapshot[];
   onAcceptShareUpdate?: (snapshot: ShareSnapshot) => Promise<void>;
+  onDismissShareUpdate?: (shareId: string) => void;
   onScanGradeSheet?: () => void;
 }
 
@@ -44,6 +45,7 @@ export function ExportShareModal({
   catalog,
   pendingShareUpdates = [],
   onAcceptShareUpdate,
+  onDismissShareUpdate,
   onScanGradeSheet,
 }: Props) {
   const versions = usePlanStore((s) => s.versions);
@@ -362,6 +364,7 @@ export function ExportShareModal({
           <ShareUpdatesPanel
             updates={pendingShareUpdates}
             onAccept={onAcceptShareUpdate}
+            onDismiss={onDismissShareUpdate}
           />
         )}
 
@@ -733,9 +736,10 @@ export function ExportShareModal({
 interface ShareUpdatesPanelProps {
   updates: ShareSnapshot[];
   onAccept?: (snapshot: ShareSnapshot) => Promise<void>;
+  onDismiss?: (shareId: string) => void;
 }
 
-function ShareUpdatesPanel({ updates, onAccept }: ShareUpdatesPanelProps) {
+function ShareUpdatesPanel({ updates, onAccept, onDismiss }: ShareUpdatesPanelProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
 
@@ -785,13 +789,22 @@ function ShareUpdatesPanel({ updates, onAccept }: ShareUpdatesPanelProps) {
                   <span className="text-red-600">שגיאה בהחלת השינויים. נסה שוב.</span>
                 )}
               </div>
-              <button
-                onClick={() => void handleAccept(u)}
-                disabled={isPending || !onAccept}
-                className="text-xs bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white font-medium px-3 py-1.5 rounded-md transition-colors"
-              >
-                {isPending ? 'מחיל...' : 'קבל לתוכנית האישית'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onDismiss?.(u.shareId)}
+                  disabled={isPending}
+                  className="text-xs bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-600 font-medium px-3 py-1.5 rounded-md border border-gray-300 transition-colors"
+                >
+                  הסתר
+                </button>
+                <button
+                  onClick={() => void handleAccept(u)}
+                  disabled={isPending || !onAccept}
+                  className="text-xs bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 disabled:cursor-not-allowed text-white font-medium px-3 py-1.5 rounded-md transition-colors"
+                >
+                  {isPending ? 'מחיל...' : 'קבל לתוכנית האישית'}
+                </button>
+              </div>
             </li>
           );
         })}

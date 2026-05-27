@@ -156,6 +156,10 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
     setPendingShareUpdates((prev) => prev.filter((s) => s.shareId !== snapshot.shareId));
   }, [user]);
 
+  const handleDismissShareUpdate = useCallback((shareId: string) => {
+    setPendingShareUpdates((prev) => prev.filter((s) => s.shareId !== shareId));
+  }, []);
+
   useEffect(() => {
     reportTrackSpecializationDiagnostics(trackDef.id);
   }, [trackDef.id]);
@@ -631,6 +635,7 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
           catalog={specializationCatalog}
           pendingShareUpdates={pendingShareUpdates}
           onAcceptShareUpdate={handleAcceptOwnedShareUpdate}
+          onDismissShareUpdate={handleDismissShareUpdate}
           onScanGradeSheet={() => { setShowExport(false); setShowGradeSheetModal(true); }}
         />
       )}
