@@ -131,8 +131,9 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     if (!specializations) return map;
     const allPlaced = new Set<string>([...completedCourses, ...Object.values(semesters).flat()]);
     const chainEligibleSet = new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
-    const effective = buildEffectiveChainAssignments(chainEligibleSet, specializations, courseChainAssignments);
-    // First pass: effective assignments (includes auto-assigned single-chain courses)
+    const selectedGroups = specializations.filter((g) => selectedSpecializations.includes(g.id));
+    const effective = buildEffectiveChainAssignments(chainEligibleSet, selectedGroups, courseChainAssignments);
+    // First pass: effective assignments (includes auto-assigned single-selected-chain courses)
     for (const [courseId, groupId] of Object.entries(effective)) {
       if (coreLockedSet.has(courseId)) continue;
       const group = specializations.find((g) => g.id === groupId && selectedSpecializations.includes(g.id));
@@ -141,9 +142,8 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
         map.set(courseId, shortName);
       }
     }
-    // Second pass: chain-eligible courses not yet mapped → multi-chain unassigned
-    for (const group of specializations) {
-      if (!selectedSpecializations.includes(group.id)) continue;
+    // Second pass: chain-eligible courses appearing in 2+ selected chains without assignment → לא שובץ
+    for (const group of selectedGroups) {
       for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) {
         if (!map.has(id) && chainEligibleSet.has(id)) map.set(id, 'לא שובץ');
       }

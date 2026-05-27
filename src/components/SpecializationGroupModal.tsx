@@ -36,6 +36,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     addCourseToSemester,
     englishTaughtCourses,
     doubleSpecializations,
+    selectedSpecializations,
     courseChainAssignments,
     setCourseChainAssignment,
     coreToChainOverrides,
@@ -48,6 +49,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     addCourseToSemester: state.addCourseToSemester,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     doubleSpecializations: state.doubleSpecializations ?? [],
+    selectedSpecializations: state.selectedSpecializations,
     courseChainAssignments: state.courseChainAssignments,
     setCourseChainAssignment: state.setCourseChainAssignment,
     coreToChainOverrides: state.coreToChainOverrides ?? [],
@@ -72,9 +74,13 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     () => new Set([...allPlaced].filter((id) => !coreLockedSet.has(id))),
     [allPlaced, coreLockedSet],
   );
+  const selectedGroupsForModal = useMemo(
+    () => allGroups.filter((g) => selectedSpecializations.includes(g.id) || g.id === group.id),
+    [allGroups, selectedSpecializations, group.id],
+  );
   const effectiveChainAssignments = useMemo(
-    () => buildEffectiveChainAssignments(chainEligibleSet, allGroups, courseChainAssignments),
-    [chainEligibleSet, allGroups, courseChainAssignments],
+    () => buildEffectiveChainAssignments(chainEligibleSet, selectedGroupsForModal, courseChainAssignments),
+    [chainEligibleSet, selectedGroupsForModal, courseChainAssignments],
   );
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(

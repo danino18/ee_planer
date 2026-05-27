@@ -962,8 +962,11 @@ export function evaluateSpecializationGroup(
 ): SpecializationGroupEvaluation {
   const takenCourses = new Set(
     [...takenCourseNumbers].filter((id) => {
-      const assignment = courseChainAssignments?.[id];
-      return assignment === group.id;
+      // When no assignment map is provided (e.g. unit tests calling the function directly),
+      // use the legacy permissive behavior so all chain-eligible courses count.
+      // When an effective assignment map is provided, require an explicit assignment to this group.
+      if (courseChainAssignments === undefined) return true;
+      return courseChainAssignments[id] === group.id;
     }),
   );
   const requirements = group.requirementsByMode[mode] ?? group.requirementsByMode.single;

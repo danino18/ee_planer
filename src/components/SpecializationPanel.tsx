@@ -59,9 +59,13 @@ export function SpecializationPanel({ catalog, courses }: Props) {
     const coreLockedSet = buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef);
     return new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
   }, [allPlaced, semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef]);
+  const selectedGroups = useMemo(
+    () => groups.filter((g) => selectedSpecializations.includes(g.id)),
+    [groups, selectedSpecializations],
+  );
   const effectiveChainAssignments = useMemo(
-    () => buildEffectiveChainAssignments(chainEligibleSet, groups, courseChainAssignments),
-    [chainEligibleSet, groups, courseChainAssignments],
+    () => buildEffectiveChainAssignments(chainEligibleSet, selectedGroups, courseChainAssignments),
+    [chainEligibleSet, selectedGroups, courseChainAssignments],
   );
   const [openGroup, setOpenGroup] = useState<SpecializationGroup | null>(null);
   const doubles = doubleSpecializations ?? [];
@@ -108,7 +112,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               group,
               chainEligibleSet,
               isDouble && group.canBeDouble ? 'double' : 'single',
-              effectiveChainAssignments,
+              isSelected ? effectiveChainAssignments : undefined,
             );
             const progress = getRuleProgress(evaluation.ruleBlocks);
             const pct = Math.min(

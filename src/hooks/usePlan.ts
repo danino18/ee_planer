@@ -650,7 +650,7 @@ export function computeRequirementsProgress(
     );
     const effectiveChainAssignments = buildEffectiveChainAssignments(
       chainEligibleCourseIds,
-      specializationCatalog.groups,
+      selectedGroups,
       courseChainAssignments,
     );
     const groupEvaluations = selectedGroups.map((group) => {
