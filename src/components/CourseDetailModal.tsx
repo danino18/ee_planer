@@ -208,6 +208,69 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
 
         <CheeseForkInfo courseId={course.id} />
 
+        {/* Chain membership */}
+        {chainMemberships.length > 0 && (
+          <div className="mb-4 border border-gray-200 rounded-lg p-3">
+            <p className="text-xs font-semibold text-gray-700 mb-2">נספר לשרשראות:</p>
+            {isCoreLocked && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-2">
+                קורס זה נספר כליבה. הקצאה לשרשרת תשחרר אותו מספירת הליבה.
+              </p>
+            )}
+            <ul className="space-y-1.5">
+              {chainMemberships.map(({ id, name, role }) => {
+                const assignedChain = courseChainAssignments?.[course.id];
+                const isAssignedHere = assignedChain === id;
+                const isAssignedElsewhere = !!assignedChain && assignedChain !== id;
+                return (
+                  <li key={id} className={`flex items-center justify-between gap-2 ${isAssignedElsewhere ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                        role === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                      }`}>
+                        {role === 'mandatory' ? 'חובה' : 'בחירה'}
+                      </span>
+                      {(isCoreLocked || chainMemberships.length > 1 || !!courseChainAssignments?.[course.id]) && (
+                        isAssignedHere ? (
+                          <button
+                            onClick={() => setCourseChainAssignment(course.id, null)}
+                            className="text-xs px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 transition-colors"
+                            title={isCoreCandidate ? 'בטל הקצאה — יחזור לספירת ליבה' : 'בטל הקצאה — יחזור לספור בכל השרשראות'}
+                          >
+                            ✓ מוקצה
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setCourseChainAssignment(course.id, id)}
+                            className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                            title="הקצה קורס זה לשרשרת זו בלבד"
+                          >
+                            הקצה
+                          </button>
+                        )
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-700 text-right">{name}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            {!isCoreLocked && courseChainAssignments?.[course.id] && (
+              <div className="mt-1.5 border-t pt-1.5 flex items-center justify-between gap-2">
+                <p className="text-xs text-gray-400">הקורס נספר רק בשרשרת המוקצית</p>
+                {isCoreCandidate && (
+                  <button
+                    onClick={() => setCourseChainAssignment(course.id, null)}
+                    className="text-xs px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors shrink-0"
+                  >
+                    החזר לליבה
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Prerequisites section */}
         <div className="mb-4 border border-gray-200 rounded-lg p-3">
           <p className="text-xs font-semibold text-gray-700 mb-2">תנאי קדם</p>
@@ -427,69 +490,6 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
             </div>
           )}
         </div>
-
-        {/* Chain membership */}
-        {chainMemberships.length > 0 && (
-          <div className="mb-4 border border-gray-200 rounded-lg p-3">
-            <p className="text-xs font-semibold text-gray-700 mb-2">נספר לשרשראות:</p>
-            {isCoreLocked && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mb-2">
-                קורס זה נספר כליבה. הקצאה לשרשרת תשחרר אותו מספירת הליבה.
-              </p>
-            )}
-            <ul className="space-y-1.5">
-              {chainMemberships.map(({ id, name, role }) => {
-                const assignedChain = courseChainAssignments?.[course.id];
-                const isAssignedHere = assignedChain === id;
-                const isAssignedElsewhere = !!assignedChain && assignedChain !== id;
-                return (
-                  <li key={id} className={`flex items-center justify-between gap-2 ${isAssignedElsewhere ? 'opacity-40' : ''}`}>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                        role === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        {role === 'mandatory' ? 'חובה' : 'בחירה'}
-                      </span>
-                      {(isCoreLocked || chainMemberships.length > 1 || !!courseChainAssignments?.[course.id]) && (
-                        isAssignedHere ? (
-                          <button
-                            onClick={() => setCourseChainAssignment(course.id, null)}
-                            className="text-xs px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 transition-colors"
-                            title={isCoreCandidate ? 'בטל הקצאה — יחזור לספירת ליבה' : 'בטל הקצאה — יחזור לספור בכל השרשראות'}
-                          >
-                            ✓ מוקצה
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setCourseChainAssignment(course.id, id)}
-                            className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
-                            title="הקצה קורס זה לשרשרת זו בלבד"
-                          >
-                            הקצה
-                          </button>
-                        )
-                      )}
-                    </div>
-                    <span className="text-xs text-gray-700 text-right">{name}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            {!isCoreLocked && courseChainAssignments?.[course.id] && (
-              <div className="mt-1.5 border-t pt-1.5 flex items-center justify-between gap-2">
-                <p className="text-xs text-gray-400">הקורס נספר רק בשרשרת המוקצית</p>
-                {isCoreCandidate && (
-                  <button
-                    onClick={() => setCourseChainAssignment(course.id, null)}
-                    className="text-xs px-2 py-0.5 rounded font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors shrink-0"
-                  >
-                    החזר לליבה
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Grade */}
         <div className="mb-4">

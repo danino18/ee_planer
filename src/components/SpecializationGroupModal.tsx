@@ -82,16 +82,6 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     () => buildEffectiveChainAssignments(chainEligibleSet, selectedGroupsForModal, courseChainAssignments),
     [chainEligibleSet, selectedGroupsForModal, courseChainAssignments],
   );
-  // Catalog-wide multi-chain set: courses that belong to 2+ catalog chains
-  const catalogMultiChainSet = useMemo(() => {
-    const count = new Map<string, number>();
-    for (const g of allGroups) {
-      for (const id of [...g.mandatoryCourses, ...g.electiveCourses]) {
-        count.set(id, (count.get(id) ?? 0) + 1);
-      }
-    }
-    return new Set([...count.entries()].filter(([, c]) => c > 1).map(([id]) => id));
-  }, [allGroups]);
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(
     () => evaluateSpecializationGroup(group, chainEligibleSet, mode, effectiveChainAssignments),
@@ -120,12 +110,10 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     const assignedElsewhereName = isAssignedElsewhere
       ? (allGroups.find((g) => g.id === effectiveAssignment)?.name ?? effectiveAssignment)
       : undefined;
-    const isMultiChain = catalogMultiChainSet.has(id);
     const showAssignButton = isInPlan && (
       isCoreLockedCourse ||
       isManuallyAssignedHere ||
-      isAssignedElsewhere ||
-      (isChainEligible && isMultiChain && !isAssignedHere)
+      (isChainEligible && !isManuallyAssignedHere)
     );
     const isNotCountedHere = isInPlan && !isAssignedHere;
     const isFav = favoriteSet.has(id);
@@ -161,7 +149,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
             )}
             {!isCoreLockedCourse && isAssignedHere && !isManuallyAssignedHere && (
               <span className="text-xs bg-green-50 text-green-700 px-1 py-0.5 rounded font-semibold leading-none" title="שרשרת יחידה — שיבוץ אוטומטי">
-                בתוכנית
+                בתוכנית - טרם שובץ לשרשרת
               </span>
             )}
             {!isCoreLockedCourse && isAssignedElsewhere && (
