@@ -22,6 +22,22 @@ service cloud.firestore {
     // server-side validation, sanitization and audit can happen.
     // Reads are allowed directly so clients can use onSnapshot for real-time
     // collaboration. The conditions mirror the GET /shares/:id Cloud Function.
+    // globalSettings — public read, admin-only write
+    match /globalSettings/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // degreeRules — public read, admin-only write
+    match /degreeRules/{trackId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    match /degreeRules/{trackId}/{subcollection}/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
     match /shares/{shareId} {
       // Owner may read (or list) their own shares without revoked/expiry guards
       // so that subscribeToMyShares collection queries succeed even when the

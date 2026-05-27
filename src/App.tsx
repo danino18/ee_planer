@@ -21,7 +21,8 @@ import { Toast } from './components/Toast';
 import { MobileSidebarDrawer } from './components/MobileSidebarDrawer';
 import { ExportShareModal } from './components/ExportShareModal';
 import { PrintView } from './components/PrintView';
-import { resolveTrackForYear, getAvailableYears } from './domain/resolveTrack';
+import { getAvailableYears } from './domain/resolveTrack';
+import { useFirestoreTrackDef } from './hooks/useFirestoreTrackDef';
 import { eeTrack } from './data/tracks/ee';
 import { csTrack } from './data/tracks/cs';
 import { eeMathTrack } from './data/tracks/ee_math';
@@ -37,6 +38,8 @@ import {
   getTrackSpecializationCatalog,
   reportTrackSpecializationDiagnostics,
 } from './domain/specializations';
+import { fetchSpecializationCatalog, fetchGlobalCourseSettings } from './services/degreeRulesService';
+import { applyGlobalCourseSettings } from './data/generalRequirements/courseClassification';
 import { reportMissingStaticCourseReferences } from './domain/staticCourseDiagnostics';
 import { useShareMode } from './context/ShareModeContext';
 
@@ -109,7 +112,16 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
     setGrade: state.setGrade,
     toggleCompleted: state.toggleCompleted,
   })));
-  const specializationCatalog = getTrackSpecializationCatalog(trackDef.id, catalogYear);
+  const [specializationCatalog, setSpecializationCatalog] = useState(
+    () => getTrackSpecializationCatalog(trackDef.id, catalogYear),
+  );
+  useEffect(() => {
+    let cancelled = false;
+    fetchSpecializationCatalog(trackDef.id, catalogYear)
+      .then((catalog) => { if (!cancelled) setSpecializationCatalog(catalog); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [trackDef.id, catalogYear]);
   const specs = specializationCatalog.groups;
   const weightedAverage = useWeightedAverage(courses);
   const progress = useRequirementsProgress(courses, trackDef, specializationCatalog, weightedAverage);
@@ -117,6 +129,11 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
 
   const shareMode = useShareMode();
   const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return; }
+    user.getIdTokenResult().then((r) => setIsAdmin(r.claims['admin'] === true));
+  }, [user]);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
@@ -700,6 +717,15 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
                 aria-expanded={sidebarOpen}
                 aria-controls="sidebar-drawer"
               >☰</button>
+              {isAdmin && (
+                <a
+                  href="#/admin"
+                  className="text-xs border px-2 py-1 rounded-lg transition-colors"
+                  style={{ color: 'rgba(255,255,255,0.6)', borderColor: 'rgba(255,255,255,0.2)' }}
+                >
+                  ניהול
+                </a>
+              )}
               {(!shareMode || shareMode.isOwner) && <LoginButton syncStatus={syncStatus} syncErrorMessage={syncErrorMessage} />}
               {(!shareMode || shareMode.isOwner) && (
                 <button
@@ -828,6 +854,20 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
   );
 }
 
+function TrackPlannerBridge({
+  staticTrackDef,
+  catalogYear,
+  courses,
+}: {
+  staticTrackDef: TrackDefinition;
+  catalogYear: number | null;
+  courses: Map<string, SapCourse>;
+}) {
+  const trackDef = useFirestoreTrackDef(staticTrackDef, catalogYear);
+  const availableYears = getAvailableYears(staticTrackDef);
+  return <PlannerApp courses={courses} trackDef={trackDef} availableYears={availableYears} />;
+}
+
 function AppInner() {
   const [courses, setCourses] = useState<Map<string, SapCourse>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -852,6 +892,10 @@ function AppInner() {
   }, [trackId, catalogYear, setCatalogYear]);
 
   useEffect(() => {
+    // Load global course settings (sport ranges, faculty prefixes) from Firestore.
+    // Fires-and-forgets — failure falls back to hardcoded defaults silently.
+    fetchGlobalCourseSettings().then(applyGlobalCourseSettings).catch(() => {});
+
     fetchCourses()
       .then((loadedCourses) => {
         setCourses(loadedCourses);
@@ -916,9 +960,7 @@ function AppInner() {
   const trackDef = ALL_TRACKS.find((t) => t.id === trackId);
   if (!trackDef) return null;
 
-  const availableYears = getAvailableYears(trackDef);
-  const resolvedTrackDef = resolveTrackForYear(trackDef, catalogYear);
-  return <PlannerApp courses={courses} trackDef={resolvedTrackDef} availableYears={availableYears} />;
+  return <TrackPlannerBridge staticTrackDef={trackDef} catalogYear={catalogYear} courses={courses} />;
 }
 
 export default function App() {

@@ -11,3 +11,5 @@ functions/lib/
 functions/.env
 functions/.env.local
 functions/.secret.local
+
+service-account.json
