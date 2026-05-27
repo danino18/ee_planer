@@ -108,9 +108,18 @@ export function SpecializationPanel({ catalog, courses }: Props) {
           {groups.map((group) => {
             const isSelected = selectedSpecializations.includes(group.id);
             const isDouble = doubles.includes(group.id);
+            // For unselected groups (potential view): exclude courses explicitly assigned
+            // to another chain, but still count all other chain-eligible courses.
+            // For selected groups: use strict effective assignments.
+            const takenForEval = isSelected
+              ? chainEligibleSet
+              : new Set([...chainEligibleSet].filter((id) => {
+                  const a = courseChainAssignments?.[id];
+                  return !a || a === group.id;
+                }));
             const evaluation = evaluateSpecializationGroup(
               group,
-              chainEligibleSet,
+              takenForEval,
               isDouble && group.canBeDouble ? 'double' : 'single',
               isSelected ? effectiveChainAssignments : undefined,
             );
