@@ -14,14 +14,6 @@ interface Props {
   courses: Map<string, SapCourse>;
 }
 
-const GROUP_TYPE_LABELS: Record<string, string> = {
-  mandatory_schedule: 'חובה (לוח סמסטרים)',
-  elective_faculty: 'בחירה פקולטית',
-  predefined_classifier: 'מסווג מוגדר מראש',
-  course_pool: 'מאגר קורסים',
-  specialization_groups: 'קבוצות התמחות',
-  custom_list: 'רשימה מותאמת',
-};
 
 const CLASSIFIER_LABELS: Record<string, string> = {
   sport: 'ספורט',

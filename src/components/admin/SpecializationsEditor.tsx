@@ -209,7 +209,7 @@ function CourseListView({
           sapCourses={sapCourses}
         />
       ))}
-      {electives.map((course, idx) => {
+      {electives.map((course) => {
         const gi = elIdToGroup.get(course.course_number);
         if (gi !== undefined) {
           if (renderedElOr.has(gi)) return null;
