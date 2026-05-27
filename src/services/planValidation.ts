@@ -39,6 +39,8 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'initializedTracks',
   'targetGraduationSemesterId',
   'loadProfile',
+  'catalogYear',
+  'countOnlyCompletedCourses',
 ]);
 const ELECTIVE_CREDIT_AREAS = new Set<ElectiveCreditArea>(['ee', 'physics', 'math', 'general']);
 
@@ -556,6 +558,19 @@ function sanitizeStudentPlanRecord(
       return null;
     }
     sanitized.loadProfile = value.loadProfile;
+  }
+
+  if ('catalogYear' in value) {
+    const { catalogYear } = value;
+    if (catalogYear !== null && !isIntegerInRange(catalogYear, 2000, 2100)) {
+      return null;
+    }
+    sanitized.catalogYear = catalogYear as number | null;
+  }
+
+  if ('countOnlyCompletedCourses' in value) {
+    if (typeof value.countOnlyCompletedCourses !== 'boolean') return null;
+    sanitized.countOnlyCompletedCourses = value.countOnlyCompletedCourses;
   }
 
   return sanitized as StudentPlan;

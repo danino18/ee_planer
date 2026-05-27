@@ -37,6 +37,8 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "initializedTracks",
   "targetGraduationSemesterId",
   "loadProfile",
+  "catalogYear",
+  "countOnlyCompletedCourses",
 ]);
 
 interface ValidationSuccess {
@@ -692,6 +694,21 @@ function validateStudentPlanRecord(
       return fail("Invalid loadProfile");
     }
     sanitized.loadProfile = value.loadProfile;
+  }
+
+  if ("catalogYear" in value) {
+    const catalogYear = value.catalogYear;
+    if (catalogYear !== null && !isIntegerInRange(catalogYear, 2000, 2100)) {
+      return fail("Invalid catalogYear");
+    }
+    sanitized.catalogYear = catalogYear;
+  }
+
+  if ("countOnlyCompletedCourses" in value) {
+    if (typeof value.countOnlyCompletedCourses !== "boolean") {
+      return fail("Invalid countOnlyCompletedCourses");
+    }
+    sanitized.countOnlyCompletedCourses = value.countOnlyCompletedCourses;
   }
 
   return success(sanitized);

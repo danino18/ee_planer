@@ -79,6 +79,7 @@ function createPlanPayload() {
         initializedTracks: ['cs'],
         targetGraduationSemesterId: 8,
         loadProfile: 'working',
+        catalogYear: 2021,
       },
     },
     miluimCredits: 2,
@@ -96,6 +97,8 @@ function createPlanPayload() {
     initializedTracks: ['ce'],
     targetGraduationSemesterId: 8,
     loadProfile: 'working',
+    catalogYear: 2021,
+    countOnlyCompletedCourses: false,
   };
 }
 
@@ -271,9 +274,31 @@ test('cloud sync schema stays aligned for serialized StudentPlan fields', () => 
     'security validator must allow electiveCreditAssignments',
   );
 
-  for (const key of ['courseChainAssignments', 'noAdditionalCreditOverrides', 'targetGraduationSemesterId', 'loadProfile']) {
+  for (const key of ['courseChainAssignments', 'noAdditionalCreditOverrides', 'targetGraduationSemesterId', 'loadProfile', 'catalogYear']) {
     assert.match(serializerSource, new RegExp(`${key}:`), `serializePlanState must include ${key}`);
     assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
     assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
+  }
+});
+
+test('validators accept catalogYear (value and null) and reject out-of-range values', () => {
+  for (const catalogYear of [2021, null]) {
+    const plan = { ...createPlanPayload(), catalogYear };
+
+    const sanitized = sanitizeStudentPlan(plan);
+    assert.ok(sanitized, `client should accept catalogYear=${catalogYear}`);
+    assert.equal(sanitized.catalogYear, catalogYear);
+
+    const validated = validateStudentPlanPayload(plan);
+    assert.equal(validated.ok, true, `server should accept catalogYear=${catalogYear}`);
+    if (validated.ok) {
+      assert.equal(validated.value.catalogYear, catalogYear);
+    }
+  }
+
+  for (const badYear of [1500, 'abc']) {
+    const plan = { ...createPlanPayload(), catalogYear: badYear };
+    assert.equal(sanitizeStudentPlan(plan), null, `client should reject catalogYear=${badYear}`);
+    assert.equal(validateStudentPlanPayload(plan).ok, false, `server should reject catalogYear=${badYear}`);
   }
 });
