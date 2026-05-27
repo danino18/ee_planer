@@ -1,7 +1,7 @@
 ﻿import { lazy, Suspense, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SpecializationGroup, SpecializationRuleBlock, SapCourse, TrackSpecializationCatalog } from '../types';
-import { evaluateSpecializationGroup } from '../domain/specializations';
+import { buildEffectiveChainAssignments, evaluateSpecializationGroup } from '../domain/specializations';
 import { usePlanStore } from '../store/planStore';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 import { getTrackDefinition } from '../data/tracks';
@@ -59,6 +59,10 @@ export function SpecializationPanel({ catalog, courses }: Props) {
     const coreLockedSet = buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef);
     return new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
   }, [allPlaced, semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef]);
+  const effectiveChainAssignments = useMemo(
+    () => buildEffectiveChainAssignments(chainEligibleSet, groups, courseChainAssignments),
+    [chainEligibleSet, groups, courseChainAssignments],
+  );
   const [openGroup, setOpenGroup] = useState<SpecializationGroup | null>(null);
   const doubles = doubleSpecializations ?? [];
   const interactionDisabled = catalog.interactionDisabled;
@@ -104,7 +108,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               group,
               chainEligibleSet,
               isDouble && group.canBeDouble ? 'double' : 'single',
-              courseChainAssignments,
+              effectiveChainAssignments,
             );
             const progress = getRuleProgress(evaluation.ruleBlocks);
             const pct = Math.min(

@@ -10,7 +10,7 @@ import type {
 import type { RequirementsInput } from '../domain/degreeCompletion/types';
 export type { RequirementsInput };
 import type { GeneralRequirementProgress } from '../domain/generalRequirements/types';
-import { evaluateSpecializationGroup } from '../domain/specializations/engine';
+import { buildEffectiveChainAssignments, evaluateSpecializationGroup } from '../domain/specializations/engine';
 import { buildGeneralRequirementsProgress } from './useGeneralRequirements';
 import { computeRoboticsMinorProgress } from './useRoboticsMinor';
 import type { RoboticsMinorProgress } from './useRoboticsMinor';
@@ -648,11 +648,16 @@ export function computeRequirementsProgress(
     const selectedGroups = specializationCatalog.groups.filter((group) =>
       selectedSpecializations.includes(group.id)
     );
+    const effectiveChainAssignments = buildEffectiveChainAssignments(
+      chainEligibleCourseIds,
+      specializationCatalog.groups,
+      courseChainAssignments,
+    );
     const groupEvaluations = selectedGroups.map((group) => {
       const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
         ? 'double'
         : 'single';
-      const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, courseChainAssignments);
+      const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, effectiveChainAssignments);
       return {
         group,
         mode,
@@ -1028,10 +1033,15 @@ export function useChainRecommendations(
 
     if (specializationCatalog.interactionDisabled) return [];
 
+    const effectiveChainAssignments = buildEffectiveChainAssignments(
+      chainEligibleCourseIds,
+      specializationCatalog.groups,
+      courseChainAssignments,
+    );
     const scored = specializationCatalog.groups
       .filter((group) => !selectedSpecializations.includes(group.id))
       .map((group) => {
-        const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, 'single', courseChainAssignments);
+        const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, 'single', effectiveChainAssignments);
         const mandatory = group.mandatoryCourses.filter((id) => chainEligibleCourseIds.has(id));
         const score = evaluation.doneCount * 2 + mandatory.length * 3;
         return { group, score, matchingCourses: evaluation.matchedCourseNumbers };

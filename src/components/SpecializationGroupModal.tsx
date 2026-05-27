@@ -2,7 +2,8 @@
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
 import type { SpecializationCourseReference, SpecializationGroup, SpecializationRuleBlock, SapCourse } from '../types';
-import { evaluateSpecializationGroup } from '../domain/specializations';
+import { buildEffectiveChainAssignments, evaluateSpecializationGroup } from '../domain/specializations';
+import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { usePlanStore } from '../store/planStore';
 import { isCourseTaughtInEnglish } from '../data/generalRequirements/courseClassification';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -36,6 +37,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     englishTaughtCourses,
     doubleSpecializations,
     courseChainAssignments,
+    setCourseChainAssignment,
     coreToChainOverrides,
     trackId,
   } = usePlanStore(useShallow((state) => ({
@@ -47,6 +49,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     doubleSpecializations: state.doubleSpecializations ?? [],
     courseChainAssignments: state.courseChainAssignments,
+    setCourseChainAssignment: state.setCourseChainAssignment,
     coreToChainOverrides: state.coreToChainOverrides ?? [],
     trackId: state.trackId,
   })));
@@ -57,6 +60,10 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     [completedCourses, semesters],
   );
   const trackDef = useMemo(() => getTrackDefinition(trackId), [trackId]);
+  const allGroups = useMemo(
+    () => trackId ? getTrackSpecializationCatalog(trackId).groups : [],
+    [trackId],
+  );
   const coreLockedSet = useMemo(
     () => trackDef ? buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef) : new Set<string>(),
     [semesters, completedCourses, coreToChainOverrides, courseChainAssignments, trackDef],
@@ -65,10 +72,14 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     () => new Set([...allPlaced].filter((id) => !coreLockedSet.has(id))),
     [allPlaced, coreLockedSet],
   );
+  const effectiveChainAssignments = useMemo(
+    () => buildEffectiveChainAssignments(chainEligibleSet, allGroups, courseChainAssignments),
+    [chainEligibleSet, allGroups, courseChainAssignments],
+  );
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(
-    () => evaluateSpecializationGroup(group, chainEligibleSet, mode, courseChainAssignments),
-    [chainEligibleSet, group, mode, courseChainAssignments],
+    () => evaluateSpecializationGroup(group, chainEligibleSet, mode, effectiveChainAssignments),
+    [chainEligibleSet, group, mode, effectiveChainAssignments],
   );
   const displayedCourseNumbers = useMemo(
     () => new Set(evaluation.ruleBlocks.flatMap((block) => block.options.map((option) => option.courseNumber))),
@@ -82,7 +93,26 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
   const renderCourse = (courseRef: SpecializationCourseReference) => {
     const id = courseRef.courseNumber;
     const course = courses.get(id);
-    const inPlan = chainEligibleSet.has(id);
+    const isInPlan = allPlaced.has(id);
+    const isCoreLockedCourse = coreLockedSet.has(id);
+    const isChainEligible = chainEligibleSet.has(id);
+    const effectiveAssignment = effectiveChainAssignments[id];
+    const explicitAssignment = courseChainAssignments?.[id];
+    const isAssignedHere = effectiveAssignment === group.id;
+    const isAssignedElsewhere = !!effectiveAssignment && effectiveAssignment !== group.id;
+    const isManuallyAssignedHere = explicitAssignment === group.id;
+    const assignedElsewhereName = isAssignedElsewhere
+      ? (allGroups.find((g) => g.id === effectiveAssignment)?.name ?? effectiveAssignment)
+      : undefined;
+    const isMultiChain = allGroups.filter(
+      (g) => g.mandatoryCourses.includes(id) || g.electiveCourses.includes(id),
+    ).length > 1;
+    const showAssignButton = isInPlan && (
+      isCoreLockedCourse ||
+      isManuallyAssignedHere ||
+      isAssignedElsewhere ||
+      (isChainEligible && isMultiChain)
+    );
     const isFav = favoriteSet.has(id);
     const showsEnglishBadge = course ? isCourseTaughtInEnglish(course, englishTaughtCourses) : false;
     const seasonBadge = getTeachingSemesterBadge(course?.teachingSemester);
@@ -104,15 +134,57 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
                 EN
               </span>
             )}
-            {inPlan && (
-              <span className="text-xs bg-green-50 text-green-700 px-1 py-0.5 rounded font-semibold leading-none">
+            {isCoreLockedCourse && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-1 py-0.5 rounded font-semibold leading-none" title="קורס נספר כליבה ולא מוקצה לשרשרת">
+                ליבה
+              </span>
+            )}
+            {!isCoreLockedCourse && isAssignedHere && isManuallyAssignedHere && (
+              <span className="text-xs bg-green-100 text-green-700 px-1 py-0.5 rounded font-semibold leading-none">
+                ✓ מוקצה לכאן
+              </span>
+            )}
+            {!isCoreLockedCourse && isAssignedHere && !isManuallyAssignedHere && (
+              <span className="text-xs bg-green-50 text-green-700 px-1 py-0.5 rounded font-semibold leading-none" title="שרשרת יחידה — שיבוץ אוטומטי">
                 בתוכנית
+              </span>
+            )}
+            {!isCoreLockedCourse && isAssignedElsewhere && (
+              <span
+                className="text-xs bg-indigo-50 text-indigo-600 px-1 py-0.5 rounded font-semibold leading-none"
+                title={`מוקצה ל-${assignedElsewhereName}`}
+              >
+                מוקצה ל-{assignedElsewhereName}
+              </span>
+            )}
+            {!isCoreLockedCourse && isChainEligible && !effectiveAssignment && (
+              <span className="text-xs bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
+                לא שובץ
               </span>
             )}
           </div>
           <p className="text-xs text-gray-400">{id} · {course?.credits ?? '?'} נק"ז</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {showAssignButton && (
+            isManuallyAssignedHere ? (
+              <button
+                onClick={() => setCourseChainAssignment(id, null)}
+                className="text-xs px-1.5 py-0.5 rounded font-medium bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 transition-colors leading-none"
+                title="בטל הקצאה"
+              >
+                ✓ מוקצה
+              </button>
+            ) : (
+              <button
+                onClick={() => setCourseChainAssignment(id, group.id)}
+                className="text-xs px-1.5 py-0.5 rounded font-medium bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-700 transition-colors leading-none"
+                title={isCoreLockedCourse ? 'הקצה לשרשרת זו — ישחרר מספירת ליבה' : 'הקצה קורס זה לשרשרת זו בלבד'}
+              >
+                הקצה
+              </button>
+            )
+          )}
           <button
             onClick={() => toggleFavorite(id)}
             className={`text-lg leading-none ${isFav ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-400'}`}
@@ -120,7 +192,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
           >
             {isFav ? '★' : '☆'}
           </button>
-          {!inPlan && (
+          {!isInPlan && (
             <button
               onClick={() => addCourseToSemester(id, 0)}
               className="text-xs text-blue-500 hover:text-blue-700 border border-blue-200 hover:border-blue-400 px-1.5 py-0.5 rounded transition-colors"

@@ -23,6 +23,7 @@ import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/fa
 import { isFreeElectiveCourseId, isSportCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
+import { buildEffectiveChainAssignments } from '../domain/specializations/engine';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
 import { useShareMode } from '../context/ShareModeContext';
 import { bareId } from '../utils/occurrenceId';
@@ -128,8 +129,11 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
   const courseChainMap = useMemo(() => {
     const map = new Map<string, string>();
     if (!specializations) return map;
-    // First pass: explicitly assigned courses use their assigned chain name
-    for (const [courseId, groupId] of Object.entries(courseChainAssignments ?? {})) {
+    const allPlaced = new Set<string>([...completedCourses, ...Object.values(semesters).flat()]);
+    const chainEligibleSet = new Set([...allPlaced].filter((id) => !coreLockedSet.has(id)));
+    const effective = buildEffectiveChainAssignments(chainEligibleSet, specializations, courseChainAssignments);
+    // First pass: effective assignments (includes auto-assigned single-chain courses)
+    for (const [courseId, groupId] of Object.entries(effective)) {
       if (coreLockedSet.has(courseId)) continue;
       const group = specializations.find((g) => g.id === groupId && selectedSpecializations.includes(g.id));
       if (group) {
@@ -137,16 +141,15 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
         map.set(courseId, shortName);
       }
     }
-    // Second pass: unassigned courses use the first selected chain they appear in
+    // Second pass: chain-eligible courses not yet mapped → multi-chain unassigned
     for (const group of specializations) {
       if (!selectedSpecializations.includes(group.id)) continue;
-      const shortName = group.name.length > 10 ? group.name.slice(0, 10) + '…' : group.name;
       for (const id of [...group.mandatoryCourses, ...group.electiveCourses]) {
-        if (!map.has(id) && !coreLockedSet.has(id)) map.set(id, shortName);
+        if (!map.has(id) && chainEligibleSet.has(id)) map.set(id, 'לא שובץ');
       }
     }
     return map;
-  }, [specializations, selectedSpecializations, courseChainAssignments, coreLockedSet]);
+  }, [specializations, selectedSpecializations, courseChainAssignments, coreLockedSet, completedCourses, semesters]);
   const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'rows' | 'buckets'>('grid');
   const [showLegend, setShowLegend] = useState(false);

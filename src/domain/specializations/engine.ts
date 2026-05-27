@@ -936,6 +936,24 @@ export function applySpecializationGroupYearVariant(
   };
 }
 
+export function buildEffectiveChainAssignments(
+  chainEligibleIds: Set<string>,
+  allGroups: SpecializationGroup[],
+  explicitAssignments: Record<string, string> | undefined,
+): Record<string, string> {
+  const result: Record<string, string> = { ...explicitAssignments };
+  for (const courseId of chainEligibleIds) {
+    if (result[courseId]) continue;
+    const chains = allGroups.filter(
+      (g) => g.mandatoryCourses.includes(courseId) || g.electiveCourses.includes(courseId),
+    );
+    if (chains.length === 1) {
+      result[courseId] = chains[0].id;
+    }
+  }
+  return result;
+}
+
 export function evaluateSpecializationGroup(
   group: SpecializationGroup,
   takenCourseNumbers: Iterable<string>,
@@ -945,7 +963,7 @@ export function evaluateSpecializationGroup(
   const takenCourses = new Set(
     [...takenCourseNumbers].filter((id) => {
       const assignment = courseChainAssignments?.[id];
-      return !assignment || assignment === group.id;
+      return assignment === group.id;
     }),
   );
   const requirements = group.requirementsByMode[mode] ?? group.requirementsByMode.single;
