@@ -83,6 +83,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
             credits: isNaN(credits) ? 0 : credits,
             prerequisites: parsePrerequisites(g['מקצועות קדם']),
             noAdditionalCreditIds: parseNoAdditionalCreditIds(g['מקצועות ללא זיכוי נוסף']),
+            containedCourseIds: parseNoAdditionalCreditIds(g['מקצועות ללא זיכוי נוסף (מוכלים)']),
             examMoed1: g['מועד א'],
             examMoed2: g['מועד ב'],
             faculty: g['פקולטה'] ?? '',

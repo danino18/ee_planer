@@ -23,6 +23,8 @@ import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/fa
 import { isFreeElectiveCourseId, isSportCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
+import { computeContainingSubstitutions } from '../domain/containingCourse';
+import type { ContainingSubstitution } from '../domain/containingCourse';
 import { createSemesterGridCollisionDetection } from '../utils/semesterGridCollision';
 import { useShareMode } from '../context/ShareModeContext';
 import { bareId } from '../utils/occurrenceId';
@@ -117,6 +119,22 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     ...mandatoryLabIds,
   ]), [trackDef, mandatoryLabIds, courses, englishScore]);
   const completedSet = useMemo(() => new Set(completedCourses), [completedCourses]);
+
+  // "מכיל": map each containing course to the mandatory slot it fills (capped credit,
+  // excess to free choice). Used to show an informational note on the course card.
+  const containingSubstitutions = useMemo(() => {
+    const subs = computeContainingSubstitutions(courses, {
+      completedCourses,
+      semesters,
+      semesterOrder,
+      mandatoryIds,
+      placedIds: new Set([...completedCourses, ...Object.values(semesters).flat()]),
+      noAdditionalCreditCourseIds,
+    });
+    return new Map<string, ContainingSubstitution>(
+      subs.map((sub) => [sub.containingCourseId, sub]),
+    );
+  }, [courses, completedCourses, semesters, semesterOrder, mandatoryIds, noAdditionalCreditCourseIds]);
 
   const coreLockedSet = useMemo(
     () => buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef),
@@ -383,6 +401,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
         : null,
       noAdditionalCreditConflicts,
       noAdditionalCreditCourseIds,
+      containingSubstitutions,
       courseChainMap,
       coreLockedSet,
       isDragging: !!activeCourseId,

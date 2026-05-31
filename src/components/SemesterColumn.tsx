@@ -7,6 +7,7 @@ import type { SapCourse } from '../types';
 import { bareId } from '../utils/occurrenceId';
 import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import { getRecognizedCredits } from '../domain/noAdditionalCredit';
+import type { ContainingSubstitution } from '../domain/containingCourse';
 
 const SEM_LABELS = [
   'לא משובץ',
@@ -42,6 +43,7 @@ interface Props {
   mutualExclusionWarnings?: string[];
   noAdditionalCreditConflicts?: Map<string, NoAdditionalCreditConflict[]>;
   noAdditionalCreditCourseIds?: ReadonlySet<string>;
+  containingSubstitutions?: Map<string, ContainingSubstitution>;
   onMarkSemesterComplete?: () => void;
   readOnly?: boolean;
 }
@@ -65,6 +67,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   mutualExclusionWarnings = [],
   noAdditionalCreditConflicts = new Map(),
   noAdditionalCreditCourseIds = new Set(),
+  containingSubstitutions = new Map(),
   onMarkSemesterComplete,
   readOnly = false,
 }: Props) {
@@ -250,6 +253,7 @@ export const SemesterColumn = memo(function SemesterColumn({
           if (!course) return null;
           const missingPrereqGroups = prereqStatus.get(id) ?? [];
           const courseNoAdditionalCreditConflicts = noAdditionalCreditConflicts.get(id) ?? [];
+          const courseContainingSubstitution = containingSubstitutions.get(bareId(id));
           const recognizedCredits = getRecognizedCredits(course, noAdditionalCreditCourseIds);
           const wrongSemesterType = !!(
             semesterType
@@ -266,6 +270,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               hasPrereqWarning={missingPrereqGroups.length > 0}
               missingPrereqGroups={missingPrereqGroups}
               noAdditionalCreditConflicts={courseNoAdditionalCreditConflicts}
+              containingSubstitution={courseContainingSubstitution}
               recognizedCredits={recognizedCredits}
               isCompleted={effectiveCompleted.has(id)}
               isPlanned={isFuture && !completedCourses.has(id)}

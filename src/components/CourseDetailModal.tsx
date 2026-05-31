@@ -2,6 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
+import type { ContainingSubstitution } from '../domain/containingCourse';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { CheeseForkInfo } from './CheeseForkInfo';
@@ -13,12 +14,13 @@ interface Props {
   semester?: number;
   instanceKey?: string;
   noAdditionalCreditConflicts?: NoAdditionalCreditConflict[];
+  containingSubstitution?: ContainingSubstitution;
   elevated?: boolean;
   isCoreLocked?: boolean;
   onClose: () => void;
 }
 
-export function CourseDetailModal({ course, courses, semester, instanceKey, noAdditionalCreditConflicts = [], elevated, isCoreLocked, onClose }: Props) {
+export function CourseDetailModal({ course, courses, semester, instanceKey, noAdditionalCreditConflicts = [], containingSubstitution, elevated, isCoreLocked, onClose }: Props) {
   const {
     grades, setGrade,
     substitutions, setSubstitution,
@@ -443,6 +445,19 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {containingSubstitution && (
+          <div className="mb-4 border border-teal-200 bg-teal-50 rounded-lg p-3">
+            <p className="text-xs font-semibold text-teal-800 mb-2">קורס מכיל</p>
+            <p className="text-xs text-teal-700 leading-relaxed">
+              קורס זה מכיל את {courses.get(containingSubstitution.containedCourseId)?.name ?? containingSubstitution.containedCourseId} (קורס חובה).{' '}
+              {containingSubstitution.mandatoryCredits} נק"ז נספרות כחובה במקומו
+              {containingSubstitution.excessCredits > 0
+                ? <>, והיתרה ({containingSubstitution.excessCredits} נק"ז) נספרת כבחירה חופשית.</>
+                : <>.</>}
+            </p>
           </div>
         )}
 

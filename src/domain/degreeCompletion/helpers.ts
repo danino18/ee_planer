@@ -25,6 +25,10 @@ import {
   getNoAdditionalCreditCourseIds,
 } from '../noAdditionalCredit';
 import {
+  buildContainingMaps,
+  computeContainingSubstitutions,
+} from '../containingCourse';
+import {
   CE_PROJECT_A_ID,
   CE_PROJECT_B_ID,
   getCeProjectRequirementProfile,
@@ -393,6 +397,19 @@ export function buildCourseAssignments(
     }),
   );
 
+  // "מכיל" feature: containing courses that fill a mandatory slot (capped credit;
+  // excess flows to elective). Mirrors computeRequirementsProgress in usePlan.ts.
+  const { mandatoryCreditByContainer } = buildContainingMaps(
+    computeContainingSubstitutions(courses, {
+      completedCourses: input.completedCourses,
+      semesters: input.semesters,
+      semesterOrder: input.semesterOrder,
+      mandatoryIds: visibleMandatoryIds,
+      placedIds: buildAllPlaced(input),
+      noAdditionalCreditCourseIds,
+    }),
+  );
+
   const assignments: CourseAssignment[] = [];
   let externalFacultyElectiveCredits = 0;
 
@@ -410,6 +427,38 @@ export function buildCourseAssignments(
       credits = 0;
     } else if (preciseMandatorySet.has(id)) {
       bucket = 'mandatory';
+    } else if (mandatoryCreditByContainer.has(id)) {
+      // Containing course: caps mandatory credit at the contained course's credits;
+      // the excess is allocated to elective, mirroring computeRequirementsProgress.
+      const specializationGroupIds = courseToSpecGroups.get(id) ?? [];
+      const mandatoryCredits = mandatoryCreditByContainer.get(id) ?? 0;
+      assignments.push({ courseId: id, bucket: 'mandatory', credits: mandatoryCredits, specializationGroupIds });
+
+      const total = courses.get(bareId(id))?.credits ?? 0;
+      const excess = Math.max(0, total - mandatoryCredits);
+      const course = courses.get(id);
+      if (excess > 0 && course) {
+        const normalizedCourse = { ...normalizeCourse(course), credits: excess };
+        const selectedArea = resolveElectiveCreditArea(
+          normalizedCourse,
+          trackDef,
+          input.electiveCreditAssignments,
+        );
+        const split = allocateElectiveCredits(
+          normalizedCourse,
+          selectedArea,
+          courseToSpecGroups.has(id),
+          EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS - externalFacultyElectiveCredits,
+        );
+        externalFacultyElectiveCredits += split.externalFacultyCredits;
+        if (split.facultyCredits > 0) {
+          assignments.push({ courseId: id, bucket: 'faculty_elective', credits: split.facultyCredits, specializationGroupIds });
+        }
+        if (split.generalCredits > 0) {
+          assignments.push({ courseId: id, bucket: 'general_elective', credits: split.generalCredits, specializationGroupIds });
+        }
+      }
+      continue;
     } else if (mandatoryLabIds.has(id)) {
       bucket = 'mandatory_lab';
     } else if (excessLabIds.has(id)) {

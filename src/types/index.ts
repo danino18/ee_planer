@@ -37,6 +37,8 @@ export interface SapCourse {
   credits: number;
   prerequisites: string[][];  // OR groups: [[A,B],[C]] = "(A AND B) OR C"
   noAdditionalCreditIds?: string[];
+  containedCourseIds?: string[];  // SAP "מקצועות ללא זיכוי נוסף (מוכלים)" — courses THIS course contains
+
   examMoed1?: string;
   examMoed2?: string;
   faculty: string;

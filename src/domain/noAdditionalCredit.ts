@@ -28,7 +28,12 @@ export function hasNoAdditionalCreditConflict(
   if (!courseA || !courseB || courseA.id === courseB.id) return false;
   return (
     (courseA.noAdditionalCreditIds ?? []).includes(courseB.id) ||
-    (courseB.noAdditionalCreditIds ?? []).includes(courseA.id)
+    (courseB.noAdditionalCreditIds ?? []).includes(courseA.id) ||
+    // A "containing" course (e.g. אלגברה אמ') overlaps its "contained" courses (e.g. אלגברה 1מ),
+    // so taking both must not grant double credit. The contains-substitution logic then applies
+    // to whichever course keeps its credit. See src/domain/containingCourse.ts.
+    (courseA.containedCourseIds ?? []).includes(courseB.id) ||
+    (courseB.containedCourseIds ?? []).includes(courseA.id)
   );
 }
 

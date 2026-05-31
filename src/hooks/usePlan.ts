@@ -45,6 +45,10 @@ import {
   getRecognizedCredits,
 } from '../domain/noAdditionalCredit';
 import {
+  buildContainingMaps,
+  computeContainingSubstitutions,
+} from '../domain/containingCourse';
+import {
   allocateElectiveCredits,
   ELECTIVE_AREA_LABELS,
   EXTERNAL_FACULTY_ELECTIVE_MAX_CREDITS,
@@ -509,7 +513,26 @@ export function computeRequirementsProgress(
     // courseId → credits already allocated to mandatory
     const partialMandatoryIds = new Map<string, number>();
 
+    // "מכיל" feature: a placed containing course Y fills the mandatory slot of a contained
+    // course X (per SAP data). Mandatory credit is capped at X's credits; Y's excess flows to
+    // free choice via partialMandatoryIds (same path as useDefaultCreditsForMandatory groups).
+    // Runs AFTER the no-additional-credit pass so an X that lost its credit is treated as unfilled.
+    const containingSubstitutions = computeContainingSubstitutions(courses, {
+      completedCourses,
+      semesters,
+      semesterOrder,
+      mandatoryIds,
+      placedIds: allPlaced,
+      noAdditionalCreditCourseIds,
+    });
+    const { mandatoryCreditByContainer } = buildContainingMaps(containingSubstitutions);
+
     let mandatoryDone = 0;
+    for (const [containerId, mandatoryCredits] of mandatoryCreditByContainer) {
+      if (partialMandatoryIds.has(containerId)) continue; // already handled by an alternative group
+      mandatoryDone += mandatoryCredits;
+      partialMandatoryIds.set(containerId, mandatoryCredits);
+    }
     for (const semesterEntry of trackDef.semesterSchedule) {
       for (const id of semesterEntry.courses) {
         if (trackDef.id === 'ce' && (id === CE_PROJECT_A_ID || id === CE_PROJECT_B_ID)) {

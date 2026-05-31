@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
+import type { ContainingSubstitution } from '../domain/containingCourse';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -17,6 +18,7 @@ interface Props {
   isPlanned?: boolean;
   missingPrereqGroups?: string[][];
   noAdditionalCreditConflicts?: NoAdditionalCreditConflict[];
+  containingSubstitution?: ContainingSubstitution;
   recognizedCredits?: number;
   courses?: Map<string, SapCourse>;
   semester?: number;
@@ -41,6 +43,7 @@ export const CourseCard = memo(function CourseCard({
   isPlanned,
   missingPrereqGroups = [],
   noAdditionalCreditConflicts = [],
+  containingSubstitution,
   recognizedCredits,
   courses = new Map(),
   semester,
@@ -220,6 +223,15 @@ export const CourseCard = memo(function CourseCard({
           </div>
         )}
 
+        {containingSubstitution && (
+          <div className="mt-1 px-4">
+            <p className="text-xs text-teal-600 leading-tight">
+              מכיל את {courses.get(containingSubstitution.containedCourseId)?.name ?? containingSubstitution.containedCourseId}: {containingSubstitution.mandatoryCredits} נק"ז נספרות כחובה
+              {containingSubstitution.excessCredits > 0 && <>, {containingSubstitution.excessCredits} נק"ז לבחירה חופשית</>}
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mt-1.5 gap-1">
           <div className="flex items-center gap-1 min-w-0">
             <span className="text-xs text-gray-400 shrink-0">{course.id}</span>
@@ -304,6 +316,7 @@ export const CourseCard = memo(function CourseCard({
             semester={semester}
             instanceKey={instanceKey}
             noAdditionalCreditConflicts={noAdditionalCreditConflicts}
+            containingSubstitution={containingSubstitution}
             isCoreLocked={isCoreLocked}
             onClose={() => setModalOpen(false)}
           />
