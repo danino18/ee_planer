@@ -14,6 +14,28 @@ export interface CheeseForkFeedback {
   posts: CheeseForkPost[];
 }
 
+/**
+ * Round the average of a list of 1-5 rank values to one decimal place.
+ * Returns `null` for an empty list.
+ */
+export function averageRank(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sum = values.reduce((a, b) => a + b, 0);
+  return Math.round((sum / values.length) * 10) / 10;
+}
+
+/**
+ * Average `generalRank` across all posts that have one. Returns `null` if
+ * there is no feedback or no post carries a generalRank value.
+ */
+export function averageGeneralRank(feedback: CheeseForkFeedback | null | undefined): number | null {
+  if (!feedback) return null;
+  const values = feedback.posts
+    .map((p) => p.generalRank)
+    .filter((n): n is number => n !== null);
+  return averageRank(values);
+}
+
 const cache = new Map<string, CheeseForkFeedback | null>();
 const inflight = new Map<string, Promise<CheeseForkFeedback | null>>();
 

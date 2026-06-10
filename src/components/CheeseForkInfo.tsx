@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  averageRank,
   buildInstructorClusters,
   extractInstructorNames,
   fetchCheeseForkFeedback,
@@ -45,12 +46,6 @@ function resolveCached(feedback: CheeseForkFeedback | null | undefined): LoadSta
   if (feedback === undefined) return { status: 'loading' };
   if (feedback === null || feedback.posts.length === 0) return { status: 'empty' };
   return { status: 'ready', feedback };
-}
-
-function average(values: number[]): number | null {
-  if (values.length === 0) return null;
-  const sum = values.reduce((a, b) => a + b, 0);
-  return Math.round((sum / values.length) * 10) / 10;
 }
 
 function applyAlias(rawName: string | null, aliases: Record<string, string>): string | null {
@@ -344,8 +339,8 @@ export function CheeseForkInfo({ courseId }: Props) {
   const generalValues = posts
     .map((p) => p.generalRank)
     .filter((n): n is number => n !== null);
-  const difficultyAvg = average(difficultyValues);
-  const generalAvg = average(generalValues);
+  const difficultyAvg = averageRank(difficultyValues);
+  const generalAvg = averageRank(generalValues);
 
   const safeIndex = Math.min(currentIndex, Math.max(filteredPosts.length - 1, 0));
   const currentPost = filteredPosts[safeIndex];

@@ -6,6 +6,7 @@ import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
 import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { useShareMode } from '../context/ShareModeContext';
+import { averageGeneralRank, fetchCheeseForkFeedback, peekCheeseForkFeedback } from '../services/cheesefork';
 
 const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
   english: [
@@ -50,6 +51,17 @@ const FACULTY_FILTER_OPTIONS: { key: CourseFacultyArea; label: string; prefix: s
   { key: 'humanities', label: 'הומניסטי', prefix: '032', activeClass: 'bg-yellow-100 text-yellow-700 border-yellow-300', hoverClass: 'hover:border-yellow-300' },
 ];
 
+const RATING_FILTER_OPTIONS: { value: number; label: string }[] = [
+  { value: 0,   label: 'כל הדירוגים' },
+  { value: 3,   label: '⭐ 3 ומעלה' },
+  { value: 4,   label: '⭐ 4 ומעלה' },
+  { value: 4.5, label: '⭐ 4.5 ומעלה' },
+  { value: 5,   label: '⭐ 5 בלבד' },
+];
+
+const RATING_FETCH_BATCH_SIZE = 25;
+const RATING_FETCH_CANDIDATE_CAP = 50;
+
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
@@ -90,6 +102,10 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     advancedDegree: false,
   });
   const [selectedFaculty, setSelectedFaculty] = useState<CourseFacultyArea | null>(null);
+  const [minRating, setMinRating] = useState(0);
+  const [ratingFetchTick, setRatingFetchTick] = useState(0);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const attemptedRatingsRef = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const pickerMenuRef = useRef<HTMLDivElement>(null);
   const {
@@ -145,9 +161,9 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   }, []);
 
   const q = deferredQuery.trim().toLowerCase();
-  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring || filters.advancedDegree || selectedFaculty !== null;
+  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring || filters.advancedDegree || selectedFaculty !== null || minRating > 0;
 
-  const matchesFilters = useCallback((course: SapCourse): boolean => {
+  const matchesNonRatingFilters = useCallback((course: SapCourse): boolean => {
     if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) {
       return false;
     }
@@ -180,6 +196,22 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     return true;
   }, [englishTaughtCourses, filters, selectedFaculty]);
 
+  const matchesFilters = useCallback((course: SapCourse): boolean => {
+    if (!matchesNonRatingFilters(course)) return false;
+
+    if (minRating > 0) {
+      const feedback = peekCheeseForkFeedback(course.id);
+      if (feedback === undefined) return false;
+      const avg = averageGeneralRank(feedback);
+      if (avg === null || avg < minRating) return false;
+    }
+
+    return true;
+    // ratingFetchTick is a forced dependency: it's bumped after background
+    // CheeseFork fetches resolve so this (and searchResults/favoriteCourses)
+    // re-evaluate against the now-populated cache.
+  }, [matchesNonRatingFilters, minRating, ratingFetchTick]);
+
   const searchResults = useMemo(() => {
     if (q.length < 2 && !hasActiveFilters) return [];
 
@@ -201,6 +233,65 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
       .filter(matchesFilters),
     [courses, favorites, matchesFilters],
   );
+
+  const ratingFetchCandidates = useMemo(() => {
+    if (minRating <= 0) return [];
+
+    const out: SapCourse[] = [];
+    for (const { course, lowerName } of indexedCourses) {
+      if (!matchesNonRatingFilters(course)) continue;
+      if (q.length >= 2 && !course.id.includes(q) && !lowerName.includes(q)) continue;
+      out.push(course);
+      if (out.length >= RATING_FETCH_CANDIDATE_CAP) break;
+    }
+
+    for (const id of favorites) {
+      const course = courses.get(id);
+      if (course && matchesNonRatingFilters(course) && !out.some((c) => c.id === course.id)) {
+        out.push(course);
+      }
+    }
+
+    return out;
+  }, [minRating, indexedCourses, q, matchesNonRatingFilters, favorites, courses]);
+
+  // Reset the attempted-fetch tracker whenever the rating filter is freshly activated,
+  // so courses whose previous fetch failed (e.g. network error) get retried.
+  const ratingFilterActive = minRating > 0;
+  useEffect(() => {
+    if (ratingFilterActive) attemptedRatingsRef.current.clear();
+  }, [ratingFilterActive]);
+
+  // Lazily fetch CheeseFork ratings for the current candidate set, in bounded
+  // batches, re-running after each batch resolves until everything is cached.
+  useEffect(() => {
+    if (minRating <= 0) {
+      setRatingLoading(false);
+      return;
+    }
+
+    const toFetch = ratingFetchCandidates
+      .filter((course) => peekCheeseForkFeedback(course.id) === undefined && !attemptedRatingsRef.current.has(course.id))
+      .slice(0, RATING_FETCH_BATCH_SIZE);
+
+    if (toFetch.length === 0) {
+      setRatingLoading(false);
+      return;
+    }
+
+    setRatingLoading(true);
+    let cancelled = false;
+    for (const course of toFetch) attemptedRatingsRef.current.add(course.id);
+
+    Promise.allSettled(toFetch.map((course) => fetchCheeseForkFeedback(course.id)))
+      .then(() => {
+        if (!cancelled) setRatingFetchTick((t) => t + 1);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [minRating, ratingFetchCandidates, ratingFetchTick]);
 
   const showDropdown = open && (tab === 'favorites' || query.trim().length >= 2 || hasActiveFilters);
 
@@ -431,6 +522,29 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-1">
+          <select
+            value={minRating}
+            onChange={(event) => {
+              setMinRating(Number(event.target.value));
+              setOpen(true);
+              setTab('search');
+              setPickerFor(null);
+              setPickerPosition(null);
+            }}
+            dir="rtl"
+            className={`text-xs border rounded-full px-2 py-1 transition-colors cursor-pointer ${
+              minRating > 0 ? 'bg-teal-100 text-teal-700 border-teal-300' : 'bg-white text-gray-500 border-gray-200 hover:border-teal-300'
+            }`}
+          >
+            {RATING_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {ratingLoading && (
+            <span className="text-xs text-gray-400 animate-pulse" title="טוען דירוגים מציזפורק…">⏳</span>
+          )}
+        </div>
       </div>
 
       {showDropdown && (
@@ -455,6 +569,9 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             </div>
           ) : (
             <div className="p-3">
+              {minRating > 0 && ratingLoading && (
+                <p className="text-xs text-gray-400 text-center pb-1.5">טוען דירוגים…</p>
+              )}
               {searchResults.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-4">לא נמצאו קורסים</p>
               ) : (
