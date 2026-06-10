@@ -6,7 +6,7 @@ import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
 import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { useShareMode } from '../context/ShareModeContext';
-import { averageGeneralRank, fetchCheeseForkFeedback, peekCheeseForkFeedback } from '../services/cheesefork';
+import { averageGeneralRank, fetchCheeseForkFeedback, type CheeseForkFeedback } from '../services/cheesefork';
 
 const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
   english: [
@@ -103,8 +103,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   });
   const [selectedFaculty, setSelectedFaculty] = useState<CourseFacultyArea | null>(null);
   const [minRating, setMinRating] = useState(0);
-  const [ratingFetchTick, setRatingFetchTick] = useState(0);
-  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingsCache, setRatingsCache] = useState<Map<string, CheeseForkFeedback | null>>(new Map());
   const attemptedRatingsRef = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
   const pickerMenuRef = useRef<HTMLDivElement>(null);
@@ -200,17 +199,14 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     if (!matchesNonRatingFilters(course)) return false;
 
     if (minRating > 0) {
-      const feedback = peekCheeseForkFeedback(course.id);
+      const feedback = ratingsCache.get(course.id);
       if (feedback === undefined) return false;
       const avg = averageGeneralRank(feedback);
       if (avg === null || avg < minRating) return false;
     }
 
     return true;
-    // ratingFetchTick is a forced dependency: it's bumped after background
-    // CheeseFork fetches resolve so this (and searchResults/favoriteCourses)
-    // re-evaluate against the now-populated cache.
-  }, [matchesNonRatingFilters, minRating, ratingFetchTick]);
+  }, [matchesNonRatingFilters, minRating, ratingsCache]);
 
   const searchResults = useMemo(() => {
     if (q.length < 2 && !hasActiveFilters) return [];
@@ -265,33 +261,35 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   // Lazily fetch CheeseFork ratings for the current candidate set, in bounded
   // batches, re-running after each batch resolves until everything is cached.
   useEffect(() => {
-    if (minRating <= 0) {
-      setRatingLoading(false);
-      return;
-    }
+    if (minRating <= 0) return;
 
     const toFetch = ratingFetchCandidates
-      .filter((course) => peekCheeseForkFeedback(course.id) === undefined && !attemptedRatingsRef.current.has(course.id))
+      .filter((course) => !ratingsCache.has(course.id) && !attemptedRatingsRef.current.has(course.id))
       .slice(0, RATING_FETCH_BATCH_SIZE);
 
-    if (toFetch.length === 0) {
-      setRatingLoading(false);
-      return;
-    }
+    if (toFetch.length === 0) return;
 
-    setRatingLoading(true);
     let cancelled = false;
     for (const course of toFetch) attemptedRatingsRef.current.add(course.id);
 
-    Promise.allSettled(toFetch.map((course) => fetchCheeseForkFeedback(course.id)))
-      .then(() => {
-        if (!cancelled) setRatingFetchTick((t) => t + 1);
+    Promise.all(toFetch.map(async (course) => {
+      const feedback = await fetchCheeseForkFeedback(course.id);
+      return [course.id, feedback] as const;
+    })).then((entries) => {
+      if (cancelled) return;
+      setRatingsCache((prev) => {
+        const next = new Map(prev);
+        for (const [id, feedback] of entries) next.set(id, feedback);
+        return next;
       });
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [minRating, ratingFetchCandidates, ratingFetchTick]);
+  }, [minRating, ratingFetchCandidates, ratingsCache]);
+
+  const ratingLoading = minRating > 0 && ratingFetchCandidates.some((course) => !ratingsCache.has(course.id));
 
   const showDropdown = open && (tab === 'favorites' || query.trim().length >= 2 || hasActiveFilters);
 
