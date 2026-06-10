@@ -62,6 +62,15 @@ const RATING_FILTER_OPTIONS: { value: number; label: string }[] = [
 const RATING_FETCH_BATCH_SIZE = 25;
 const RATING_FETCH_CANDIDATE_CAP = 50;
 
+// Fetch ratings in this order: EE faculty, then מל"ג, then physics, then math, then everything else.
+function ratingFetchPriority(course: SapCourse): number {
+  if (course.id.startsWith('004')) return 0;
+  if (isMelagCourseId(course.id)) return 1;
+  if (course.id.startsWith('011')) return 2;
+  if (course.id.startsWith('010')) return 3;
+  return 4;
+}
+
 const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
@@ -238,17 +247,20 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
       if (!matchesNonRatingFilters(course)) continue;
       if (q.length >= 2 && !course.id.includes(q) && !lowerName.includes(q)) continue;
       out.push(course);
-      if (out.length >= RATING_FETCH_CANDIDATE_CAP) break;
     }
+
+    out.sort((a, b) => ratingFetchPriority(a) - ratingFetchPriority(b));
+
+    const capped = out.slice(0, RATING_FETCH_CANDIDATE_CAP);
 
     for (const id of favorites) {
       const course = courses.get(id);
-      if (course && matchesNonRatingFilters(course) && !out.some((c) => c.id === course.id)) {
-        out.push(course);
+      if (course && matchesNonRatingFilters(course) && !capped.some((c) => c.id === course.id)) {
+        capped.push(course);
       }
     }
 
-    return out;
+    return capped;
   }, [minRating, indexedCourses, q, matchesNonRatingFilters, favorites, courses]);
 
   // Reset the attempted-fetch tracker whenever the rating filter is freshly activated,
