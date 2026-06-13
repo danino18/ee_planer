@@ -4,6 +4,8 @@ import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import type { ContainingSubstitution } from '../domain/containingCourse';
+import type { ResolvedStatistic } from '../domain/gradeStatistics/types';
+import { formatSemester } from '../domain/gradeStatistics/semester';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -28,6 +30,13 @@ interface Props {
   isCoreLocked?: boolean;
   draggable?: boolean;
   showActions?: boolean;
+  /** Resolved historical grade statistic for the selected semester (catalog only). */
+  gradeStat?: ResolvedStatistic | null;
+}
+
+/** Format a 0–100 grade value, preserving a single decimal when present. */
+function formatGrade(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
 const LazyCourseDetailModal = lazy(async () => {
@@ -53,6 +62,7 @@ export const CourseCard = memo(function CourseCard({
   isCoreLocked,
   draggable = true,
   showActions = true,
+  gradeStat,
 }: Props) {
   const shareMode = useShareMode();
   const isReadOnly = shareMode?.isShareReview ?? false;
@@ -300,6 +310,19 @@ export const CourseCard = memo(function CourseCard({
             </span>
           </div>
         </div>
+
+        {gradeStat && (gradeStat.average !== null || gradeStat.median !== null) && (
+          <div
+            className="flex items-center flex-wrap gap-x-1.5 mt-1 text-[11px] text-slate-400 leading-tight"
+            title="נתוני ציונים היסטוריים מ-CheeseFork — אינדיקציה בלבד, משתנה לפי סמסטר ומועד"
+          >
+            {gradeStat.average !== null && <span>ממוצע {formatGrade(gradeStat.average)}</span>}
+            {gradeStat.average !== null && gradeStat.median !== null && <span aria-hidden>·</span>}
+            {gradeStat.median !== null && <span>חציון {formatGrade(gradeStat.median)}</span>}
+            <span aria-hidden>·</span>
+            <span>{formatSemester(gradeStat.semester)}</span>
+          </div>
+        )}
       </div>
 
       {modalOpen && (

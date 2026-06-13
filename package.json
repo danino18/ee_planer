@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "sync:general-requirements": "node scripts/sync-general-requirements.mjs",
+    "sync:grade-statistics": "node scripts/sync-grade-statistics.mjs",
     "dev": "vite",
     "typecheck": "tsc -b",
     "build": "npm run sync:general-requirements && npm run typecheck && vite build",

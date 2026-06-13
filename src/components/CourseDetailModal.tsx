@@ -6,6 +6,7 @@ import type { ContainingSubstitution } from '../domain/containingCourse';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { CheeseForkInfo } from './CheeseForkInfo';
+import { CourseGradeStats } from './CourseGradeStats';
 import { getTrackDefinition } from '../data/tracks';
 
 interface Props {
@@ -207,6 +208,8 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none mr-2">✕</button>
         </div>
+
+        <CourseGradeStats courseId={course.id} />
 
         <CheeseForkInfo courseId={course.id} />
 

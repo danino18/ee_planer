@@ -38,3 +38,37 @@ export function expandCourseIdVariants(raw: string): string[] {
   const leg = normalizeCourseIdKey(sap);
   return [...new Set([d, sap, leg])];
 }
+
+export type StrictNormalizeResult =
+  | { ok: true; value: string }
+  | { ok: false; reason: string };
+
+/**
+ * Strictly normalize a raw course identifier to the canonical 8-digit
+ * `0XXX0XXX` form, rejecting (rather than silently passing through) anything
+ * that is not a valid 6/7/8-digit Technion course number. Reuses
+ * `toSapEightDigitCourseIdForStorage` for the actual conversion — it does NOT
+ * reimplement the `AAABBB → 0AAA0BBB` rule, and never uses `padStart(8, …)`.
+ */
+export function normalizeCourseNumberStrict(raw: string): StrictNormalizeResult {
+  if (typeof raw !== 'string') {
+    return { ok: false, reason: 'not a string' };
+  }
+  const d = raw.replace(/\s+/g, '');
+  if (d.length === 0) {
+    return { ok: false, reason: 'empty' };
+  }
+  if (!/^\d+$/.test(d)) {
+    return { ok: false, reason: `non-numeric: "${raw}"` };
+  }
+  if (d.length === 8) {
+    if (!SAP_PADDED_8.test(d)) {
+      return { ok: false, reason: `malformed 8-digit (not 0XXX0XXX): "${d}"` };
+    }
+    return { ok: true, value: d };
+  }
+  if (d.length === 6 || d.length === 7) {
+    return { ok: true, value: toSapEightDigitCourseIdForStorage(d) };
+  }
+  return { ok: false, reason: `unexpected length ${d.length}: "${d}"` };
+}

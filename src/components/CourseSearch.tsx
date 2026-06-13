@@ -1,63 +1,25 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useShallow } from 'zustand/react/shallow';
-import type { CourseFacultyArea, SapCourse } from '../types';
+import type { SapCourse } from '../types';
+import type { CourseFilters } from '../domain/gradeStatistics/types';
 import { usePlanStore } from '../store/planStore';
 import { CourseCard } from './CourseCard';
+import { CourseFilterPanel } from './CourseFilterPanel';
 import { isCourseTaughtInEnglish, isMelagCourseId, isHumanitiesFreeElectiveCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { useShareMode } from '../context/ShareModeContext';
 import { averageGeneralRank, fetchCheeseForkFeedback, type CheeseForkFeedback } from '../services/cheesefork';
-
-const FILTER_LINKS: Partial<Record<string, { href: string; label: string; tooltip?: string }[]>> = {
-  english: [
-    {
-      href: 'https://ugportal.technion.ac.il/%d7%94%d7%95%d7%a8%d7%90%d7%94-%d7%95%d7%91%d7%97%d7%99%d7%a0%d7%95%d7%aa/%d7%aa%d7%a7%d7%a0%d7%94-1-3-3-%d7%97%d7%95%d7%91%d7%aa-%d7%9c%d7%99%d7%9e%d7%95%d7%93-%d7%a7%d7%95%d7%a8%d7%a1%d7%99%d7%9d-%d7%91%d7%a9%d7%a4%d7%94-%d7%94%d7%90%d7%a0%d7%92%d7%9c%d7%99%d7%aa-compuls/',
-      label: 'קורסי אנגלית',
-    },
-  ],
-  melag: [
-    {
-      href: 'https://ugportal.technion.ac.il/%D7%94%D7%95%D7%A8%D7%90%D7%94-%D7%95%D7%91%D7%97%D7%99%D7%A0%D7%95%D7%AA/%D7%9C%D7%99%D7%9E%D7%95%D7%93%D7%99-%D7%94%D7%A2%D7%A9%D7%A8%D7%94/',
-      label: 'מל"גים',
-    },
-  ],
-  freeElective: [
-    {
-      href: 'https://humanities.technion.ac.il/courses/%d7%a7%d7%95%d7%a8%d7%a1-%d7%94%d7%a2%d7%a9%d7%a8%d7%94/',
-      label: 'קורסי העשרה',
-    },
-  ],
-  winter: [
-    {
-      href: 'https://ece.technion.ac.il/degree-studies-programs/undergraduate-studies/study-programs-courses/?lang=he',
-      label: 'קורסי אביב וחורף',
-      tooltip: 'לרדת למטה בדף עד לטבלת הקורסים לפי סמסטר',
-    },
-  ],
-  spring: [
-    {
-      href: 'https://ece.technion.ac.il/degree-studies-programs/undergraduate-studies/study-programs-courses/?lang=he',
-      label: 'קורסי אביב וחורף',
-      tooltip: 'לרדת למטה בדף עד לטבלת הקורסים לפי סמסטר',
-    },
-  ],
-};
-
-const FACULTY_FILTER_OPTIONS: { key: CourseFacultyArea; label: string; prefix: string; activeClass: string; hoverClass: string }[] = [
-  { key: 'ee',         label: 'חשמל',     prefix: '004', activeClass: 'bg-blue-100 text-blue-700 border-blue-300',     hoverClass: 'hover:border-blue-300'   },
-  { key: 'math',       label: 'מתמטיקה',  prefix: '010', activeClass: 'bg-green-100 text-green-700 border-green-300',  hoverClass: 'hover:border-green-300'  },
-  { key: 'physics',    label: 'פיזיקה',   prefix: '011', activeClass: 'bg-orange-100 text-orange-700 border-orange-300', hoverClass: 'hover:border-orange-300' },
-  { key: 'cs',         label: 'מדמ"ח',    prefix: '023', activeClass: 'bg-purple-100 text-purple-700 border-purple-300', hoverClass: 'hover:border-purple-300' },
-  { key: 'humanities', label: 'הומניסטי', prefix: '032', activeClass: 'bg-yellow-100 text-yellow-700 border-yellow-300', hoverClass: 'hover:border-yellow-300' },
-];
-
-const RATING_FILTER_OPTIONS: { value: number; label: string }[] = [
-  { value: 0,   label: 'כל הדירוגים' },
-  { value: 3,   label: '⭐ 3 ומעלה' },
-  { value: 4,   label: '⭐ 4 ומעלה' },
-  { value: 4.5, label: '⭐ 4.5 ומעלה' },
-  { value: 5,   label: '⭐ 5 בלבד' },
-];
+import { useGradeStatistics } from '../services/gradeStatistics';
+import { resolveStatistic } from '../domain/gradeStatistics/select';
+import {
+  computeVisibleCourses,
+  defaultFilters,
+  matchesAverageRange,
+  matchesMedianRange,
+  matchesMinStudents,
+  matchesSubjects,
+} from '../domain/gradeStatistics/filters';
+import type { ResolvedStatistic } from '../domain/gradeStatistics/types';
 
 const RATING_FETCH_BATCH_SIZE = 25;
 const RATING_FETCH_CANDIDATE_CAP = 50;
@@ -102,16 +64,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   const [tab, setTab] = useState<'search' | 'favorites'>('search');
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [pickerPosition, setPickerPosition] = useState<PickerPosition | null>(null);
-  const [filters, setFilters] = useState({
-    english: false,
-    melag: false,
-    freeElective: false,
-    winter: false,
-    spring: false,
-    advancedDegree: false,
-  });
-  const [selectedFaculty, setSelectedFaculty] = useState<CourseFacultyArea | null>(null);
-  const [minRating, setMinRating] = useState(0);
+  const [filters, setFilters] = useState<CourseFilters>(defaultFilters);
   const [ratingsCache, setRatingsCache] = useState<Map<string, CheeseForkFeedback | null>>(new Map());
   const attemptedRatingsRef = useRef<Set<string>>(new Set());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -129,6 +82,18 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     summerSemesters: state.summerSemesters,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
   })));
+
+  const { data: statsData, status: statsStatus } = useGradeStatistics();
+
+  const updateFilters = useCallback((partial: Partial<CourseFilters>) => {
+    setFilters((current) => ({ ...current, ...partial }));
+    setOpen(true);
+    setTab('search');
+    setPickerFor(null);
+    setPickerPosition(null);
+  }, []);
+  const resetFilters = useCallback(() => setFilters(defaultFilters()), []);
+
   const deferredQuery = useDeferredValue(query);
   const indexedCourses = useMemo(
     () => [...courses.values()].map((course) => ({
@@ -137,6 +102,17 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     })),
     [courses],
   );
+
+  // Resolve the statistic for every course once per (dataset, semester-selection) change.
+  const resolvedStats = useMemo(() => {
+    const map = new Map<string, ResolvedStatistic | null>();
+    if (!statsData) return map;
+    for (const { course } of indexedCourses) {
+      map.set(course.id, resolveStatistic(statsData.index.get(course.id), filters.statisticsSemester));
+    }
+    return map;
+  }, [statsData, indexedCourses, filters.statisticsSemester]);
+  const getStat = useCallback((course: SapCourse) => resolvedStats.get(course.id) ?? null, [resolvedStats]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -169,25 +145,21 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   }, []);
 
   const q = deferredQuery.trim().toLowerCase();
-  const hasActiveFilters = filters.english || filters.melag || filters.freeElective || filters.winter || filters.spring || filters.advancedDegree || selectedFaculty !== null || minRating > 0;
+  const gradeFilterActive =
+    filters.averageMin !== null || filters.averageMax !== null ||
+    filters.medianMin !== null || filters.medianMax !== null ||
+    filters.minStudents !== null;
+  const hasActiveFilters =
+    filters.subjects.length > 0 || filters.english || filters.melag || filters.freeElective ||
+    filters.winter || filters.spring || filters.advancedDegree || filters.minRating > 0 ||
+    gradeFilterActive;
 
-  const matchesNonRatingFilters = useCallback((course: SapCourse): boolean => {
-    if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) {
-      return false;
-    }
-
-    if (filters.melag && !isMelagCourseId(course.id)) {
-      return false;
-    }
-
-    if (filters.freeElective && !isHumanitiesFreeElectiveCourseId(course.id)) {
-      return false;
-    }
-
-    if (filters.advancedDegree && !isAdvancedDegreeCourseId(course.id)) {
-      return false;
-    }
-
+  // Academic-property predicate (no subjects, grades, rating or query).
+  const matchesAcademic = useCallback((course: SapCourse): boolean => {
+    if (filters.english && !isCourseTaughtInEnglish(course, englishTaughtCourses)) return false;
+    if (filters.melag && !isMelagCourseId(course.id)) return false;
+    if (filters.freeElective && !isHumanitiesFreeElectiveCourseId(course.id)) return false;
+    if (filters.advancedDegree && !isAdvancedDegreeCourseId(course.id)) return false;
     if (filters.winter || filters.spring) {
       if (!course.teachingSemester) return false;
       return (
@@ -195,85 +167,93 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
         (filters.spring && course.teachingSemester === 'spring')
       );
     }
-
-    if (selectedFaculty) {
-      const opt = FACULTY_FILTER_OPTIONS.find(o => o.key === selectedFaculty);
-      if (opt && !course.id.startsWith(opt.prefix)) return false;
-    }
-
     return true;
-  }, [englishTaughtCourses, filters, selectedFaculty]);
+  }, [englishTaughtCourses, filters.english, filters.melag, filters.freeElective, filters.advancedDegree, filters.winter, filters.spring]);
 
-  const matchesFilters = useCallback((course: SapCourse): boolean => {
-    if (!matchesNonRatingFilters(course)) return false;
+  const matchesRating = useCallback((course: SapCourse): boolean => {
+    if (filters.minRating <= 0) return true;
+    const feedback = ratingsCache.get(course.id);
+    if (feedback === undefined) return false;
+    const avg = averageGeneralRank(feedback);
+    return avg !== null && avg >= filters.minRating;
+  }, [filters.minRating, ratingsCache]);
 
-    if (minRating > 0) {
-      const feedback = ratingsCache.get(course.id);
-      if (feedback === undefined) return false;
-      const avg = averageGeneralRank(feedback);
-      if (avg === null || avg < minRating) return false;
-    }
+  const matchesQueryText = useCallback((course: SapCourse, lowerName: string): boolean => {
+    if (q.length < 2) return true;
+    return course.id.includes(q) || lowerName.includes(q);
+  }, [q]);
 
-    return true;
-  }, [matchesNonRatingFilters, minRating, ratingsCache]);
+  // Everything except the rating filter (used to pick which ratings to fetch).
+  const passesPreRating = useCallback((course: SapCourse, lowerName: string): boolean => {
+    if (!matchesSubjects(course.id, filters.subjects)) return false;
+    if (!matchesAcademic(course)) return false;
+    const stat = getStat(course);
+    if (!matchesAverageRange(stat, filters.averageMin, filters.averageMax)) return false;
+    if (!matchesMedianRange(stat, filters.medianMin, filters.medianMax)) return false;
+    if (!matchesMinStudents(stat, filters.minStudents)) return false;
+    return matchesQueryText(course, lowerName);
+  }, [filters.subjects, filters.averageMin, filters.averageMax, filters.medianMin, filters.medianMax, filters.minStudents, matchesAcademic, getStat, matchesQueryText]);
+
+  const lowerNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const { course, lowerName } of indexedCourses) m.set(course.id, lowerName);
+    return m;
+  }, [indexedCourses]);
 
   const searchResults = useMemo(() => {
     if (q.length < 2 && !hasActiveFilters) return [];
-
-    const results: SapCourse[] = [];
-    for (const { course, lowerName } of indexedCourses) {
-      if (!matchesFilters(course)) continue;
-      if (q.length >= 2 && !course.id.includes(q) && !lowerName.includes(q)) continue;
-      results.push(course);
-      if (results.length >= 50) break;
-    }
-
-    return results;
-  }, [hasActiveFilters, indexedCourses, q, matchesFilters]);
+    return computeVisibleCourses(
+      indexedCourses.map((x) => x.course),
+      getStat,
+      filters,
+      {
+        matchesAcademic: (course) => matchesAcademic(course) && matchesRating(course),
+        matchesQuery: (course) => matchesQueryText(course, lowerNameById.get(course.id) ?? ''),
+        limit: 50,
+      },
+    );
+  }, [q, hasActiveFilters, indexedCourses, getStat, filters, matchesAcademic, matchesRating, matchesQueryText, lowerNameById]);
 
   const favoriteCourses = useMemo(
-    () => favorites
-      .map((id) => courses.get(id))
-      .filter((course): course is SapCourse => !!course)
-      .filter(matchesFilters),
-    [courses, favorites, matchesFilters],
+    () => computeVisibleCourses(
+      favorites.map((id) => courses.get(id)).filter((c): c is SapCourse => !!c),
+      getStat,
+      filters,
+      {
+        matchesAcademic: (course) => matchesAcademic(course) && matchesRating(course),
+        matchesQuery: (course) => matchesQueryText(course, (course.name ?? '').toLowerCase()),
+      },
+    ),
+    [courses, favorites, getStat, filters, matchesAcademic, matchesRating, matchesQueryText],
   );
 
   const ratingFetchCandidates = useMemo(() => {
-    if (minRating <= 0) return [];
+    if (filters.minRating <= 0) return [];
 
     const out: SapCourse[] = [];
     for (const { course, lowerName } of indexedCourses) {
-      if (!matchesNonRatingFilters(course)) continue;
-      if (q.length >= 2 && !course.id.includes(q) && !lowerName.includes(q)) continue;
-      out.push(course);
+      if (passesPreRating(course, lowerName)) out.push(course);
     }
-
     out.sort((a, b) => ratingFetchPriority(a) - ratingFetchPriority(b));
-
     const capped = out.slice(0, RATING_FETCH_CANDIDATE_CAP);
 
     for (const id of favorites) {
       const course = courses.get(id);
-      if (course && matchesNonRatingFilters(course) && !capped.some((c) => c.id === course.id)) {
+      if (course && passesPreRating(course, (course.name ?? '').toLowerCase()) && !capped.some((c) => c.id === course.id)) {
         capped.push(course);
       }
     }
-
     return capped;
-  }, [minRating, indexedCourses, q, matchesNonRatingFilters, favorites, courses]);
+  }, [filters.minRating, indexedCourses, passesPreRating, favorites, courses]);
 
-  // Reset the attempted-fetch tracker whenever the rating filter is freshly activated,
-  // so courses whose previous fetch failed (e.g. network error) get retried.
-  const ratingFilterActive = minRating > 0;
+  // Reset the attempted-fetch tracker whenever the rating filter is freshly activated.
+  const ratingFilterActive = filters.minRating > 0;
   useEffect(() => {
     if (ratingFilterActive) attemptedRatingsRef.current.clear();
   }, [ratingFilterActive]);
 
-  // Lazily fetch CheeseFork ratings for the current candidate set, in bounded
-  // batches, re-running after each batch resolves until everything is cached.
   useEffect(() => {
-    if (minRating <= 0) return;
+    if (filters.minRating <= 0) return;
 
     const toFetch = ratingFetchCandidates
       .filter((course) => !ratingsCache.has(course.id) && !attemptedRatingsRef.current.has(course.id))
@@ -299,9 +279,9 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     return () => {
       cancelled = true;
     };
-  }, [minRating, ratingFetchCandidates, ratingsCache]);
+  }, [filters.minRating, ratingFetchCandidates, ratingsCache]);
 
-  const ratingLoading = minRating > 0 && ratingFetchCandidates.some((course) => !ratingsCache.has(course.id));
+  const ratingLoading = filters.minRating > 0 && ratingFetchCandidates.some((course) => !ratingsCache.has(course.id));
 
   const showDropdown = open && (tab === 'favorites' || query.trim().length >= 2 || hasActiveFilters);
 
@@ -400,25 +380,6 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     );
   }
 
-  function toggleFacultyFilter(key: CourseFacultyArea) {
-    setSelectedFaculty(prev => prev === key ? null : key);
-    setOpen(true);
-    setTab('search');
-    setPickerFor(null);
-    setPickerPosition(null);
-  }
-
-  function toggleFilter(filterKey: keyof typeof filters) {
-    setFilters((current) => ({
-      ...current,
-      [filterKey]: !current[filterKey],
-    }));
-    setOpen(true);
-    setTab('search');
-    setPickerFor(null);
-    setPickerPosition(null);
-  }
-
   return (
     <div ref={containerRef} className="relative mb-3">
       <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
@@ -454,108 +415,15 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2 px-1">
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => toggleFilter('english')}
-            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-              filters.english ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'
-            }`}
-          >
-            אנגלית
-          </button>
-          <a href={FILTER_LINKS.english![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.english![0].label} className="text-xs text-blue-400 hover:text-blue-600 shrink-0">↗</a>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => toggleFilter('melag')}
-            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-              filters.melag ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
-            }`}
-          >
-            מל"ג
-          </button>
-          <a href={FILTER_LINKS.melag![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.melag![0].label} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => toggleFilter('freeElective')}
-            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-              filters.freeElective ? 'bg-amber-100 text-amber-700 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:border-amber-300'
-            }`}
-          >
-            בחירה חופשית
-          </button>
-          <a href={FILTER_LINKS.freeElective![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.freeElective![0].label} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">↗</a>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => toggleFilter('advancedDegree')}
-            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-              filters.advancedDegree ? 'bg-indigo-100 text-indigo-700 border-indigo-300' : 'bg-white text-gray-500 border-gray-200 hover:border-indigo-300'
-            }`}
-          >
-            תארים מתקדמים
-          </button>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => toggleFilter('winter')}
-            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-              filters.winter ? 'bg-cyan-100 text-cyan-700 border-cyan-300' : 'bg-white text-gray-500 border-gray-200 hover:border-cyan-300'
-            }`}
-          >
-            חורף
-          </button>
-          <button
-            onClick={() => toggleFilter('spring')}
-            className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-              filters.spring ? 'bg-pink-100 text-pink-700 border-pink-300' : 'bg-white text-gray-500 border-gray-200 hover:border-pink-300'
-            }`}
-          >
-            אביב
-          </button>
-          <a href={FILTER_LINKS.winter![0].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS.winter![0].tooltip} className="text-xs text-blue-400 hover:text-blue-600 hover:underline shrink-0">{FILTER_LINKS.winter![0].label} ↗</a>
-        </div>
-        <div className="flex items-center gap-1 flex-wrap">
-          {FACULTY_FILTER_OPTIONS.map(opt => (
-            <button
-              key={opt.key}
-              onClick={() => toggleFacultyFilter(opt.key)}
-              className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-                selectedFaculty === opt.key
-                  ? opt.activeClass
-                  : `bg-white text-gray-500 border-gray-200 ${opt.hoverClass}`
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-1">
-          <select
-            value={minRating}
-            onChange={(event) => {
-              setMinRating(Number(event.target.value));
-              setOpen(true);
-              setTab('search');
-              setPickerFor(null);
-              setPickerPosition(null);
-            }}
-            dir="rtl"
-            className={`text-xs border rounded-full px-2 py-1 transition-colors cursor-pointer ${
-              minRating > 0 ? 'bg-teal-100 text-teal-700 border-teal-300' : 'bg-white text-gray-500 border-gray-200 hover:border-teal-300'
-            }`}
-          >
-            {RATING_FILTER_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {ratingLoading && (
-            <span className="text-xs text-gray-400 animate-pulse" title="טוען דירוגים מציזפורק…">⏳</span>
-          )}
-        </div>
-      </div>
+      <CourseFilterPanel
+        filters={filters}
+        onChange={updateFilters}
+        onReset={resetFilters}
+        availableSemesters={statsData?.semesters ?? []}
+        statsAvailable={statsStatus === 'ready' && !!statsData}
+        statsLoading={statsStatus === 'loading'}
+        ratingLoading={ratingLoading}
+      />
 
       {showDropdown && (
         <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-96 overflow-y-auto">
@@ -569,7 +437,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
                   {favoriteCourses.map((course) => (
                     <div key={course.id} className="flex items-center gap-2">
                       <div className="flex-1">
-                        <CourseCard course={course} isMandatory={false} />
+                        <CourseCard course={course} isMandatory={false} gradeStat={getStat(course)} />
                       </div>
                       {renderAddButton(course.id)}
                     </div>
@@ -579,7 +447,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
             </div>
           ) : (
             <div className="p-3">
-              {minRating > 0 && ratingLoading && (
+              {filters.minRating > 0 && ratingLoading && (
                 <p className="text-xs text-gray-400 text-center pb-1.5">טוען דירוגים…</p>
               )}
               {searchResults.length === 0 ? (
@@ -589,7 +457,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
                   {searchResults.map((course) => (
                     <div key={course.id} className="flex items-center gap-2">
                       <div className="flex-1">
-                        <CourseCard course={course} isMandatory={false} />
+                        <CourseCard course={course} isMandatory={false} gradeStat={getStat(course)} />
                       </div>
                       {renderAddButton(course.id)}
                     </div>
