@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const BASELINE_FILE = 'src/data/teachingSemesterFallback.ts';
 
-function courseFields(course) {
+export function courseFields(course) {
   const fields = {
     id: course.id,
     name: course.name,
@@ -40,9 +40,9 @@ function renderTsFormatted(courses) {
   ].join('\n');
 }
 
-function renderTsMinified(courses) {
+export function renderTsMinified(courses) {
   const body = courses.map((course) => JSON.stringify(courseFields(course))).join(',');
-  return `export const historicalFallbackCourses=${`[${body}]`};`;
+  return `import type { SapCourse } from '../types';\nexport const historicalFallbackCourses: SapCourse[] = [${body}];\n`;
 }
 
 function byteLength(content) {

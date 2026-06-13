@@ -42,7 +42,7 @@ function transpileToDataUrl(absolutePath) {
     },
   }).outputText;
 
-  const specifiers = [...transpiled.matchAll(/\bfrom\s+['"]([^'"]+)['"]/g)]
+  const specifiers = [...transpiled.matchAll(/\b(?:from\s+|import\s*\(\s*)['"]([^'"]+)['"]/g)]
     .map((match) => match[1])
     .filter((specifier) => specifier.startsWith('.'));
 

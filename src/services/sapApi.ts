@@ -184,6 +184,16 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
     }
   }
 
+  // Historical courses no longer offered in any current SAP semester, imported
+  // from technion-ug-info-fetcher. Loaded dynamically to keep this large dataset
+  // out of the main bundle (see scripts/migrate-historical-courses).
+  const { historicalFallbackCourses } = await import('../data/historicalCourses');
+  for (const course of historicalFallbackCourses) {
+    if (!merged.has(course.id)) {
+      merged.set(course.id, { ...course, prerequisites: course.prerequisites.map((group) => [...group]) });
+    }
+  }
+
   // Remove self-referencing prerequisites (e.g. פיזיקה 1מ listing itself as prereq)
   for (const [id, course] of merged) {
     course.prerequisites = course.prerequisites

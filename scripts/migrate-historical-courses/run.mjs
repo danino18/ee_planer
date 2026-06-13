@@ -17,39 +17,45 @@ import { fileURLToPath } from 'node:url';
 import { discoverHistoricalFiles, fetchHistoricalSemester, loadCurrentCourseIds } from './fetchData.mjs';
 import { mergeSemesters } from './merge.mjs';
 import { buildMigrationPlan } from './plan.mjs';
-import { buildSizeReport } from './sizeReport.mjs';
+import { buildSizeReport, renderTsMinified } from './sizeReport.mjs';
 import { loadTranspiledModule } from './tsModuleLoader.mjs';
+import { writeGeneratedFile } from './writeOutput.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const HISTORICAL_COURSES_PATH = join(repoRoot, 'src/data/historicalCourses.ts');
 const isDryRun = process.argv.includes('--dry-run');
 
-async function loadExistingHistoricalIds() {
-  if (!existsSync(HISTORICAL_COURSES_PATH)) return new Set();
+async function loadExistingHistoricalCourses() {
+  if (!existsSync(HISTORICAL_COURSES_PATH)) return { ids: new Set(), courses: [] };
   const mod = await loadTranspiledModule('src/data/historicalCourses.ts');
-  const list = mod.historicalFallbackCourses ?? [];
-  return new Set(list.map((course) => course.id));
+  const courses = mod.historicalFallbackCourses ?? [];
+  return { ids: new Set(courses.map((course) => course.id)), courses };
 }
 
 async function main() {
-  console.error('[1/5] Discovering historical semester files...');
+  console.error('[1/6] Discovering historical semester files...');
   const files = await discoverHistoricalFiles();
   console.error(`       found ${files.length} files: ${files.map((f) => f.label).join(', ')}`);
 
-  console.error('[2/5] Fetching historical semester data...');
+  console.error('[2/6] Fetching historical semester data...');
   const semesterFiles = await Promise.all(files.map((file) => fetchHistoricalSemester(file)));
   const totalHistoricalRecords = semesterFiles.reduce((sum, file) => sum + file.records.length, 0);
 
-  console.error('[3/5] Merging semesters...');
+  console.error('[3/6] Merging semesters...');
   const historical = await mergeSemesters(semesterFiles);
 
-  console.error('[4/5] Loading current course ids (fetchCourses + existing fallbacks)...');
+  console.error('[4/6] Loading current course ids (fetchCourses + existing fallbacks)...');
   const existingIds = await loadCurrentCourseIds();
-  const existingHistoricalIds = await loadExistingHistoricalIds();
+  const existingHistorical = await loadExistingHistoricalCourses();
 
-  console.error('[5/5] Building migration plan and size report...');
-  const plan = await buildMigrationPlan({ historical, existingIds, existingHistoricalIds });
+  console.error('[5/6] Building migration plan and size report...');
+  const plan = await buildMigrationPlan({ historical, existingIds, existingHistoricalIds: existingHistorical.ids });
   const sizeReport = buildSizeReport(plan.toInsert);
+
+  console.error('[6/6] Writing generated dataset...');
+  const finalCourses = [...existingHistorical.courses, ...plan.toInsert];
+  const content = renderTsMinified(finalCourses);
+  const writeResult = await writeGeneratedFile(HISTORICAL_COURSES_PATH, content, { dryRun: isDryRun });
 
   const report = {
     dryRun: isDryRun,
@@ -59,7 +65,7 @@ async function main() {
     uniqueNormalizedHistoricalCourses: plan.uniqueHistoricalCount,
     alreadyExistingInCurrentSystem: plan.alreadyExists.length,
     missingFromCurrentSystem: plan.missingFromCurrent.length,
-    previouslyInserted: existingHistoricalIds.size,
+    previouslyInserted: existingHistorical.ids.size,
     wouldInsertCount: plan.toInsert.length,
     insertedCount: isDryRun ? 0 : plan.toInsert.length,
     rejectedCount: plan.rejections.length,
@@ -68,13 +74,10 @@ async function main() {
     conflicts: plan.conflicts,
     insertedCourseIds: plan.toInsert.map((course) => course.id),
     sizeReport,
+    writeResult,
   };
 
   console.log(JSON.stringify(report, null, 2));
-
-  if (!isDryRun) {
-    console.error('Real-run write step is not implemented yet (storage format pending decision); no files written.');
-  }
 }
 
 main().catch((error) => {
