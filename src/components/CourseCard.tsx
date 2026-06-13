@@ -316,11 +316,15 @@ export const CourseCard = memo(function CourseCard({
             className="flex items-center flex-wrap gap-x-1.5 mt-1 text-[11px] text-slate-400 leading-tight"
             title="נתוני ציונים היסטוריים מ-CheeseFork — אינדיקציה בלבד, משתנה לפי סמסטר ומועד"
           >
-            {gradeStat.average !== null && <span>ממוצע {formatGrade(gradeStat.average)}</span>}
+            {gradeStat.average !== null && <span>{gradeStat.kind === 'general' ? 'ממוצע כללי' : 'ממוצע'} {formatGrade(gradeStat.average)}</span>}
             {gradeStat.average !== null && gradeStat.median !== null && <span aria-hidden>·</span>}
-            {gradeStat.median !== null && <span>חציון {formatGrade(gradeStat.median)}</span>}
-            <span aria-hidden>·</span>
-            <span>{formatSemester(gradeStat.semester)}</span>
+            {gradeStat.median !== null && <span>{gradeStat.kind === 'general' ? 'חציון כללי' : 'חציון'} {formatGrade(gradeStat.median)}</span>}
+            {gradeStat.kind === 'semester' && gradeStat.semester && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{formatSemester(gradeStat.semester)}</span>
+              </>
+            )}
           </div>
         )}
       </div>

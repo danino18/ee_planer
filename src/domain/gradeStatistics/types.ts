@@ -36,11 +36,17 @@ export interface CourseGradeStatistics {
 
 /** The statistic resolved for display/filtering/sorting for one course. */
 export interface ResolvedStatistic {
-  semester: string;
-  category: GradeCategory;
+  /** `'general'` = aggregated across semesters; `'semester'` = a single semester. */
+  kind: 'general' | 'semester';
+  /** `null` for the general aggregate. */
+  semester: string | null;
+  /** `null` for the general aggregate (it spans categories). */
+  category: GradeCategory | null;
   average: number | null;
   median: number | null;
   students: number | null;
+  /** Number of semesters aggregated (general only). */
+  semesterCount?: number;
 }
 
 /** Subject ids reuse the existing faculty-area classification. */
@@ -56,8 +62,11 @@ export type SortBy =
 
 export type SortDirection = 'asc' | 'desc';
 
-/** `'latest'` resolves per-course to its newest semester with data. */
-export type StatisticsSemesterSelection = string | 'latest';
+/**
+ * `'general'` aggregates across semesters (default), `'latest'` resolves per-course to its
+ * newest semester with data, or a specific `YYYY0M` code.
+ */
+export type StatisticsSemesterSelection = string | 'latest' | 'general';
 
 /** The full typed filter + sorting state for the course catalog. */
 export interface CourseFilters {
@@ -73,9 +82,7 @@ export interface CourseFilters {
   // Grade statistics.
   statisticsSemester: StatisticsSemesterSelection;
   averageMin: number | null;
-  averageMax: number | null;
   medianMin: number | null;
-  medianMax: number | null;
   minStudents: number | null;
   // Sorting.
   sortBy: SortBy;

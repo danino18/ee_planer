@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadTsModule } from '../scripts/lib/tsImport.mjs';
 
-const { selectPrimaryCategory, resolveStatistic } = await loadTsModule('src/domain/gradeStatistics/select.ts');
+const { selectPrimaryCategory, resolveStatistic, computeGeneralStatistic, GENERAL_MIN_SEMESTERS } = await loadTsModule('src/domain/gradeStatistics/select.ts');
 
 test('Finals is preferred when available', () => {
   assert.equal(selectPrimaryCategory({ Exam_A: {}, Final_A: {}, Finals: {} }), 'Finals');
@@ -27,8 +27,44 @@ function rec(semester, over = {}) {
 test('latest available selects the newest semester record', () => {
   const records = [rec('202301', { average: 60 }), rec('202501', { average: 90 }), rec('202401', { average: 75 })];
   const r = resolveStatistic(records, 'latest');
+  assert.equal(r.kind, 'semester');
   assert.equal(r.semester, '202501');
   assert.equal(r.average, 90);
+});
+
+test('general aggregate averages the semester averages and medians (>= 3 semesters)', () => {
+  assert.equal(GENERAL_MIN_SEMESTERS, 3);
+  const records = [
+    rec('202301', { average: 60, median: 62 }),
+    rec('202401', { average: 70, median: 72 }),
+    rec('202501', { average: 80, median: 79 }),
+  ];
+  const g = resolveStatistic(records, 'general');
+  assert.equal(g.kind, 'general');
+  assert.equal(g.semester, null);
+  assert.equal(g.average, 70);   // mean of 60,70,80
+  assert.equal(g.median, 71);    // mean of 62,72,79 = 71
+  assert.equal(g.semesterCount, 3);
+});
+
+test('general aggregate ignores null fields when averaging', () => {
+  const records = [
+    rec('202301', { average: 60, median: null }),
+    rec('202401', { average: null, median: 72 }),
+    rec('202501', { average: 80, median: 78 }),
+  ];
+  const g = computeGeneralStatistic(records);
+  assert.equal(g.average, 70); // mean of 60,80
+  assert.equal(g.median, 75);  // mean of 72,78
+});
+
+test('general falls back to latest semester for fewer than 3 semesters', () => {
+  const records = [rec('202301', { average: 60 }), rec('202401', { average: 90 })];
+  const r = resolveStatistic(records, 'general');
+  assert.equal(r.kind, 'semester');
+  assert.equal(r.semester, '202401');
+  assert.equal(r.average, 90);
+  assert.equal(computeGeneralStatistic(records), null);
 });
 
 test('specific semester never falls back to another', () => {

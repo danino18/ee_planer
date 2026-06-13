@@ -5,8 +5,8 @@ import { loadTsModule } from '../scripts/lib/tsImport.mjs';
 const {
   defaultFilters,
   matchesSubjects,
-  matchesAverageRange,
-  matchesMedianRange,
+  matchesAverageMin,
+  matchesMedianMin,
   matchesMinStudents,
   computeVisibleCourses,
 } = await loadTsModule('src/domain/gradeStatistics/filters.ts');
@@ -34,24 +34,19 @@ test('no selected subject means no subject filtering', () => {
   assert.equal(matchesSubjects(CS, []), true);
 });
 
-test('minimum average filtering works', () => {
-  assert.equal(matchesAverageRange(stat({ average: 80 }), 75, null), true);
-  assert.equal(matchesAverageRange(stat({ average: 70 }), 75, null), false);
+test('minimum average filtering works (value must be >= min)', () => {
+  assert.equal(matchesAverageMin(stat({ average: 80 }), 75), true);
+  assert.equal(matchesAverageMin(stat({ average: 75 }), 75), true);
+  assert.equal(matchesAverageMin(stat({ average: 70 }), 75), false);
 });
 
-test('maximum average filtering works', () => {
-  assert.equal(matchesAverageRange(stat({ average: 80 }), null, 85), true);
-  assert.equal(matchesAverageRange(stat({ average: 90 }), null, 85), false);
+test('no minimum average means no average filtering', () => {
+  assert.equal(matchesAverageMin(stat({ average: 10 }), null), true);
 });
 
-test('average range filtering works', () => {
-  assert.equal(matchesAverageRange(stat({ average: 80 }), 70, 90), true);
-  assert.equal(matchesAverageRange(stat({ average: 95 }), 70, 90), false);
-});
-
-test('median range filtering works', () => {
-  assert.equal(matchesMedianRange(stat({ median: 82 }), 80, 90), true);
-  assert.equal(matchesMedianRange(stat({ median: 70 }), 80, 90), false);
+test('minimum median filtering works', () => {
+  assert.equal(matchesMedianMin(stat({ median: 82 }), 80), true);
+  assert.equal(matchesMedianMin(stat({ median: 70 }), 80), false);
 });
 
 test('min-students filtering works', () => {
@@ -61,13 +56,15 @@ test('min-students filtering works', () => {
 });
 
 test('courses without data are excluded only when a relevant filter is active', () => {
-  assert.equal(matchesAverageRange(null, null, null), true); // inactive → kept
-  assert.equal(matchesAverageRange(null, 60, null), false); // active → excluded
+  assert.equal(matchesAverageMin(null, null), true); // inactive → kept
+  assert.equal(matchesAverageMin(null, 60), false); // active → excluded
+  assert.equal(matchesMedianMin(null, null), true);
+  assert.equal(matchesMedianMin(null, 60), false);
   assert.equal(matchesMinStudents(null, null), true);
   assert.equal(matchesMinStudents(null, 10), false);
 });
 
-test('average and median filters work together (both must pass)', () => {
+test('average and median minimums work together (both must pass)', () => {
   const courses = [
     { id: CS, name: 'A', credits: 3 },
     { id: EE, name: 'B', credits: 3 },
@@ -78,10 +75,14 @@ test('average and median filters work together (both must pass)', () => {
   assert.deepEqual(visible.map((c) => c.id), [CS]);
 });
 
-test('reset filters restores the default state', () => {
+test('reset filters restores the default state (general default, min-only)', () => {
   const d = defaultFilters();
   assert.deepEqual(d.subjects, []);
-  assert.equal(d.statisticsSemester, 'latest');
+  assert.equal(d.statisticsSemester, 'general');
   assert.equal(d.averageMin, null);
+  assert.equal(d.medianMin, null);
+  assert.equal(d.minStudents, null);
+  assert.equal('averageMax' in d, false);
+  assert.equal('medianMax' in d, false);
   assert.equal(d.sortBy, 'default');
 });

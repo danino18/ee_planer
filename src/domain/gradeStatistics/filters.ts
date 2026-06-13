@@ -33,11 +33,9 @@ export function defaultFilters(): CourseFilters {
     winter: false,
     spring: false,
     minRating: 0,
-    statisticsSemester: 'latest',
+    statisticsSemester: 'general',
     averageMin: null,
-    averageMax: null,
     medianMin: null,
-    medianMax: null,
     minStudents: null,
     sortBy: 'default',
     sortDirection: 'asc',
@@ -52,28 +50,18 @@ export function matchesSubjects(courseId: string, subjects: SubjectId[]): boolea
   return subjects.some((subject) => courseMatchesSubject(courseId, subject));
 }
 
-function withinRange(value: number | null, min: number | null, max: number | null): boolean {
-  if (min === null && max === null) return true; // filter inactive
+function atLeast(value: number | null, min: number | null): boolean {
+  if (min === null) return true; // filter inactive
   if (value === null) return false; // active filter excludes missing data
-  if (min !== null && value < min) return false;
-  if (max !== null && value > max) return false;
-  return true;
+  return value >= min;
 }
 
-export function matchesAverageRange(
-  stat: ResolvedStatistic | null,
-  min: number | null,
-  max: number | null,
-): boolean {
-  return withinRange(stat?.average ?? null, min, max);
+export function matchesAverageMin(stat: ResolvedStatistic | null, min: number | null): boolean {
+  return atLeast(stat?.average ?? null, min);
 }
 
-export function matchesMedianRange(
-  stat: ResolvedStatistic | null,
-  min: number | null,
-  max: number | null,
-): boolean {
-  return withinRange(stat?.median ?? null, min, max);
+export function matchesMedianMin(stat: ResolvedStatistic | null, min: number | null): boolean {
+  return atLeast(stat?.median ?? null, min);
 }
 
 export function matchesMinStudents(stat: ResolvedStatistic | null, min: number | null): boolean {
@@ -184,8 +172,8 @@ export function computeVisibleCourses<T extends CourseLike>(
     if (!matchesSubjects(course.id, filters.subjects)) continue;
     if (!matchesAcademic(course)) continue;
     const stat = getStat(course);
-    if (!matchesAverageRange(stat, filters.averageMin, filters.averageMax)) continue;
-    if (!matchesMedianRange(stat, filters.medianMin, filters.medianMax)) continue;
+    if (!matchesAverageMin(stat, filters.averageMin)) continue;
+    if (!matchesMedianMin(stat, filters.medianMin)) continue;
     if (!matchesMinStudents(stat, filters.minStudents)) continue;
     if (!matchesQuery(course)) continue;
     filtered.push(course);

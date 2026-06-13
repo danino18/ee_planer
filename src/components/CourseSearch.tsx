@@ -14,8 +14,8 @@ import { resolveStatistic } from '../domain/gradeStatistics/select';
 import {
   computeVisibleCourses,
   defaultFilters,
-  matchesAverageRange,
-  matchesMedianRange,
+  matchesAverageMin,
+  matchesMedianMin,
   matchesMinStudents,
   matchesSubjects,
 } from '../domain/gradeStatistics/filters';
@@ -146,9 +146,7 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
 
   const q = deferredQuery.trim().toLowerCase();
   const gradeFilterActive =
-    filters.averageMin !== null || filters.averageMax !== null ||
-    filters.medianMin !== null || filters.medianMax !== null ||
-    filters.minStudents !== null;
+    filters.averageMin !== null || filters.medianMin !== null || filters.minStudents !== null;
   const hasActiveFilters =
     filters.subjects.length > 0 || filters.english || filters.melag || filters.freeElective ||
     filters.winter || filters.spring || filters.advancedDegree || filters.minRating > 0 ||
@@ -188,11 +186,11 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
     if (!matchesSubjects(course.id, filters.subjects)) return false;
     if (!matchesAcademic(course)) return false;
     const stat = getStat(course);
-    if (!matchesAverageRange(stat, filters.averageMin, filters.averageMax)) return false;
-    if (!matchesMedianRange(stat, filters.medianMin, filters.medianMax)) return false;
+    if (!matchesAverageMin(stat, filters.averageMin)) return false;
+    if (!matchesMedianMin(stat, filters.medianMin)) return false;
     if (!matchesMinStudents(stat, filters.minStudents)) return false;
     return matchesQueryText(course, lowerName);
-  }, [filters.subjects, filters.averageMin, filters.averageMax, filters.medianMin, filters.medianMax, filters.minStudents, matchesAcademic, getStat, matchesQueryText]);
+  }, [filters.subjects, filters.averageMin, filters.medianMin, filters.minStudents, matchesAcademic, getStat, matchesQueryText]);
 
   const lowerNameById = useMemo(() => {
     const m = new Map<string, string>();

@@ -58,15 +58,23 @@ function clampGrade(value: string): number | null {
   return Math.min(100, Math.max(0, n));
 }
 
-function GroupLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-semibold text-gray-500 mb-1.5">{children}</p>;
-}
+const CHIP_BASE = 'text-xs border px-2 py-1 rounded-full transition-colors';
+const CHIP_OFF = 'bg-white text-gray-500 border-gray-200 hover:border-gray-300';
 
-function SubjectsMultiSelect({ filters, onChange }: Pick<Props, 'filters' | 'onChange'>) {
+/** A compact chip that opens a popover; closes on outside-click and Escape. */
+function ChipPopover({
+  label, active, activeClass, children, onClear, panelClassName,
+}: {
+  label: string;
+  active: boolean;
+  activeClass: string;
+  children: React.ReactNode;
+  onClear?: () => void;
+  panelClassName?: string;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const listId = useId();
-  const selected = filters.subjects;
+  const panelId = useId();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -84,266 +92,234 @@ function SubjectsMultiSelect({ filters, onChange }: Pick<Props, 'filters' | 'onC
     };
   }, [open]);
 
-  function toggle(id: SubjectId) {
-    onChange({
-      subjects: selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id],
-    });
-  }
-
-  const label = selected.length === 0
-    ? 'מקצועות'
-    : selected.length === 1
-      ? `מקצועות: ${SUBJECT_OPTIONS.find((o) => o.id === selected[0])?.label}`
-      : `מקצועות (${selected.length})`;
-
   return (
-    <div ref={ref} className="relative inline-block">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={listId}
-        className={`text-xs border px-2.5 py-1 rounded-full transition-colors ${
-          selected.length > 0
-            ? 'bg-blue-100 text-blue-700 border-blue-300'
-            : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'
-        }`}
-      >
-        {label} <span aria-hidden>{open ? '▴' : '▾'}</span>
-      </button>
-      {open && (
-        <div
-          id={listId}
-          role="listbox"
-          aria-multiselectable
-          className="absolute z-[60] mt-1 min-w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-1.5 text-xs end-0"
+    <span ref={ref} className="relative inline-flex items-center">
+      <span className={`inline-flex items-center gap-1 border rounded-full transition-colors ${active ? activeClass : CHIP_OFF}`}>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-controls={panelId}
+          className="text-xs px-2 py-1 leading-none"
         >
-          <div className="flex items-center justify-between gap-2 px-1 pb-1.5 mb-1 border-b border-gray-100">
-            <button type="button" className="text-blue-600 hover:text-blue-800" onClick={() => onChange({ subjects: SUBJECT_OPTIONS.map((o) => o.id) })}>בחר הכל</button>
-            <button type="button" className="text-gray-500 hover:text-gray-700" onClick={() => onChange({ subjects: [] })}>נקה</button>
-          </div>
-          {SUBJECT_OPTIONS.map((opt) => {
-            const isOn = selected.includes(opt.id);
-            return (
-              <button
-                type="button"
-                role="option"
-                aria-selected={isOn}
-                key={opt.id}
-                onClick={() => toggle(opt.id)}
-                className={`flex w-full items-center gap-2 px-2 py-1 rounded text-start ${
-                  isOn ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className={`inline-block w-3.5 h-3.5 border rounded-sm shrink-0 text-center leading-3 ${isOn ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`} aria-hidden>
-                  {isOn && <span className="text-[10px]">✓</span>}
-                </span>
-                <span className={`inline-block w-2 h-2 rounded-full ${opt.dotClass}`} aria-hidden />
-                <span>{opt.label}</span>
-              </button>
-            );
-          })}
+          {label} <span aria-hidden>{open ? '▴' : '▾'}</span>
+        </button>
+        {onClear && active && (
+          <button type="button" onClick={onClear} aria-label="נקה סינון" className="pe-1.5 -ms-1 leading-none hover:opacity-70">×</button>
+        )}
+      </span>
+      {open && (
+        <div id={panelId} role="dialog" className={`absolute z-[60] mt-1 top-full right-0 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs ${panelClassName ?? 'min-w-44'}`}>
+          {children}
         </div>
       )}
-    </div>
+    </span>
   );
 }
 
-function GradeRange({
-  label, min, max, onMin, onMax,
-}: { label: string; min: number | null; max: number | null; onMin: (v: number | null) => void; onMax: (v: number | null) => void }) {
-  const invalid = min !== null && max !== null && min > max;
+function SubjectsChip({ filters, onChange }: Pick<Props, 'filters' | 'onChange'>) {
+  const selected = filters.subjects;
+  const label = selected.length === 0 ? 'מקצועות' : `מקצועות (${selected.length})`;
+
+  function toggle(id: SubjectId) {
+    onChange({ subjects: selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id] });
+  }
+
   return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs text-gray-600 w-12 shrink-0">{label}</span>
-        <input
-          type="number" inputMode="numeric" min={0} max={100} placeholder="מ-"
-          aria-label={`${label} מינימום`}
-          value={min ?? ''}
-          onChange={(e) => onMin(clampGrade(e.target.value))}
-          className="w-16 text-xs border border-gray-200 rounded-md px-1.5 py-1 text-center focus:border-blue-400 outline-none"
-        />
-        <span className="text-gray-400 text-xs">–</span>
-        <input
-          type="number" inputMode="numeric" min={0} max={100} placeholder="עד"
-          aria-label={`${label} מקסימום`}
-          value={max ?? ''}
-          onChange={(e) => onMax(clampGrade(e.target.value))}
-          className="w-16 text-xs border border-gray-200 rounded-md px-1.5 py-1 text-center focus:border-blue-400 outline-none"
-        />
+    <ChipPopover
+      label={label}
+      active={selected.length > 0}
+      activeClass="bg-blue-100 text-blue-700 border-blue-300"
+      onClear={() => onChange({ subjects: [] })}
+    >
+      <div className="flex items-center justify-between gap-2 px-1 pb-1.5 mb-1 border-b border-gray-100">
+        <button type="button" className="text-blue-600 hover:text-blue-800" onClick={() => onChange({ subjects: SUBJECT_OPTIONS.map((o) => o.id) })}>בחר הכל</button>
+        <button type="button" className="text-gray-500 hover:text-gray-700" onClick={() => onChange({ subjects: [] })}>נקה</button>
       </div>
-      {invalid && <span className="text-[11px] text-red-500">המינימום גדול מהמקסימום</span>}
-    </div>
+      <div role="group" aria-label="מקצועות">
+        {SUBJECT_OPTIONS.map((opt) => {
+          const isOn = selected.includes(opt.id);
+          return (
+            <button
+              type="button"
+              aria-pressed={isOn}
+              key={opt.id}
+              onClick={() => toggle(opt.id)}
+              className={`flex w-full items-center gap-2 px-2 py-1 rounded text-start ${isOn ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`}
+            >
+              <span className={`inline-block w-3.5 h-3.5 border rounded-sm shrink-0 text-center leading-3 ${isOn ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`} aria-hidden>
+                {isOn && <span className="text-[10px]">✓</span>}
+              </span>
+              <span className={`inline-block w-2 h-2 rounded-full ${opt.dotClass}`} aria-hidden />
+              <span>{opt.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </ChipPopover>
+  );
+}
+
+function MinInput({ label, value, max, onChange }: { label: string; value: number | null; max?: number; onChange: (raw: string) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-2">
+      <span className="text-gray-600">{label}</span>
+      <input
+        type="number" inputMode="numeric" min={0} max={max} placeholder="מינ׳"
+        aria-label={label}
+        value={value ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-20 text-xs border border-gray-200 rounded-md px-1.5 py-1 text-center focus:border-blue-400 outline-none"
+      />
+    </label>
+  );
+}
+
+function GradeStatsChip({
+  filters, onChange, availableSemesters, statsAvailable, statsLoading,
+}: Pick<Props, 'filters' | 'onChange' | 'availableSemesters' | 'statsAvailable' | 'statsLoading'>) {
+  const mode = filters.statisticsSemester;
+  const active = mode !== 'general' || filters.averageMin !== null || filters.medianMin !== null || filters.minStudents !== null;
+  const modeLabel = mode === 'general' ? 'כללי' : mode === 'latest' ? 'האחרון' : formatSemester(mode);
+
+  return (
+    <ChipPopover
+      label={`ציונים: ${modeLabel}`}
+      active={active}
+      activeClass="bg-emerald-100 text-emerald-700 border-emerald-300"
+      onClear={() => onChange({ statisticsSemester: 'general', averageMin: null, medianMin: null, minStudents: null })}
+      panelClassName="w-60"
+    >
+      {!statsAvailable ? (
+        <p className="text-gray-400 italic px-1">{statsLoading ? 'טוען נתוני ציונים…' : 'נתוני הציונים אינם זמינים כעת.'}</p>
+      ) : (
+        <div className="space-y-2">
+          <label className="flex items-center justify-between gap-2">
+            <span className="text-gray-600">סטטיסטיקה</span>
+            <select
+              value={mode}
+              onChange={(e) => onChange({ statisticsSemester: e.target.value })}
+              dir="rtl"
+              aria-label="מצב סטטיסטיקת ציונים"
+              className="text-xs border border-gray-200 rounded-md px-2 py-1 cursor-pointer focus:border-blue-400 outline-none max-w-36"
+            >
+              <option value="general">כללי</option>
+              <option value="latest">האחרון הזמין</option>
+              {availableSemesters.map((s) => <option key={s} value={s}>{formatSemester(s)}</option>)}
+            </select>
+          </label>
+
+          <p className="text-[11px] text-gray-400 leading-snug">
+            {mode === 'general'
+              ? 'ממוצע וחציון כלליים מחושבים מכל הסמסטרים עם נתונים (לפחות 3). קורסים עם פחות מ-3 סמסטרים מציגים את הסמסטר האחרון.'
+              : mode === 'latest'
+                ? '"האחרון הזמין" עשוי להציג סמסטר שונה לכל מקצוע — הסמסטר מוצג לצד הערך.'
+                : 'מוצגים נתונים מהסמסטר הנבחר בלבד.'}
+          </p>
+
+          <div className="border-t border-gray-100 pt-2 space-y-1.5">
+            <MinInput label="ממוצע מינ׳" value={filters.averageMin} max={100} onChange={(raw) => onChange({ averageMin: clampGrade(raw) })} />
+            <MinInput label="חציון מינ׳" value={filters.medianMin} max={100} onChange={(raw) => onChange({ medianMin: clampGrade(raw) })} />
+            <MinInput
+              label="תלמידים מינ׳"
+              value={filters.minStudents}
+              onChange={(raw) => {
+                const s = raw.trim();
+                onChange({ minStudents: s === '' ? null : Math.max(0, Math.floor(Number(s) || 0)) });
+              }}
+            />
+          </div>
+
+          <p className="text-[11px] text-gray-400 leading-snug border-t border-gray-100 pt-1.5">
+            נתוני ציונים היסטוריים מ-CheeseFork. הזמינות משתנה לפי מקצוע וסמסטר. אין לראות בערכים הבטחה לקושי הקורס או לציון עתידי.
+          </p>
+        </div>
+      )}
+    </ChipPopover>
   );
 }
 
 export function CourseFilterPanel({
   filters, onChange, onReset, availableSemesters, statsAvailable, statsLoading, ratingLoading,
 }: Props) {
-  const [expanded, setExpanded] = useState(false);
-
   const activeCount =
     filters.subjects.length +
     TOGGLE_FILTERS.filter((t) => filters[t.key]).length +
     (filters.minRating > 0 ? 1 : 0) +
-    (filters.averageMin !== null || filters.averageMax !== null ? 1 : 0) +
-    (filters.medianMin !== null || filters.medianMax !== null ? 1 : 0) +
-    (filters.minStudents !== null ? 1 : 0);
+    (filters.statisticsSemester !== 'general' ? 1 : 0) +
+    (filters.averageMin !== null ? 1 : 0) +
+    (filters.medianMin !== null ? 1 : 0) +
+    (filters.minStudents !== null ? 1 : 0) +
+    (filters.sortBy !== 'default' ? 1 : 0);
 
   const sortValue = `${filters.sortBy}:${filters.sortDirection}`;
-  const usesLatest = filters.statisticsSemester === 'latest';
 
   return (
-    <div className="mt-2 border border-gray-200 rounded-xl bg-white shadow-sm">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 md:cursor-default"
-      >
-        <span className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          סינון ומיון
-          {activeCount > 0 && (
-            <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-1.5 py-0.5">{activeCount}</span>
-          )}
-        </span>
-        <span className="flex items-center gap-2">
-          {activeCount > 0 && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => { e.stopPropagation(); onReset(); }}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onReset(); } }}
-              className="text-xs text-gray-500 hover:text-red-600 underline"
-            >
-              איפוס סינון
-            </span>
-          )}
-          <span aria-hidden className="md:hidden text-gray-400">{expanded ? '▴' : '▾'}</span>
-        </span>
-      </button>
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2 px-1" role="group" aria-label="סינון ומיון">
+      <SubjectsChip filters={filters} onChange={onChange} />
 
-      <div className={`${expanded ? 'block' : 'hidden'} md:block px-3 pb-3 pt-1 space-y-3 border-t border-gray-100`}>
-        {/* Subjects */}
-        <div>
-          <GroupLabel>מקצועות</GroupLabel>
-          <SubjectsMultiSelect filters={filters} onChange={onChange} />
-        </div>
-
-        {/* Academic properties */}
-        <div>
-          <GroupLabel>תכונות אקדמיות</GroupLabel>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            {TOGGLE_FILTERS.map((t) => (
-              <span key={t.key} className="inline-flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => onChange({ [t.key]: !filters[t.key] } as Partial<CourseFilters>)}
-                  aria-pressed={!!filters[t.key]}
-                  className={`text-xs border px-2 py-1 rounded-full transition-colors ${
-                    filters[t.key] ? t.active : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  {t.label}
-                </button>
-                {FILTER_LINKS[t.key as string] && (
-                  <a href={FILTER_LINKS[t.key as string].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS[t.key as string].tooltip ?? FILTER_LINKS[t.key as string].label} className="text-xs text-blue-400 hover:text-blue-600">↗</a>
-                )}
-              </span>
-            ))}
-            <select
-              value={filters.minRating}
-              onChange={(e) => onChange({ minRating: Number(e.target.value) })}
-              dir="rtl"
-              aria-label="דירוג ציזפורק מינימלי"
-              className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${
-                filters.minRating > 0 ? 'bg-teal-100 text-teal-700 border-teal-300' : 'bg-white text-gray-500 border-gray-200 hover:border-teal-300'
-              }`}
-            >
-              {RATING_FILTER_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-            </select>
-            {ratingLoading && <span className="text-xs text-gray-400 animate-pulse" title="טוען דירוגים…">⏳</span>}
-          </div>
-        </div>
-
-        {/* Grade statistics */}
-        <div>
-          <GroupLabel>סטטיסטיקת ציונים</GroupLabel>
-          {!statsAvailable ? (
-            <p className="text-xs text-gray-400 italic">
-              {statsLoading ? 'טוען נתוני ציונים…' : 'נתוני הציונים אינם זמינים כעת.'}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <label className="text-xs text-gray-600" htmlFor="stats-semester">סמסטר:</label>
-                <select
-                  id="stats-semester"
-                  value={filters.statisticsSemester}
-                  onChange={(e) => onChange({ statisticsSemester: e.target.value })}
-                  dir="rtl"
-                  className="text-xs border border-gray-200 rounded-md px-2 py-1 cursor-pointer focus:border-blue-400 outline-none"
-                >
-                  <option value="latest">האחרון הזמין</option>
-                  {availableSemesters.map((s) => <option key={s} value={s}>{formatSemester(s)}</option>)}
-                </select>
-              </div>
-              {usesLatest && (
-                <p className="text-[11px] text-gray-400 leading-snug">
-                  "האחרון הזמין" עשוי להציג סמסטר שונה לכל מקצוע — הסמסטר מוצג לצד הערך.
-                </p>
-              )}
-              <GradeRange
-                label="ממוצע"
-                min={filters.averageMin} max={filters.averageMax}
-                onMin={(v) => onChange({ averageMin: v })} onMax={(v) => onChange({ averageMax: v })}
-              />
-              <GradeRange
-                label="חציון"
-                min={filters.medianMin} max={filters.medianMax}
-                onMin={(v) => onChange({ medianMin: v })} onMax={(v) => onChange({ medianMax: v })}
-              />
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-gray-600 w-12 shrink-0">תלמידים</span>
-                <input
-                  type="number" inputMode="numeric" min={0} placeholder="מינימום"
-                  aria-label="מספר תלמידים מינימלי"
-                  value={filters.minStudents ?? ''}
-                  onChange={(e) => {
-                    const v = e.target.value.trim();
-                    onChange({ minStudents: v === '' ? null : Math.max(0, Math.floor(Number(v) || 0)) });
-                  }}
-                  className="w-20 text-xs border border-gray-200 rounded-md px-1.5 py-1 text-center focus:border-blue-400 outline-none"
-                />
-              </div>
-              <p className="text-[11px] text-gray-400 leading-snug">
-                נתוני ציונים היסטוריים מ-CheeseFork. הזמינות משתנה לפי מקצוע וסמסטר, וההבדלים בין מועדי בחינה אפשריים. אין לראות בערכים הבטחה לקושי הקורס או לציון עתידי.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Sorting */}
-        <div>
-          <GroupLabel>מיון</GroupLabel>
-          <select
-            value={sortValue}
-            onChange={(e) => {
-              const opt = SORT_OPTIONS.find((o) => o.value === e.target.value);
-              if (opt) onChange({ sortBy: opt.sortBy, sortDirection: opt.dir });
-            }}
-            dir="rtl"
-            aria-label="מיון קורסים"
-            className="text-xs border border-gray-200 rounded-md px-2 py-1 cursor-pointer focus:border-blue-400 outline-none"
+      {TOGGLE_FILTERS.map((t) => (
+        <span key={t.key} className="inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onChange({ [t.key]: !filters[t.key] } as Partial<CourseFilters>)}
+            aria-pressed={!!filters[t.key]}
+            className={`${CHIP_BASE} ${filters[t.key] ? t.active : CHIP_OFF}`}
           >
-            {SORT_OPTIONS.filter((o) => statsAvailable || !o.needsStats).map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+            {t.label}
+          </button>
+          {FILTER_LINKS[t.key as string] && (
+            <a href={FILTER_LINKS[t.key as string].href} target="_blank" rel="noopener noreferrer" title={FILTER_LINKS[t.key as string].tooltip ?? FILTER_LINKS[t.key as string].label} className="text-xs text-blue-400 hover:text-blue-600 shrink-0">↗</a>
+          )}
+        </span>
+      ))}
+
+      <span className="inline-flex items-center gap-1">
+        <select
+          value={filters.minRating}
+          onChange={(e) => onChange({ minRating: Number(e.target.value) })}
+          dir="rtl"
+          aria-label="דירוג ציזפורק מינימלי"
+          className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${filters.minRating > 0 ? 'bg-teal-100 text-teal-700 border-teal-300' : CHIP_OFF}`}
+        >
+          {RATING_FILTER_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+        </select>
+        {ratingLoading && <span className="text-xs text-gray-400 animate-pulse" title="טוען דירוגים…">⏳</span>}
+      </span>
+
+      <GradeStatsChip
+        filters={filters}
+        onChange={onChange}
+        availableSemesters={availableSemesters}
+        statsAvailable={statsAvailable}
+        statsLoading={statsLoading}
+      />
+
+      <select
+        value={sortValue}
+        onChange={(e) => {
+          const opt = SORT_OPTIONS.find((o) => o.value === e.target.value);
+          if (opt) onChange({ sortBy: opt.sortBy, sortDirection: opt.dir });
+        }}
+        dir="rtl"
+        aria-label="מיון קורסים"
+        className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${filters.sortBy !== 'default' ? 'bg-violet-100 text-violet-700 border-violet-300' : CHIP_OFF}`}
+      >
+        {SORT_OPTIONS.filter((o) => statsAvailable || !o.needsStats).map((o) => (
+          <option key={o.value} value={o.value}>{`מיון: ${o.label}`}</option>
+        ))}
+      </select>
+
+      {activeCount > 0 && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-xs text-gray-500 hover:text-red-600 underline px-1"
+        >
+          איפוס סינון ({activeCount})
+        </button>
+      )}
     </div>
   );
 }

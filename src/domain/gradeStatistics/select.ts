@@ -33,11 +33,68 @@ export function selectPrimaryCategory(
   return null;
 }
 
+/** Minimum number of semesters with data required for the `כללי` aggregate. */
+export const GENERAL_MIN_SEMESTERS = 3;
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function mean(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return round2(values.reduce((a, b) => a + b, 0) / values.length);
+}
+
+function toSemesterResolved(record: CourseGradeStatistics): ResolvedStatistic {
+  return {
+    kind: 'semester',
+    semester: record.semester,
+    category: record.category,
+    average: record.average,
+    median: record.median,
+    students: record.students,
+  };
+}
+
+function latest(records: CourseGradeStatistics[]): CourseGradeStatistics | null {
+  let chosen: CourseGradeStatistics | null = null;
+  for (const record of records) {
+    if (!chosen || compareSemesters(record.semester, chosen.semester) > 0) chosen = record;
+  }
+  return chosen;
+}
+
 /**
- * Resolve the statistic to use for one course given the semester selection.
+ * The `כללי` aggregate: mean of all available semester averages and mean of all available
+ * semester medians. Requires at least `GENERAL_MIN_SEMESTERS` semester records, and at
+ * least one valid average or median. Returns `null` otherwise (caller falls back to latest).
+ */
+export function computeGeneralStatistic(
+  records: CourseGradeStatistics[] | undefined,
+): ResolvedStatistic | null {
+  if (!records || records.length < GENERAL_MIN_SEMESTERS) return null;
+  const averages = records.map((r) => r.average).filter((v): v is number => v !== null);
+  const medians = records.map((r) => r.median).filter((v): v is number => v !== null);
+  const average = mean(averages);
+  const median = mean(medians);
+  if (average === null && median === null) return null;
+  return {
+    kind: 'general',
+    semester: null,
+    category: null,
+    average,
+    median,
+    students: null,
+    semesterCount: records.length,
+  };
+}
+
+/**
+ * Resolve the statistic to use for one course given the selection.
  *
- * - `'latest'`  → the newest semester that has a record (records already store
- *   only the primary category, one per semester).
+ * - `'general'` → the `כללי` aggregate across semesters; for courses with fewer than
+ *   `GENERAL_MIN_SEMESTERS` semesters of data it falls back to the latest semester.
+ * - `'latest'`  → the newest semester that has a record.
  * - specific code → only that exact semester; never falls back to another.
  *
  * Returns `null` when no matching record exists.
@@ -48,28 +105,18 @@ export function resolveStatistic(
 ): ResolvedStatistic | null {
   if (!records || records.length === 0) return null;
 
-  let chosen: CourseGradeStatistics | null = null;
-  if (selection === 'latest') {
-    for (const record of records) {
-      if (!chosen || compareSemesters(record.semester, chosen.semester) > 0) {
-        chosen = record;
-      }
-    }
-  } else {
-    for (const record of records) {
-      if (record.semester === selection) {
-        chosen = record;
-        break;
-      }
-    }
+  if (selection === 'general') {
+    const general = computeGeneralStatistic(records);
+    if (general) return general;
+    const newest = latest(records); // fewer than the threshold → latest available
+    return newest ? toSemesterResolved(newest) : null;
   }
 
-  if (!chosen) return null;
-  return {
-    semester: chosen.semester,
-    category: chosen.category,
-    average: chosen.average,
-    median: chosen.median,
-    students: chosen.students,
-  };
+  if (selection === 'latest') {
+    const newest = latest(records);
+    return newest ? toSemesterResolved(newest) : null;
+  }
+
+  const exact = records.find((record) => record.semester === selection);
+  return exact ? toSemesterResolved(exact) : null;
 }

@@ -24,7 +24,7 @@ interface Props {
 
 export function CourseGradeStats({ courseId }: Props) {
   const { data, status } = useGradeStatistics();
-  const [selected, setSelected] = useState<string>('latest');
+  const [selected, setSelected] = useState<string>('general');
 
   const records = data?.index.get(courseId);
   const semesters = useMemo(
@@ -69,6 +69,7 @@ export function CourseGradeStats({ courseId }: Props) {
           aria-label="בחר סמסטר לציונים"
           className="text-xs border border-gray-200 rounded-md px-2 py-1 cursor-pointer focus:border-blue-400 outline-none"
         >
+          <option value="general">כללי</option>
           <option value="latest">האחרון הזמין</option>
           {semesters.map((s) => <option key={s} value={s}>{formatSemester(s)}</option>)}
         </select>
@@ -80,18 +81,24 @@ export function CourseGradeStats({ courseId }: Props) {
         <>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5 text-center">
-              <div className="text-xs text-gray-500">ממוצע</div>
+              <div className="text-xs text-gray-500">{stat.kind === 'general' ? 'ממוצע כללי' : 'ממוצע'}</div>
               <div className="text-sm font-bold text-gray-800">{stat.average !== null ? formatGrade(stat.average) : '—'}</div>
             </div>
             <div className="rounded-md bg-gray-50 border border-gray-200 px-2 py-1.5 text-center">
-              <div className="text-xs text-gray-500">חציון</div>
+              <div className="text-xs text-gray-500">{stat.kind === 'general' ? 'חציון כללי' : 'חציון'}</div>
               <div className="text-sm font-bold text-gray-800">{stat.median !== null ? formatGrade(stat.median) : '—'}</div>
             </div>
           </div>
           <div className="text-xs text-gray-400 mt-1.5 flex flex-wrap gap-x-2">
-            <span>{formatSemester(stat.semester)}</span>
-            <span>· {CATEGORY_LABELS[stat.category]}</span>
-            {stat.students !== null && <span>· {stat.students} נבחנים</span>}
+            {stat.kind === 'general' ? (
+              <span>מבוסס על {stat.semesterCount} סמסטרים</span>
+            ) : (
+              <>
+                {stat.semester && <span>{formatSemester(stat.semester)}</span>}
+                {stat.category && <span>· {CATEGORY_LABELS[stat.category]}</span>}
+                {stat.students !== null && <span>· {stat.students} נבחנים</span>}
+              </>
+            )}
           </div>
         </>
       )}
