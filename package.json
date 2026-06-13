@@ -13,6 +13,7 @@
     "build:functions": "npm --prefix functions run build",
     "lint:functions": "npm --prefix functions run lint",
     "analyze:bundle": "node scripts/check-bundle-budget.mjs",
+    "migrate:historical-courses": "node scripts/migrate-historical-courses/run.mjs",
     "perf:bundle": "npm run build && npm run analyze:bundle",
     "check": "powershell -ExecutionPolicy Bypass -File scripts/run-checks.ps1",
     "preview": "vite preview"
