@@ -35,15 +35,16 @@ test('latest available selects the newest semester record', () => {
 test('general aggregate averages the semester averages and medians (>= 3 semesters)', () => {
   assert.equal(GENERAL_MIN_SEMESTERS, 3);
   const records = [
-    rec('202301', { average: 60, median: 62 }),
-    rec('202401', { average: 70, median: 72 }),
-    rec('202501', { average: 80, median: 79 }),
+    rec('202301', { average: 60, median: 62, students: 100 }),
+    rec('202401', { average: 70, median: 72, students: 200 }),
+    rec('202501', { average: 80, median: 79, students: 300 }),
   ];
   const g = resolveStatistic(records, 'general');
   assert.equal(g.kind, 'general');
   assert.equal(g.semester, null);
   assert.equal(g.average, 70);   // mean of 60,70,80
   assert.equal(g.median, 71);    // mean of 62,72,79 = 71
+  assert.equal(g.students, 200); // mean examinees per semester (100,200,300)
   assert.equal(g.semesterCount, 3);
 });
 

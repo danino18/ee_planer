@@ -91,7 +91,10 @@ export function CourseGradeStats({ courseId }: Props) {
           </div>
           <div className="text-xs text-gray-400 mt-1.5 flex flex-wrap gap-x-2">
             {stat.kind === 'general' ? (
-              <span>מבוסס על {stat.semesterCount} סמסטרים</span>
+              <>
+                <span>מבוסס על {stat.semesterCount} סמסטרים</span>
+                {stat.students !== null && <span>· {stat.students} נבחנים בממוצע</span>}
+              </>
             ) : (
               <>
                 {stat.semester && <span>{formatSemester(stat.semester)}</span>}

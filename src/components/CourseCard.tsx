@@ -325,6 +325,12 @@ export const CourseCard = memo(function CourseCard({
                 <span>{formatSemester(gradeStat.semester)}</span>
               </>
             )}
+            {gradeStat.students !== null && (
+              <>
+                <span aria-hidden>·</span>
+                <span>{gradeStat.students} נבחנים</span>
+              </>
+            )}
           </div>
         )}
       </div>

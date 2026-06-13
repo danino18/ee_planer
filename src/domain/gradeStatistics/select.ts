@@ -45,6 +45,11 @@ function mean(values: number[]): number | null {
   return round2(values.reduce((a, b) => a + b, 0) / values.length);
 }
 
+function meanInt(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+}
+
 function toSemesterResolved(record: CourseGradeStatistics): ResolvedStatistic {
   return {
     kind: 'semester',
@@ -75,6 +80,7 @@ export function computeGeneralStatistic(
   if (!records || records.length < GENERAL_MIN_SEMESTERS) return null;
   const averages = records.map((r) => r.average).filter((v): v is number => v !== null);
   const medians = records.map((r) => r.median).filter((v): v is number => v !== null);
+  const studentCounts = records.map((r) => r.students).filter((v): v is number => v !== null);
   const average = mean(averages);
   const median = mean(medians);
   if (average === null && median === null) return null;
@@ -84,7 +90,9 @@ export function computeGeneralStatistic(
     category: null,
     average,
     median,
-    students: null,
+    // Average number of examinees per semester — keeps the min-students filter and the
+    // card display meaningful (and comparable to per-semester mode) in general mode.
+    students: meanInt(studentCounts),
     semesterCount: records.length,
   };
 }
