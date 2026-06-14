@@ -44,9 +44,11 @@ export function serializePlanState(state: StudentPlan): StudentPlan {
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
     quantumComputingMinorEnabled: state.quantumComputingMinorEnabled ?? false,
+    newLabFormatEnabled: state.newLabFormatEnabled ?? false,
     initializedTracks: [...(state.initializedTracks ?? [])],
     targetGraduationSemesterId: state.targetGraduationSemesterId ?? null,
     loadProfile: state.loadProfile ?? 'fulltime',
     catalogYear: state.catalogYear ?? null,
+    countOnlyCompletedCourses: state.countOnlyCompletedCourses ?? false,
   };
 }

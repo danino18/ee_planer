@@ -1418,6 +1418,10 @@ export const usePlanStore = create<PlanState>()(
           const now = Date.now();
           const newId = crypto.randomUUID();
           const dateLabel = new Date(now).toLocaleDateString('he-IL');
+          const snapshot = captureSnapshot(state);
+          const updatedVersions = state.versions.map((v) =>
+            v.id === state.activeVersionId ? { ...v, plan: snapshot, updatedAt: now } : v,
+          );
           const newVersion: PlanVersion = {
             id: newId,
             name: `עותק משיתוף - ${dateLabel}`,
@@ -1429,7 +1433,7 @@ export const usePlanStore = create<PlanState>()(
           result = { ok: true, versionId: newId };
           return {
             ...planToStateFields(source.plan, state),
-            versions: [...state.versions, newVersion],
+            versions: [...updatedVersions, newVersion],
             activeVersionId: newId,
             shareReview: null,
             _history: [],
@@ -1482,9 +1486,15 @@ export const usePlanStore = create<PlanState>()(
           lastLocalEditAt: s.lastLocalEditAt ?? 0,
         };
         if (fromVersion === 0 || !s.versions || s.versions.length === 0) {
-          // Wrap existing plan as the first version
+          // Wrap existing plan as the first version. Run it through
+          // serializePlanState so the version's plan only ever contains
+          // the canonical StudentPlan fields - never legacy PlanState
+          // bookkeeping fields (e.g. _history, versions, shareReview)
+          // that would otherwise be spread in from the old persisted
+          // root state and later get rejected as "unsupported fields"
+          // when shared/synced.
           const vId = crypto.randomUUID();
-          const plan: StudentPlan = { ...initialState, ...s };
+          const plan: StudentPlan = serializePlanState({ ...initialState, ...s });
           return {
             ...migratedBase,
             versions: [{

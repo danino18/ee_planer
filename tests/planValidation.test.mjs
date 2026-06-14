@@ -22,6 +22,7 @@ function loadTranspiledModule(relativePath) {
 
 const { sanitizeStudentPlan, sanitizeEnvelope: sanitizeEnvelopeForClient } = await loadTranspiledModule('src/services/planValidation.ts');
 const { validateStudentPlanPayload } = await loadTranspiledModule('functions/src/security/planValidation.ts');
+const { serializePlanState } = await loadTranspiledModule('src/services/planStateSerialization.ts');
 
 function createPlanPayload() {
   return {
@@ -246,7 +247,7 @@ test('cloud sync schema stays aligned for serialized StudentPlan fields', () => 
   const clientValidatorSource = readFileSync(join(repoRoot, 'src/services/planValidation.ts'), 'utf8');
   const securityValidatorSource = readFileSync(join(repoRoot, 'functions/src/security/planValidation.ts'), 'utf8');
 
-  for (const key of ['roboticsMinorEnabled', 'entrepreneurshipMinorEnabled', 'quantumComputingMinorEnabled']) {
+  for (const key of ['roboticsMinorEnabled', 'entrepreneurshipMinorEnabled', 'quantumComputingMinorEnabled', 'newLabFormatEnabled', 'countOnlyCompletedCourses']) {
     assert.match(serializerSource, new RegExp(`${key}: state\\.${key}`), `serializePlanState must include ${key}`);
     assert.match(clientValidatorSource, new RegExp(`['"]${key}['"]`), `client validator must allow ${key}`);
     assert.match(securityValidatorSource, new RegExp(`["']${key}["']`), `security validator must allow ${key}`);
@@ -300,5 +301,59 @@ test('validators accept catalogYear (value and null) and reject out-of-range val
     const plan = { ...createPlanPayload(), catalogYear: badYear };
     assert.equal(sanitizeStudentPlan(plan), null, `client should reject catalogYear=${badYear}`);
     assert.equal(validateStudentPlanPayload(plan).ok, false, `server should reject catalogYear=${badYear}`);
+  }
+});
+
+test('serializePlanState strips legacy bookkeeping fields so a migrated plan passes validation as a non-active version', () => {
+  const legacyPersistedState = {
+    ...createPlanPayload(),
+    newLabFormatEnabled: false,
+    _history: [],
+    _initKey: 'cs',
+    isSwitchingTrack: false,
+    shareReview: null,
+    hasPendingCloudSync: false,
+    lastLocalEditAt: 123,
+    versions: [],
+    activeVersionId: '',
+  };
+
+  const migratedPlan = serializePlanState(legacyPersistedState);
+
+  assert.equal(migratedPlan._history, undefined, 'serialized plan must not carry legacy _history');
+  assert.equal(migratedPlan.versions, undefined, 'serialized plan must not carry legacy versions');
+  assert.equal(migratedPlan.activeVersionId, undefined, 'serialized plan must not carry legacy activeVersionId');
+  assert.equal(migratedPlan.shareReview, undefined, 'serialized plan must not carry legacy shareReview');
+  assert.equal(migratedPlan.newLabFormatEnabled, false);
+
+  const envelope = {
+    schemaVersion: 2,
+    versions: [
+      { id: 'v1', name: 'גרסה 1', plan: migratedPlan, createdAt: 1, updatedAt: 1 },
+      { id: 'v2', name: 'גרסה 2', plan: createPlanPayload(), createdAt: 2, updatedAt: 2 },
+    ],
+    activeVersionId: 'v2',
+  };
+
+  const validated = validateStudentPlanPayload(envelope);
+  assert.equal(validated.ok, true, validated.ok ? '' : validated.error);
+
+  assert.ok(sanitizeEnvelopeForClient(envelope), 'client should accept envelope with migrated non-active version');
+});
+
+test('newLabFormatEnabled round-trips through serializePlanState, client sanitizer, and server validator', () => {
+  const plan = { ...createPlanPayload(), newLabFormatEnabled: true };
+
+  const serialized = serializePlanState(plan);
+  assert.equal(serialized.newLabFormatEnabled, true);
+
+  const sanitized = sanitizeStudentPlan(serialized);
+  assert.ok(sanitized, 'client should accept newLabFormatEnabled');
+  assert.equal(sanitized.newLabFormatEnabled, true);
+
+  const validated = validateStudentPlanPayload(serialized);
+  assert.equal(validated.ok, true);
+  if (validated.ok) {
+    assert.equal(validated.value.newLabFormatEnabled, true);
   }
 });

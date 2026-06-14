@@ -36,6 +36,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'roboticsMinorEnabled',
   'entrepreneurshipMinorEnabled',
   'quantumComputingMinorEnabled',
+  'newLabFormatEnabled',
   'initializedTracks',
   'targetGraduationSemesterId',
   'loadProfile',
@@ -537,6 +538,11 @@ function sanitizeStudentPlanRecord(
   if ('quantumComputingMinorEnabled' in value) {
     if (typeof value.quantumComputingMinorEnabled !== 'boolean') return null;
     sanitized.quantumComputingMinorEnabled = value.quantumComputingMinorEnabled;
+  }
+
+  if ('newLabFormatEnabled' in value) {
+    if (typeof value.newLabFormatEnabled !== 'boolean') return null;
+    sanitized.newLabFormatEnabled = value.newLabFormatEnabled;
   }
 
   if ('initializedTracks' in value) {

@@ -34,6 +34,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "roboticsMinorEnabled",
   "entrepreneurshipMinorEnabled",
   "quantumComputingMinorEnabled",
+  "newLabFormatEnabled",
   "initializedTracks",
   "targetGraduationSemesterId",
   "loadProfile",
@@ -670,6 +671,13 @@ function validateStudentPlanRecord(
       return fail("Invalid quantumComputingMinorEnabled");
     }
     sanitized.quantumComputingMinorEnabled = value.quantumComputingMinorEnabled;
+  }
+
+  if ("newLabFormatEnabled" in value) {
+    if (typeof value.newLabFormatEnabled !== "boolean") {
+      return fail("Invalid newLabFormatEnabled");
+    }
+    sanitized.newLabFormatEnabled = value.newLabFormatEnabled;
   }
 
   if ("initializedTracks" in value) {
