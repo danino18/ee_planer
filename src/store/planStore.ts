@@ -111,6 +111,8 @@ interface PlanState extends StudentPlan {
     | { ok: false; reason: 'no_share_review' | 'capacity_full' };
   markCloudSyncPending: (editedAt?: number) => void;
   markCloudSyncSettled: (syncedAt?: number) => void;
+  darkMode: 'light' | 'dark' | 'system';
+  setDarkMode: (mode: 'light' | 'dark' | 'system') => void;
 }
 
 export const NORMAL_VERSION_LIMIT = 4;
@@ -501,6 +503,9 @@ export const usePlanStore = create<PlanState>()(
       shareReview: null,
       hasPendingCloudSync: false,
       lastLocalEditAt: 0,
+      darkMode: 'system' as const,
+
+      setDarkMode: (mode) => set({ darkMode: mode }),
 
       setTrack: (newTrackId, newCatalogYear) =>
         set((state) => {

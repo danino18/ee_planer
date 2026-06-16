@@ -84,6 +84,8 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
     toggleCompleted,
     addSemester,
     maxSemester,
+    darkMode,
+    setDarkMode,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -112,6 +114,8 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
     toggleCompleted: state.toggleCompleted,
     addSemester: state.addSemester,
     maxSemester: state.maxSemester,
+    darkMode: state.darkMode,
+    setDarkMode: state.setDarkMode,
   })));
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id, catalogYear);
   const specs = specializationCatalog.groups;
@@ -647,10 +651,10 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
         <div
           className={`sticky top-0 z-20 px-4 py-2 text-xs text-center flex flex-wrap items-center justify-center gap-3 ${
             shareMode.isShareReview
-              ? 'bg-indigo-50 border-b border-indigo-200 text-indigo-800'
+              ? 'bg-indigo-50 dark:bg-indigo-950 border-b border-indigo-200 dark:border-indigo-800 text-indigo-800 dark:text-indigo-200'
               : shareMode.canEdit
-                ? 'bg-amber-50 border-b border-amber-200 text-amber-800'
-                : 'bg-blue-50 border-b border-blue-200 text-blue-800'
+                ? 'bg-amber-50 dark:bg-amber-950 border-b border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200'
+                : 'bg-blue-50 dark:bg-blue-950 border-b border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
           }`}
           dir="rtl"
         >
@@ -741,6 +745,15 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
                   )}
                 </button>
               )}
+              <button
+                onClick={() => setDarkMode(darkMode === 'dark' ? 'light' : darkMode === 'light' ? 'system' : 'dark')}
+                className="text-sm border px-2 py-1.5 rounded-lg transition-colors"
+                style={{ color: 'rgba(255,255,255,0.75)', borderColor: 'rgba(255,255,255,0.2)' }}
+                title={darkMode === 'dark' ? 'מצב כהה — לחץ למצב בהיר' : darkMode === 'light' ? 'מצב בהיר — לחץ למצב אוטומטי' : 'אוטומטי — לחץ למצב כהה'}
+                aria-label="החלף מצב תאורה"
+              >
+                {darkMode === 'dark' ? '🌙' : darkMode === 'light' ? '☀️' : '🌓'}
+              </button>
               <button
                 onClick={undo}
                 disabled={_history.length === 0}

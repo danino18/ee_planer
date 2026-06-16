@@ -59,7 +59,7 @@ function clampGrade(value: string): number | null {
 }
 
 const CHIP_BASE = 'text-xs border px-2 py-1 rounded-full transition-colors';
-const CHIP_OFF = 'bg-white text-gray-500 border-gray-200 hover:border-gray-300';
+const CHIP_OFF = 'bg-white dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500';
 
 /** A compact chip that opens a popover; closes on outside-click and Escape. */
 function ChipPopover({
@@ -110,7 +110,7 @@ function ChipPopover({
         )}
       </span>
       {open && (
-        <div id={panelId} role="dialog" className={`absolute z-[60] mt-1 top-full right-0 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs ${panelClassName ?? 'min-w-44'}`}>
+        <div id={panelId} role="dialog" className={`absolute z-[60] mt-1 top-full right-0 max-w-[calc(100vw-2rem)] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-lg p-2 text-xs ${panelClassName ?? 'min-w-44'}`}>
           {children}
         </div>
       )}
@@ -133,9 +133,9 @@ function SubjectsChip({ filters, onChange }: Pick<Props, 'filters' | 'onChange'>
       activeClass="bg-blue-100 text-blue-700 border-blue-300"
       onClear={() => onChange({ subjects: [] })}
     >
-      <div className="flex items-center justify-between gap-2 px-1 pb-1.5 mb-1 border-b border-gray-100">
-        <button type="button" className="text-blue-600 hover:text-blue-800" onClick={() => onChange({ subjects: SUBJECT_OPTIONS.map((o) => o.id) })}>בחר הכל</button>
-        <button type="button" className="text-gray-500 hover:text-gray-700" onClick={() => onChange({ subjects: [] })}>נקה</button>
+      <div className="flex items-center justify-between gap-2 px-1 pb-1.5 mb-1 border-b border-gray-100 dark:border-slate-700">
+        <button type="button" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300" onClick={() => onChange({ subjects: SUBJECT_OPTIONS.map((o) => o.id) })}>בחר הכל</button>
+        <button type="button" className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200" onClick={() => onChange({ subjects: [] })}>נקה</button>
       </div>
       <div role="group" aria-label="מקצועות">
         {SUBJECT_OPTIONS.map((opt) => {
@@ -146,9 +146,9 @@ function SubjectsChip({ filters, onChange }: Pick<Props, 'filters' | 'onChange'>
               aria-pressed={isOn}
               key={opt.id}
               onClick={() => toggle(opt.id)}
-              className={`flex w-full items-center gap-2 px-2 py-1 rounded text-start ${isOn ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'}`}
+              className={`flex w-full items-center gap-2 px-2 py-1 rounded text-start ${isOn ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
             >
-              <span className={`inline-block w-3.5 h-3.5 border rounded-sm shrink-0 text-center leading-3 ${isOn ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`} aria-hidden>
+              <span className={`inline-block w-3.5 h-3.5 border rounded-sm shrink-0 text-center leading-3 ${isOn ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300 dark:border-slate-500'}`} aria-hidden>
                 {isOn && <span className="text-[10px]">✓</span>}
               </span>
               <span className={`inline-block w-2 h-2 rounded-full ${opt.dotClass}`} aria-hidden />
@@ -164,13 +164,13 @@ function SubjectsChip({ filters, onChange }: Pick<Props, 'filters' | 'onChange'>
 function MinInput({ label, value, max, onChange }: { label: string; value: number | null; max?: number; onChange: (raw: string) => void }) {
   return (
     <label className="flex items-center justify-between gap-2">
-      <span className="text-gray-600">{label}</span>
+      <span className="text-gray-600 dark:text-gray-400">{label}</span>
       <input
         type="number" inputMode="numeric" min={0} max={max} placeholder="מינ׳"
         aria-label={label}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
-        className="w-20 text-xs border border-gray-200 rounded-md px-1.5 py-1 text-center focus:border-blue-400 outline-none"
+        className="w-20 text-xs border border-gray-200 dark:border-slate-600 rounded-md px-1.5 py-1 text-center focus:border-blue-400 outline-none bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200"
       />
     </label>
   );
@@ -192,17 +192,17 @@ function GradeStatsChip({
       panelClassName="w-60"
     >
       {!statsAvailable ? (
-        <p className="text-gray-400 italic px-1">{statsLoading ? 'טוען נתוני ציונים…' : 'נתוני הציונים אינם זמינים כעת.'}</p>
+        <p className="text-gray-400 dark:text-gray-500 italic px-1">{statsLoading ? 'טוען נתוני ציונים…' : 'נתוני הציונים אינם זמינים כעת.'}</p>
       ) : (
         <div className="space-y-2">
           <label className="flex items-center justify-between gap-2">
-            <span className="text-gray-600">סטטיסטיקה</span>
+            <span className="text-gray-600 dark:text-gray-400">סטטיסטיקה</span>
             <select
               value={mode}
               onChange={(e) => onChange({ statisticsSemester: e.target.value })}
               dir="rtl"
               aria-label="מצב סטטיסטיקת ציונים"
-              className="text-xs border border-gray-200 rounded-md px-2 py-1 cursor-pointer focus:border-blue-400 outline-none max-w-36"
+              className="text-xs border border-gray-200 dark:border-slate-600 rounded-md px-2 py-1 cursor-pointer focus:border-blue-400 outline-none max-w-36 bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200"
             >
               <option value="general">כללי</option>
               <option value="latest">האחרון הזמין</option>
@@ -210,7 +210,7 @@ function GradeStatsChip({
             </select>
           </label>
 
-          <p className="text-[11px] text-gray-400 leading-snug">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug">
             {mode === 'general'
               ? 'ממוצע וחציון כלליים מחושבים מכל הסמסטרים עם נתונים (לפחות 3). קורסים עם פחות מ-3 סמסטרים מציגים את הסמסטר האחרון.'
               : mode === 'latest'
@@ -218,7 +218,7 @@ function GradeStatsChip({
                 : 'מוצגים נתונים מהסמסטר הנבחר בלבד.'}
           </p>
 
-          <div className="border-t border-gray-100 pt-2 space-y-1.5">
+          <div className="border-t border-gray-100 dark:border-slate-700 pt-2 space-y-1.5">
             <MinInput label="ממוצע מינ׳" value={filters.averageMin} max={100} onChange={(raw) => onChange({ averageMin: clampGrade(raw) })} />
             <MinInput label="חציון מינ׳" value={filters.medianMin} max={100} onChange={(raw) => onChange({ medianMin: clampGrade(raw) })} />
             <MinInput
@@ -231,7 +231,7 @@ function GradeStatsChip({
             />
           </div>
 
-          <p className="text-[11px] text-gray-400 leading-snug border-t border-gray-100 pt-1.5">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-snug border-t border-gray-100 dark:border-slate-700 pt-1.5">
             נתוני ציונים היסטוריים מ-CheeseFork. הזמינות משתנה לפי מקצוע וסמסטר. אין לראות בערכים הבטחה לקושי הקורס או לציון עתידי.
           </p>
         </div>
@@ -281,7 +281,7 @@ export function CourseFilterPanel({
           onChange={(e) => onChange({ minRating: Number(e.target.value) })}
           dir="rtl"
           aria-label="דירוג ציזפורק מינימלי"
-          className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${filters.minRating > 0 ? 'bg-teal-100 text-teal-700 border-teal-300' : CHIP_OFF}`}
+          className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${filters.minRating > 0 ? 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border-teal-300 dark:border-teal-700' : CHIP_OFF}`}
         >
           {RATING_FILTER_OPTIONS.map((opt) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
         </select>
@@ -304,7 +304,7 @@ export function CourseFilterPanel({
         }}
         dir="rtl"
         aria-label="מיון קורסים"
-        className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${filters.sortBy !== 'default' ? 'bg-violet-100 text-violet-700 border-violet-300' : CHIP_OFF}`}
+        className={`text-xs border rounded-full px-2 py-1 cursor-pointer ${filters.sortBy !== 'default' ? 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 border-violet-300 dark:border-violet-700' : CHIP_OFF}`}
       >
         {SORT_OPTIONS.filter((o) => statsAvailable || !o.needsStats).map((o) => (
           <option key={o.value} value={o.value}>{`מיון: ${o.label}`}</option>
@@ -315,7 +315,7 @@ export function CourseFilterPanel({
         <button
           type="button"
           onClick={onReset}
-          className="text-xs text-gray-500 hover:text-red-600 underline px-1"
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 underline px-1"
         >
           איפוס סינון ({activeCount})
         </button>

@@ -65,12 +65,12 @@ function ProgressRow({ label, earned, required, color }: ProgressRowProps) {
   return (
     <div className="mb-3">
       <div className="flex justify-between items-center mb-1">
-        <span className="text-sm text-gray-700">{label}</span>
-        <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}`}>
+        <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+        <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
           {earned.toFixed(1)} / {required} {done ? 'נק"ז' : ''}
         </span>
       </div>
-      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
         <div className={`h-2 rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
@@ -103,22 +103,22 @@ function ElectiveBreakdown({
   }
 
   return (
-    <div className="mb-3 rounded-lg border border-purple-100 bg-purple-50/60 px-3 py-2.5 space-y-2.5">
+    <div className="mb-3 rounded-lg border border-purple-100 dark:border-purple-900 bg-purple-50/60 dark:bg-purple-950/40 px-3 py-2.5 space-y-2.5">
       {showExternalFaculty && (
         <div>
           <div className="flex justify-between items-center gap-3 mb-1">
             <button
               onClick={() => setExternalExpanded(e => !e)}
-              className="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-purple-700 transition-colors"
+              className="flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-purple-700 transition-colors"
             >
               <span>{externalExpanded ? '▾' : '▸'}</span>
               <span>קורסים מוכרים מפקולטות אחרות</span>
             </button>
-            <span className="text-xs font-semibold shrink-0 text-gray-600">
+            <span className="text-xs font-semibold shrink-0 text-gray-600 dark:text-gray-400">
               {formatCredits(externalFaculty.earned)} / {formatCredits(externalFaculty.limit)}
             </span>
           </div>
-          <div className="w-full bg-purple-100 rounded-full h-1.5">
+          <div className="w-full bg-purple-100 dark:bg-purple-900/50 rounded-full h-1.5">
             <div
               className="h-1.5 rounded-full transition-all bg-purple-500"
               style={{ width: `${Math.min(100, (externalFaculty.earned / externalFaculty.limit) * 100)}%` }}
@@ -129,7 +129,7 @@ function ElectiveBreakdown({
               {externalFaculty.courseIds.map(id => {
                 const course = courses.get(id);
                 return (
-                  <li key={id} className="flex justify-between items-center gap-2 text-xs text-gray-600">
+                  <li key={id} className="flex justify-between items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
                     <span className="truncate">{course?.name ?? id}</span>
                     <span className="shrink-0 font-medium text-purple-700">
                       {formatCredits(course?.credits ?? 0)} נק"ז
@@ -150,19 +150,19 @@ function ElectiveBreakdown({
             return (
               <div key={requirement.area}>
                 <div className="flex justify-between items-center gap-3 mb-1">
-                  <span className="text-xs font-medium text-gray-700">{requirement.label}</span>
-                  <span className={`text-xs font-semibold shrink-0 ${done ? 'text-green-600' : 'text-gray-600'}`}>
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{requirement.label}</span>
+                  <span className={`text-xs font-semibold shrink-0 ${done ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
                     {formatCredits(requirement.earned)} / {formatCredits(requirement.required)}
                   </span>
                 </div>
-                <div className="w-full bg-purple-100 rounded-full h-1.5">
+                <div className="w-full bg-purple-100 dark:bg-purple-900/50 rounded-full h-1.5">
                   <div
                     className={`h-1.5 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-purple-500'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
                 {requirement.requiredAnyOfCourseIds && (
-                  <div className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-600">
+                  <div className="mt-1.5 flex items-start gap-1.5 text-xs text-gray-600 dark:text-gray-400">
                     <span className={`font-bold shrink-0 ${requirement.requiredAnyOfDone ? 'text-green-600' : 'text-gray-400'}`}>
                       {requirement.requiredAnyOfDone ? '\u2713' : '\u25cb'}
                     </span>
@@ -179,16 +179,16 @@ function ElectiveBreakdown({
 
       {assignmentChoices.length > 0 && (
         <div className="border-t border-purple-100 pt-2 space-y-1.5">
-          <p className="text-xs font-medium text-gray-700">{MANUAL_ASSIGNMENT_TITLE}</p>
+          <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{MANUAL_ASSIGNMENT_TITLE}</p>
           {assignmentChoices.map((choice) => (
-            <label key={choice.courseId} className="flex items-center justify-between gap-2 text-xs text-gray-600">
+            <label key={choice.courseId} className="flex items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400">
               <span className="min-w-0 truncate">{choice.courseName}</span>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-xs text-gray-400">{CREDIT_ASSIGNMENT_LABEL}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{CREDIT_ASSIGNMENT_LABEL}</span>
                 <select
                   value={choice.selectedArea}
                   onChange={(event) => onSelectAssignment(choice.courseId, event.target.value as ElectiveCreditArea)}
-                  className="text-xs border border-purple-200 rounded bg-white px-1.5 py-0.5 text-gray-700"
+                  className="text-xs border border-purple-200 dark:border-purple-800 rounded bg-white dark:bg-slate-700 px-1.5 py-0.5 text-gray-700 dark:text-gray-300"
                 >
                   {choice.options.map((area) => (
                     <option key={area} value={area}>{ELECTIVE_AREA_LABELS[area]}</option>
@@ -247,12 +247,12 @@ function SubBar({ label, recognized, target }: SubBarProps) {
   return (
     <div>
       <div className="flex justify-between items-center gap-3 mb-0.5">
-        <span className={`text-sm ${muted ? 'text-gray-400' : 'text-gray-700'}`}>{label}</span>
-        <span className={`text-sm font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600'}`}>
+        <span className={`text-sm ${muted ? 'text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>{label}</span>
+        <span className={`text-sm font-semibold shrink-0 ${done ? 'text-green-600' : muted ? 'text-gray-400' : 'text-gray-600 dark:text-gray-400'}`}>
           {formatCredits(recognized)} / {formatCredits(target)}
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-1">
+      <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-1">
         <div
           className={`h-1 rounded-full transition-all ${done ? 'bg-green-500' : 'bg-gray-400'}`}
           style={{ width: `${pct}%` }}
@@ -304,21 +304,21 @@ function GeneralElectivesRow({
     c.surplusBeyond12 > 0;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+    <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 px-3 py-2.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{getRequirementDisplayLabel(req)}</span>
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">{missingText}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{missingText}</p>
         </div>
-        <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600'}`}>
+        <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
           {formatCredits(total.recognized)} / {formatCredits(total.target)} נק"ז
         </span>
       </div>
 
-      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+      <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-1.5 mt-2">
         <div
           className={`h-1.5 rounded-full transition-all ${isDone ? 'bg-green-500' : 'bg-gray-400'}`}
           style={{ width: `${pct}%` }}
@@ -336,12 +336,12 @@ function GeneralElectivesRow({
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className="text-xs text-gray-500 hover:text-gray-700"
+            className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700"
           >
             {showDetails ? '▲ הסתר פירוט' : '▼ פירוט מקורות'}
           </button>
           {showDetails && (
-            <div className="mt-1.5 space-y-1 text-xs text-gray-600">
+            <div className="mt-1.5 space-y-1 text-xs text-gray-600 dark:text-gray-400">
               {c.regularSportToFloor > 0 && (
                 <p>ספורט רגיל ← רצפת ספורט: {formatCredits(c.regularSportToFloor)} נק"ז</p>
               )}
@@ -403,7 +403,7 @@ function GeneralElectivesRow({
         return (
           <div className="mt-2 flex flex-wrap gap-1">
             {Array.from(grouped.values()).map(({ name, count }) => (
-              <span key={`general-electives-${name}`} className="text-xs rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+              <span key={`general-electives-${name}`} className="text-xs rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-2 py-0.5 text-gray-600 dark:text-gray-300">
                 {count > 1 ? `${name} ×${count}` : name}
               </span>
             ))}
@@ -417,7 +417,7 @@ function GeneralElectivesRow({
             const course = req.countedCourses.find((item) => item.courseId === courseId);
             if (!course) return null;
             return (
-              <label key={`general-electives-toggle-${courseId}`} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+              <label key={`general-electives-toggle-${courseId}`} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={englishTaughtCourses.includes(courseId)}
@@ -470,21 +470,21 @@ function CompactRequirementRow({
     : 'הושלם';
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
+    <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 px-3 py-2.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-800">{getRequirementDisplayLabel(req)}</span>
+            <span className="text-sm font-medium text-gray-800 dark:text-gray-100">{getRequirementDisplayLabel(req)}</span>
             {isDone && <span className="text-xs font-semibold text-green-600">הושלם</span>}
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">{missingText}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{missingText}</p>
         </div>
-        <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600'}`}>
+        <span className={`text-xs font-semibold shrink-0 ${isDone ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
           {formatRequirementValue(req, targetValue)}
         </span>
       </div>
 
-      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+      <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-1.5 mt-2">
         <div
           className={`h-1.5 rounded-full transition-all ${isDone ? 'bg-green-500' : 'bg-gray-400'}`}
           style={{ width: `${pct}%` }}
@@ -504,7 +504,7 @@ function CompactRequirementRow({
               onSetEnglishScore(nextValue);
             }}
             placeholder="104-150"
-            className="w-24 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center bg-white"
+            className="w-24 text-xs border border-gray-300 dark:border-slate-600 rounded px-1.5 py-0.5 text-center bg-white dark:bg-slate-700 dark:text-gray-200"
           />
         </div>
       )}
@@ -512,7 +512,7 @@ function CompactRequirementRow({
       {req.requirementId === 'english' && (
         <div className="mt-2 space-y-1.5">
           {englishScore === undefined ? (
-            <p className="text-xs text-gray-400">הזן ניקוד אמיר"ם כדי לחשב את דרישות האנגלית</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">הזן ניקוד אמיר"ם כדי לחשב את דרישות האנגלית</p>
           ) : (
             englishRequirementItems?.map((requirement) => (
               <div key={`${req.requirementId}-${requirement.kind}-${requirement.label}`} className="flex items-start gap-2 text-xs">
@@ -520,8 +520,8 @@ function CompactRequirementRow({
                   {requirement.done ? '✓' : '○'}
                 </span>
                 <div className="min-w-0">
-                  <div className={`font-medium ${requirement.done ? 'text-green-700' : 'text-gray-600'}`}>{requirement.label}</div>
-                  <div className="text-gray-500 break-words">{renderEnglishRequirementText(requirement)}</div>
+                  <div className={`font-medium ${requirement.done ? 'text-green-700' : 'text-gray-600 dark:text-gray-400'}`}>{requirement.label}</div>
+                  <div className="text-gray-500 dark:text-gray-500 break-words">{renderEnglishRequirementText(requirement)}</div>
                 </div>
               </div>
             ))
@@ -539,7 +539,7 @@ function CompactRequirementRow({
         return (
           <div className="mt-2 flex flex-wrap gap-1">
             {Array.from(grouped.values()).map(({ name, count }) => (
-              <span key={`${req.requirementId}-${name}`} className="text-sm rounded-full bg-white border border-gray-200 px-2 py-0.5 text-gray-600">
+              <span key={`${req.requirementId}-${name}`} className="text-sm rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-2 py-0.5 text-gray-600 dark:text-gray-300">
                 {count > 1 ? `${name} ×${count}` : name}
               </span>
             ))}
@@ -554,7 +554,7 @@ function CompactRequirementRow({
             if (!course) return null;
 
             return (
-              <label key={`${req.requirementId}-toggle-${courseId}`} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+              <label key={`${req.requirementId}-toggle-${courseId}`} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={englishTaughtCourses.includes(courseId)}
@@ -764,7 +764,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           +
         </button>
         {isPickerOpen && (
-          <div className="absolute start-0 top-full mt-0.5 z-[60] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[130px]">
+          <div className="absolute start-0 top-full mt-0.5 z-[60] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1 min-w-[130px]">
             {semesterOptions.map(({ label, value }) => (
               <button
                 key={value}
@@ -773,7 +773,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   addCourseToSemester(courseId, value);
                   setPickerFor(null);
                 }}
-                className="w-full text-right text-xs px-2.5 py-1 hover:bg-blue-50 text-gray-700 hover:text-blue-700 transition-colors"
+                className="w-full text-right text-xs px-2.5 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 hover:text-blue-700 transition-colors"
               >
                 {label}
               </button>
@@ -788,17 +788,17 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   const shouldShowCoreAddButton = trackId === 'ce' || trackId === 'cs';
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 sidebar-panel">
-      <h2 className="text-base font-bold text-slate-800 mb-3 tracking-tight">מעקב דרישות</h2>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sidebar-panel">
+      <h2 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-3 tracking-tight">מעקב דרישות</h2>
 
-      <div className="mb-4 flex rounded-xl border border-slate-200 overflow-hidden text-xs">
+      <div className="mb-4 flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-xs">
         <button
           type="button"
           onClick={() => countOnlyCompletedCourses && toggleCountOnlyCompleted()}
           className={`flex-1 py-1.5 px-2 transition-colors ${
             !countOnlyCompletedCourses
               ? 'font-semibold text-white'
-              : 'bg-white text-slate-500 hover:bg-slate-50'
+              : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
           }`}
           style={!countOnlyCompletedCourses ? { background: '#1e4d93' } : {}}
         >
@@ -807,10 +807,10 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         <button
           type="button"
           onClick={() => !countOnlyCompletedCourses && toggleCountOnlyCompleted()}
-          className={`flex-1 py-1.5 px-2 transition-colors border-r border-slate-200 ${
+          className={`flex-1 py-1.5 px-2 transition-colors border-r border-slate-200 dark:border-slate-700 ${
             countOnlyCompletedCourses
               ? 'font-semibold text-white'
-              : 'bg-white text-slate-500 hover:bg-slate-50'
+              : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
           }`}
           style={countOnlyCompletedCourses ? { background: '#1e4d93' } : {}}
         >
@@ -819,8 +819,8 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
       </div>
 
       {progress.isReady && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-4 text-center">
-          <p className="text-emerald-700 font-semibold text-sm">עמדת בכל הדרישות!</p>
+        <div className="bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3 mb-4 text-center">
+          <p className="text-emerald-700 dark:text-emerald-400 font-semibold text-sm">עמדת בכל הדרישות!</p>
         </div>
       )}
 
@@ -840,14 +840,14 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         const done = completed >= required;
         const pct = Math.min(100, required > 0 ? (completed / required) * 100 : 0);
         return (
-          <div className="mb-3 rounded-xl border border-slate-200/70 bg-slate-50/80 px-3 py-2.5">
+          <div className="mb-3 rounded-xl border border-slate-200/70 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-700/50 px-3 py-2.5">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-800">קורסי ליבה</span>
-              <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600'}`}>
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-100">קורסי ליבה</span>
+              <span className={`text-sm font-bold ${done ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
                 {completed} / {required} {done ? 'קורסים ✓' : 'קורסים'}
               </span>
             </div>
-            <div className="w-full bg-slate-200 rounded-full h-2 mb-2 overflow-hidden">
+            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-2 overflow-hidden">
               <div className={`h-2 rounded-full transition-all ${done ? 'progress-green' : 'progress-orange'}`} style={{ width: `${pct}%` }} />
             </div>
             <div className="space-y-1">
@@ -892,15 +892,15 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
               ))}
             </div>
             {canRelease.length > 0 && (
-              <div className="mt-2.5 pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-500 mb-1.5">שחרור עודף לשרשרת:</p>
+              <div className="mt-2.5 pt-2 border-t border-gray-200 dark:border-slate-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">שחרור עודף לשרשרת:</p>
                 <div className="space-y-1">
                   {canRelease.map((id) => {
                     const isReleased = coreToChainOverrides.includes(id);
                     const slot = slots.find((s) => s.ids.includes(id));
                     const name = slot?.names[slot.ids.indexOf(id)] ?? id;
                     return (
-                      <label key={id} className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                      <label key={id} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={isReleased}
@@ -952,7 +952,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 const parsed = parseInt(event.target.value, 10);
                 if (!Number.isNaN(parsed)) setMiluimCredits(parsed);
               }}
-              className="w-14 text-xs border border-gray-300 rounded px-1.5 py-0.5 text-center"
+              className="w-14 text-xs border border-gray-300 dark:border-slate-600 rounded px-1.5 py-0.5 text-center dark:bg-slate-700 dark:text-gray-200"
               placeholder="0-10"
             />
             <span className="text-xs text-gray-400">נק"ז</span>
@@ -975,7 +975,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
       {roboticsMinorEnabled && progress.roboticsMinorProgress && (() => {
         const rp = progress.roboticsMinorProgress;
         return (
-          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
+          <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950 px-3 py-2.5 space-y-2">
             <div className="text-xs text-amber-800 space-y-0.5">
               <p className="font-semibold">דרישות קבלה להתמחות המשנה</p>
               <p className={rp.missingTotalCredits ? 'text-red-600' : 'text-green-700'}>
@@ -1007,7 +1007,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                     <button
                       onClick={() => setExpandedRoboticsList(isExpanded ? null : lp.listNumber)}
                       className={`text-xs px-1.5 py-0.5 rounded-full w-full text-right flex justify-between items-center ${
-                        lp.satisfied ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+                        lp.satisfied ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       <span>{isExpanded ? '▲' : '▼'}</span>
@@ -1054,7 +1054,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
       {trackId === 'ce' && (
         <div className="mb-2 flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={quantumComputingMinorEnabled}
@@ -1080,7 +1080,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             : `נדרש ממוצע ≥ ${QUANTUM_MINOR_MIN_GPA} או אישור יועץ מ-${QUANTUM_MINOR_ADVISOR_GPA}`;
 
         return (
-          <div className="mb-3 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5 space-y-2">
+          <div className="mb-3 rounded-lg border border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950 px-3 py-2.5 space-y-2">
             <div className="text-xs text-sky-800 space-y-0.5">
               <p className="font-semibold">דרישות קבלה להתמחות המשנית</p>
               <p className={qp.missingTotalCredits ? 'text-red-600' : 'text-green-700'}>
@@ -1092,10 +1092,10 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className={`rounded-md px-2 py-1 ${qp.option1Satisfied ? 'bg-green-100 text-green-700' : 'bg-white text-gray-600'}`}>
+              <div className={`rounded-md px-2 py-1 ${qp.option1Satisfied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}>
                 אפשרות 1 {qp.option1Satisfied ? '✓' : ''}
               </div>
-              <div className={`rounded-md px-2 py-1 ${qp.option2Satisfied ? 'bg-green-100 text-green-700' : 'bg-white text-gray-600'}`}>
+              <div className={`rounded-md px-2 py-1 ${qp.option2Satisfied ? 'bg-green-100 text-green-700' : 'bg-white dark:bg-slate-700 text-gray-600 dark:text-gray-300'}`}>
                 אפשרות 2 {qp.option2Satisfied ? '✓' : ''}
               </div>
             </div>
@@ -1140,12 +1140,12 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-700">ג2. קורסי טרום-קוונטים</p>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">ג2. קורסי טרום-קוונטים</p>
               {qp.g2OptionProgress.map((option) => {
                 const optionData = QUANTUM_MINOR_G2_OPTIONS.find((entry) => entry.id === option.id)!;
                 return (
-                  <div key={option.id} className={`rounded-md px-2 py-1 ${option.satisfied ? 'bg-green-100' : 'bg-white'}`}>
-                    <div className={`text-xs font-medium ${option.satisfied ? 'text-green-700' : 'text-gray-600'}`}>
+                  <div key={option.id} className={`rounded-md px-2 py-1 ${option.satisfied ? 'bg-green-100' : 'bg-white dark:bg-slate-700'}`}>
+                    <div className={`text-xs font-medium ${option.satisfied ? 'text-green-700' : 'text-gray-600 dark:text-gray-300'}`}>
                       {option.title}{option.satisfied ? ' ✓' : ` ${option.matchedCourseIds.length}/${option.requiredCourseIds.length}`}
                     </div>
                     <div className="mt-0.5 space-y-0.5">
@@ -1186,7 +1186,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
       {trackId === 'ee' && (
         <div className="mb-2 flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer select-none">
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={newLabFormatEnabled}
@@ -1202,7 +1202,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         const ep = progress.entrepreneurshipMinorProgress;
         const mandatoryCourses = ENTREPRENEURSHIP_COURSES.filter((c) => c.mandatory);
         return (
-          <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 space-y-2">
+          <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950 px-3 py-2.5 space-y-2">
             <div className="text-xs text-amber-800 space-y-0.5">
               <p className="font-semibold">דרישות קבלה להתמחות המשנית</p>
               <p className={ep.missingTotalCredits ? 'text-red-600' : 'text-green-700'}>
@@ -1226,7 +1226,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             />
 
             <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-700">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
                 קורסי חובה: {ep.mandatoryCompleted}/{ep.mandatoryRequired}
               </p>
               {mandatoryCourses.map((course) => {
@@ -1247,7 +1247,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             </div>
 
             <div className="space-y-1">
-              <p className="text-xs font-medium text-gray-700">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
                 {`קורסי בחירה שסומנו: ${ep.electivesCompleted}`}
               </p>
               {ENTREPRENEURSHIP_COURSES.filter((c) => !c.mandatory).map((course) => {
@@ -1270,9 +1270,9 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         );
       })()}
 
-      <div className="border-t pt-3 mt-1 space-y-2">
+      <div className="border-t dark:border-slate-700 pt-3 mt-1 space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700">קבוצות התמחות</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">קבוצות התמחות</span>
           <span className={`text-sm font-bold ${
             progress.specializationGroups.unavailable
               ? 'text-amber-700'
@@ -1294,7 +1294,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
             {progress.groupDetails.map((group) => (
               <div key={group.id}>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500 truncate max-w-[120px]" title={group.name}>{group.name}</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px]" title={group.name}>{group.name}</span>
                   <div className="flex items-center gap-1 shrink-0">
                     {group.isDouble && <span className="text-xs bg-purple-100 text-purple-600 px-1 rounded font-medium">כפול</span>}
                     <span className={`text-xs font-medium ${group.done >= group.min ? 'text-green-600' : 'text-gray-500'}`}>
@@ -1308,8 +1308,8 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         )}
 
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-700">ממוצע משוקלל</span>
-          <span className="text-sm font-bold text-gray-800">
+          <span className="text-sm text-gray-700 dark:text-gray-300">ממוצע משוקלל</span>
+          <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
             {weightedAverage !== null ? weightedAverage.toFixed(1) : '—'}
           </span>
         </div>

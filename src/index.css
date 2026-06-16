@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ═══════════════════════════════════════════════════════════
    DESIGN TOKENS
    ═══════════════════════════════════════════════════════════ */
@@ -99,6 +101,47 @@ html, body {
   border-color: #2c61ad;
   background: linear-gradient(180deg, #dbeafe 0%, #bfdbfe 100%);
   box-shadow: 0 0 0 3px rgb(44 97 173 / 0.25);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE OVERRIDES
+   ═══════════════════════════════════════════════════════════ */
+.dark {
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 2px 6px -1px rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 4px 14px -2px rgb(0 0 0 / 0.4), 0 2px 4px -1px rgb(0 0 0 / 0.3);
+  --shadow-panel: 0 1px 3px 0 rgb(0 0 0 / 0.2), 0 1px 2px -1px rgb(0 0 0 / 0.15);
+}
+
+.dark .app-bg {
+  background: linear-gradient(160deg, #0f172a 0%, #1a2744 50%, #0f172a 100%);
+}
+
+.dark .sem-col-default {
+  border-color: #334155;
+  background: linear-gradient(180deg, #1e293b 0%, #162032 100%);
+}
+.dark .sem-col-current {
+  border-color: #3b82f6;
+  background: linear-gradient(180deg, #1e3a5f 0%, #172a4d 100%);
+  box-shadow: inset 0 0 0 1px rgb(59 130 246 / 0.2);
+}
+.dark .sem-col-past {
+  border-color: #059669;
+  background: linear-gradient(180deg, #052e16 0%, #14532d 100%);
+}
+.dark .sem-col-future {
+  border-color: #334155;
+  background-color: #0f172a;
+  opacity: 0.7;
+}
+.dark .sem-col-summer {
+  border-color: #d97706;
+  background: linear-gradient(180deg, #451a03 0%, #78350f 100%);
+}
+.dark .sem-col-over {
+  border-color: #3b82f6;
+  background: linear-gradient(180deg, #1e3a5f 0%, #1e3a5f 100%);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.3);
 }
 
 /* ═══════════════════════════════════════════════════════════

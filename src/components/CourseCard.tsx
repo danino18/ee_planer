@@ -113,11 +113,11 @@ export const CourseCard = memo(function CourseCard({
     ...(effectiveDraggable && transform ? { transform: `translate(${transform.x}px, ${transform.y}px)`, zIndex: 999 } : {}),
   };
 
-  let colorClass = 'bg-white border-slate-200 hover:border-slate-300';
-  if (wrongSemesterType) colorClass = 'bg-red-50 border-red-200 hover:border-red-300';
-  else if (effectiveIsCompleted) colorClass = 'bg-emerald-50 border-emerald-200';
-  else if (hasPrereqWarning || hasNoAdditionalCreditWarning) colorClass = 'bg-amber-50 border-amber-200';
-  else if (isMandatory) colorClass = 'bg-blue-50 border-blue-200 hover:border-blue-300';
+  let colorClass = 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600';
+  if (wrongSemesterType) colorClass = 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-900 hover:border-red-300';
+  else if (effectiveIsCompleted) colorClass = 'bg-emerald-50 dark:bg-emerald-950 border-emerald-200 dark:border-emerald-900';
+  else if (hasPrereqWarning || hasNoAdditionalCreditWarning) colorClass = 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-900';
+  else if (isMandatory) colorClass = 'bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900 hover:border-blue-300';
 
   const namedGroups = missingPrereqGroups.filter((group) =>
     group.every((id) => courses.get(id)?.name !== undefined)
@@ -162,7 +162,7 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleFavorite(course.id);
             }}
-            className={`w-14 h-14 flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 hover:text-amber-400'}`}
+            className={`w-14 h-14 flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'}`}
             title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
           >
             {isFavorite ? '★' : '☆'}
@@ -176,7 +176,7 @@ export const CourseCard = memo(function CourseCard({
                 e.stopPropagation();
                 removeCourseFromSemester(effectiveId, semester);
               }}
-              className="w-14 h-14 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 hover:text-red-500 transition-colors"
+              className="w-14 h-14 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors"
               title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
               aria-label={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
             >
@@ -195,14 +195,14 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleCompleted(effectiveId);
             }}
-            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${effectiveIsCompleted ? 'text-emerald-500' : 'text-slate-300 hover:text-emerald-400'}`}
+            className={`absolute top-0 right-0 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${effectiveIsCompleted ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600 hover:text-emerald-400'}`}
             title={effectiveIsCompleted ? 'סמן כלא הושלם' : 'סמן כהושלם'}
           >
             {effectiveIsCompleted ? '✓' : '○'}
           </button>
         )}
 
-        <p className={`text-xs font-semibold text-slate-800 leading-snug pt-0.5 ${showCardActions ? 'pr-11 pl-28' : ''}`}>{course.name}</p>
+        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? 'pr-11 pl-28' : ''}`}>{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">
@@ -235,7 +235,7 @@ export const CourseCard = memo(function CourseCard({
 
         {containingSubstitution && (
           <div className="mt-1 px-4">
-            <p className="text-xs text-teal-600 leading-tight">
+            <p className="text-xs text-teal-600 dark:text-teal-400 leading-tight">
               מכיל את {courses.get(containingSubstitution.containedCourseId)?.name ?? containingSubstitution.containedCourseId}: {containingSubstitution.mandatoryCredits} נק"ז נספרות כחובה
               {containingSubstitution.excessCredits > 0 && <>, {containingSubstitution.excessCredits} נק"ז לבחירה חופשית</>}
             </p>
@@ -244,7 +244,7 @@ export const CourseCard = memo(function CourseCard({
 
         <div className="flex items-center justify-between mt-1.5 gap-1">
           <div className="flex items-center gap-1 min-w-0">
-            <span className="text-xs text-gray-400 shrink-0">{course.id}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">{course.id}</span>
             {facultyStyle && (
               <span
                 className={`inline-block w-2 h-2 rounded-full shrink-0 ${facultyStyle.dot}`}
@@ -259,31 +259,31 @@ export const CourseCard = memo(function CourseCard({
               </span>
             )}
             {showsEnglishBadge && (
-              <span className="text-xs bg-sky-50 text-sky-600 px-1 py-0.5 rounded font-semibold leading-none" title="קורס באנגלית">
+              <span className="text-xs bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 px-1 py-0.5 rounded font-semibold leading-none" title="קורס באנגלית">
                 EN
               </span>
             )}
             {showsFreeElectiveBadge && (
-              <span className="text-xs bg-amber-50 text-amber-700 px-1 py-0.5 rounded font-semibold leading-none" title="בחירה חופשית">
+              <span className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 px-1 py-0.5 rounded font-semibold leading-none" title="בחירה חופשית">
                 ב"ח
               </span>
             )}
             {!isCoreLocked && !isMandatory && chainName === 'לא שובץ' ? (
               <>
-                <span className="text-xs bg-amber-50 text-amber-600 px-1 py-0.5 rounded font-medium leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
+                <span className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded font-medium leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
                   לא שובץ
                 </span>
-                <span className="text-xs bg-teal-50 text-teal-600 px-1 py-0.5 rounded font-medium leading-none">
+                <span className="text-xs bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400 px-1 py-0.5 rounded font-medium leading-none">
                   בחירה
                 </span>
               </>
             ) : (
               <span
                 className={`text-xs px-1 py-0.5 rounded font-medium leading-none ${
-                  isCoreLocked ? 'bg-amber-100 text-amber-700'
-                  : isMandatory ? 'bg-blue-100 text-blue-600'
-                  : chainName ? 'bg-indigo-50 text-indigo-600'
-                  : 'bg-teal-50 text-teal-600'
+                  isCoreLocked ? 'bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300'
+                  : isMandatory ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300'
+                  : chainName ? 'bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400'
+                  : 'bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
                 }`}
                 title={isCoreLocked ? 'קורס נספר כליבה' : (!isMandatory && chainName ? chainName : undefined)}
               >
@@ -291,10 +291,10 @@ export const CourseCard = memo(function CourseCard({
               </span>
             )}
             {isBinaryPass && (
-              <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">עובר</span>
+              <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded-full font-medium">עובר</span>
             )}
             {grade !== undefined && !isBinaryPass && (
-              <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>
+              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>
             )}
             {(hasPrereqWarning || hasNoAdditionalCreditWarning) && (
               <span
@@ -303,7 +303,7 @@ export const CourseCard = memo(function CourseCard({
               >⚠️</span>
             )}
             <span
-              className={`text-xs font-bold ${displayedCredits === 0 && course.credits > 0 ? 'text-orange-600 line-through decoration-orange-500' : 'text-gray-600'}`}
+              className={`text-xs font-bold ${displayedCredits === 0 && course.credits > 0 ? 'text-orange-600 line-through decoration-orange-500' : 'text-gray-600 dark:text-gray-400'}`}
               title={displayedCredits === 0 && course.credits > 0 ? `${course.credits} נק"ז מקוריות, 0 נק"ז מוכרות` : undefined}
             >
               {displayedCredits} נק"ז
@@ -313,7 +313,7 @@ export const CourseCard = memo(function CourseCard({
 
         {gradeStat && (gradeStat.average !== null || gradeStat.median !== null) && (
           <div
-            className="flex items-center flex-wrap gap-x-1.5 mt-1 text-[11px] text-slate-400 leading-tight"
+            className="flex items-center flex-wrap gap-x-1.5 mt-1 text-[11px] text-slate-400 dark:text-slate-500 leading-tight"
             title="נתוני ציונים היסטוריים מ-CheeseFork — אינדיקציה בלבד, משתנה לפי סמסטר ומועד"
           >
             {gradeStat.average !== null && <span>{gradeStat.kind === 'general' ? 'ממוצע כללי' : 'ממוצע'} {formatGrade(gradeStat.average)}</span>}

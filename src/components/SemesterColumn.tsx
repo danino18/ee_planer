@@ -50,7 +50,9 @@ interface Props {
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
   if (isOver)     return 'sem-col-over';
-  if (isDragging) return isSummer ? 'border-amber-400 border-dashed bg-amber-50/60' : 'border-blue-300 border-dashed bg-blue-50/10';
+  if (isDragging) return isSummer
+    ? 'border-amber-400 dark:border-amber-600 border-dashed bg-amber-50/60 dark:bg-amber-900/30'
+    : 'border-blue-300 dark:border-blue-600 border-dashed bg-blue-50/10 dark:bg-blue-900/10';
   if (isSummer)   return 'sem-col-summer';
   if (isCurrent)  return 'sem-col-current';
   if (isPast)     return 'sem-col-past';
@@ -122,7 +124,7 @@ export const SemesterColumn = memo(function SemesterColumn({
       data-print-col
       className={`flex flex-col rounded-2xl border-2 min-h-44 transition-all duration-200 ${columnStyle}`}
     >
-      <div className={`px-3 py-2.5 rounded-t-2xl border-b ${isSummer ? 'bg-amber-50/80 border-amber-200/70' : 'bg-white/90 border-slate-200'}`}>
+      <div className={`px-3 py-2.5 rounded-t-2xl border-b ${isSummer ? 'bg-amber-50/80 dark:bg-amber-950/80 border-amber-200/70 dark:border-amber-900/70' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             {/* Drag handle for reordering */}
@@ -131,7 +133,7 @@ export const SemesterColumn = memo(function SemesterColumn({
                 {...attributes}
                 {...listeners}
                 style={{ touchAction: 'none' }}
-                className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 text-base select-none leading-none"
+                className="cursor-grab active:cursor-grabbing text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 text-base select-none leading-none"
                 title="גרור לשינוי סדר"
               >⠿</div>
             )}
@@ -146,7 +148,7 @@ export const SemesterColumn = memo(function SemesterColumn({
                 {semesterType === 'winter' ? '❄️' : '🌸'}
               </button>
             )}
-            <span className="font-semibold text-slate-700 text-sm tracking-tight">{semesterLabel}</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm tracking-tight">{semesterLabel}</span>
             {isCurrent && (
               <span className="text-xs text-white px-2 py-0.5 rounded-full font-semibold" style={{ background: '#2c61ad' }}>
                 נוכחי
@@ -160,14 +162,14 @@ export const SemesterColumn = memo(function SemesterColumn({
                 onClick={(e) => { e.stopPropagation(); onMarkSemesterComplete?.(); }}
                 className={`text-xs px-1 py-0.5 rounded border transition-colors ${
                   courseIds.every((id) => completedCourses.has(id))
-                    ? 'text-green-600 border-green-300 bg-green-50 hover:bg-green-100'
-                    : 'text-gray-300 border-gray-200 hover:text-green-500'
+                    ? 'text-green-600 dark:text-green-400 border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950 hover:bg-green-100'
+                    : 'text-gray-300 dark:text-slate-600 border-gray-200 dark:border-slate-700 hover:text-green-500'
                 }`}
                 title={courseIds.every((id) => completedCourses.has(id)) ? 'בטל סימון הושלם' : 'סמן הכל כהושלם'}
               >✓</button>
             )}
             {semester > 0 && (
-              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-medium tabular-nums">
+              <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded-full font-medium tabular-nums">
                 {totalCredits.toFixed(1)} נ״ז
               </span>
             )}
@@ -210,7 +212,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="חפש קורס..."
               onPointerDown={(e) => e.stopPropagation()}
-              className="w-full text-xs pr-6 pl-2 py-1 border border-gray-200 rounded-lg bg-white text-gray-700 placeholder-gray-400 focus:outline-none focus:border-blue-300"
+              className="w-full text-xs pr-6 pl-2 py-1 border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-blue-300"
             />
           </div>
         )}
@@ -220,17 +222,17 @@ export const SemesterColumn = memo(function SemesterColumn({
       {ruleWarnings.length > 0 && semester > 0 && (
         <div className="px-2 pb-1 space-y-1">
           {ruleWarnings.includes('melag') && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
               ⚠️ בטכניון ניתן לקחת עד 2 מל&quot;גים בסמסטר אחד
             </p>
           )}
           {ruleWarnings.includes('sport') && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
               ⚠️ בטכניון ניתן לקחת קורס ספורט אחד בסמסטר
             </p>
           )}
           {ruleWarnings.includes('advancedDegree') && (
-            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            <p className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
               ⚠️ חרגת ממגבלת קורסי תארים מתקדמים (0048)
             </p>
           )}
@@ -285,14 +287,14 @@ export const SemesterColumn = memo(function SemesterColumn({
           );
         })}
         {filteredIds.length === 0 && !isOver && (
-          <p className="text-xs text-gray-400 text-center py-6 italic">
+          <p className="text-xs text-gray-400 dark:text-slate-600 text-center py-6 italic">
             {semester === 0
               ? (search.trim() ? 'אין קורסים תואמים' : 'כל הקורסים משובצים')
               : isDraggingActive ? '' : 'גרור קורסים לכאן'}
           </p>
         )}
         {isDraggingActive && isOver && (
-          <div className="mt-1 mb-1 flex items-center justify-center gap-1.5 text-blue-600 text-xs font-semibold py-2 bg-blue-100 rounded-lg border-2 border-blue-400 border-dashed">
+          <div className="mt-1 mb-1 flex items-center justify-center gap-1.5 text-blue-600 text-xs font-semibold py-2 bg-blue-100 dark:bg-blue-900 rounded-lg border-2 border-blue-400 dark:border-blue-600 border-dashed">
             <span>📥</span>
             <span>שחרר כאן</span>
           </div>

@@ -34,13 +34,13 @@ export function MobileSidebarDrawer({ open, onClose, children }: Props) {
       <div
         role="dialog"
         aria-modal="true"
-        className={`absolute top-0 bottom-0 right-0 w-[85vw] max-w-xs bg-gray-50 shadow-2xl overflow-y-auto transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`absolute top-0 bottom-0 right-0 w-[85vw] max-w-xs bg-gray-50 dark:bg-slate-900 shadow-2xl overflow-y-auto transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        <div className="sticky top-0 bg-gray-50 flex items-center justify-between px-3 py-2 border-b border-gray-200">
-          <span className="text-sm font-semibold text-gray-700">תפריט</span>
+        <div className="sticky top-0 bg-gray-50 dark:bg-slate-900 flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-slate-700">
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">תפריט</span>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 text-xl leading-none px-2"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none px-2"
             aria-label="סגור"
           >✕</button>
         </div>
