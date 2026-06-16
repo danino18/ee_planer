@@ -84,8 +84,6 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
     toggleCompleted,
     addSemester,
     maxSemester,
-    darkMode,
-    setDarkMode,
   } = usePlanStore(useShallow((state) => ({
     trackId: state.trackId,
     resetPlan: state.resetPlan,
@@ -114,9 +112,36 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
     toggleCompleted: state.toggleCompleted,
     addSemester: state.addSemester,
     maxSemester: state.maxSemester,
-    darkMode: state.darkMode,
-    setDarkMode: state.setDarkMode,
   })));
+
+  // Dark mode — stored in a dedicated localStorage key, not in Zustand,
+  // so it doesn't pull the store into the entry bundle via Root.tsx.
+  type DarkModeValue = 'light' | 'dark' | 'system';
+  const DARK_MODE_KEY = 'ee-dark-mode';
+  const [darkMode, setDarkModeState] = useState<DarkModeValue>(() => {
+    const stored = localStorage.getItem(DARK_MODE_KEY);
+    return (stored === 'dark' || stored === 'light' || stored === 'system') ? stored : 'system';
+  });
+  const setDarkMode = useCallback((mode: DarkModeValue) => {
+    localStorage.setItem(DARK_MODE_KEY, mode);
+    setDarkModeState(mode);
+    const html = document.documentElement;
+    if (mode === 'dark') html.classList.add('dark');
+    else if (mode === 'light') html.classList.remove('dark');
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) html.classList.add('dark');
+    else html.classList.remove('dark');
+  }, []);
+  useEffect(() => {
+    if (darkMode !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, [darkMode]);
+
   const specializationCatalog = getTrackSpecializationCatalog(trackDef.id, catalogYear);
   const specs = specializationCatalog.groups;
   const weightedAverage = useWeightedAverage(courses);
