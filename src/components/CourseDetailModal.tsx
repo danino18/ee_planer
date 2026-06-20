@@ -11,8 +11,6 @@ import { CourseGradeStats } from './CourseGradeStats';
 import { getTrackDefinition } from '../data/tracks';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 
-const INDIRECT_DISPLAY_CAP = 15;
-
 interface Props {
   course: SapCourse;
   courses: Map<string, SapCourse>;
@@ -126,17 +124,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         Number(allInPlan.has(b.id)) - Number(allInPlan.has(a.id)) || a.name.localeCompare(b.name, 'he'));
   }, [rawDownstream.direct, allInPlan, relevanceContext]);
 
-  const downstreamIndirectAll = useMemo(() => {
-    return rawDownstream.indirect
-      .filter((d) => allInPlan.has(d.course.id) || isCourseRelevantToTrack(d.course, relevanceContext))
-      .sort((a, b) =>
-        Number(allInPlan.has(b.course.id)) - Number(allInPlan.has(a.course.id)) ||
-        a.course.name.localeCompare(b.course.name, 'he'));
-  }, [rawDownstream.indirect, allInPlan, relevanceContext]);
-
-  const downstreamIndirect = downstreamIndirectAll.slice(0, INDIRECT_DISPLAY_CAP);
-  const downstreamIndirectTruncated = Math.max(0, downstreamIndirectAll.length - INDIRECT_DISPLAY_CAP);
-  const downstreamTotal = downstreamDirect.length + downstreamIndirectAll.length;
+  const downstreamTotal = downstreamDirect.length;
   const searchableCourses = useMemo(
     () => Array.from(courses.values()).map((candidate) => ({
       course: candidate,
@@ -219,13 +207,18 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
     setCustomGroup(savedGroup && savedIdx < 0 ? savedGroup : []);
   }, [savedGroup, savedIdx, course.id]);
 
+  const handleClose = () => {
+    setCourseNote(effectiveId, noteInput);
+    onClose();
+  };
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     }
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [handleClose]);
 
   function handleSaveGrade() {
     if (isBinaryMode) {
@@ -234,8 +227,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
       const val = parseFloat(gradeInput);
       if (!isNaN(val) && val >= 0 && val <= 100) setGrade(effectiveId, val, semester);
     }
-    setCourseNote(effectiveId, noteInput);
-    onClose();
+    handleClose();
   }
 
   const numVal = parseFloat(gradeInput);
@@ -245,7 +237,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
   return (
     <div
       className={`fixed inset-0 bg-black/40 ${elevated ? 'z-[250]' : 'z-50'} flex items-center justify-center p-4`}
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={(e) => { if (e.target === e.currentTarget) handleClose(); }}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" dir="rtl">
@@ -265,7 +257,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
               פתח ב-SAP ↗
             </a>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none mr-2">✕</button>
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none mr-2">✕</button>
         </div>
 
         <CourseGradeStats courseId={course.id} />
@@ -562,70 +554,29 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                 onClick={() => setDownstreamOpen((o) => !o)}
                 className="w-full flex items-center justify-between text-xs text-gray-600 hover:text-gray-800"
               >
-                <span>
-                  {downstreamTotal} קורסים תלויים בקורס זה
-                  {' '}
-                  ({downstreamDirect.length} ישירות, {downstreamIndirectAll.length} בעקיפין)
-                </span>
+                <span>{downstreamTotal} קורסים תלויים בקורס זה</span>
                 <span className="text-gray-400">{downstreamOpen ? '▴' : '▾'}</span>
               </button>
 
               {downstreamOpen && (
-                <div className="mt-2 space-y-3">
-                  {downstreamDirect.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">תלות ישירה</p>
-                      <ul className="space-y-1">
-                        {downstreamDirect.map((dep) => {
-                          const inPlan = allInPlan.has(dep.id);
-                          return (
-                            <li
-                              key={dep.id}
-                              className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded border ${
-                                inPlan ? 'border-green-200 bg-green-50' : 'border-gray-200'
-                              }`}
-                            >
-                              <span className={inPlan ? 'text-green-700' : 'text-gray-700'}>{dep.name}</span>
-                              {inPlan && (
-                                <span className="text-xs font-medium text-green-600 shrink-0">✓ בתכנית</span>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  )}
-
-                  {downstreamIndirect.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">תלות בעקיפין</p>
-                      <ul className="space-y-1">
-                        {downstreamIndirect.map(({ course: dep, viaName }) => {
-                          const inPlan = allInPlan.has(dep.id);
-                          return (
-                            <li
-                              key={dep.id}
-                              className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded border border-dashed ${
-                                inPlan ? 'border-green-200 bg-green-50' : 'border-gray-200'
-                              }`}
-                            >
-                              <div className="min-w-0">
-                                <p className={inPlan ? 'text-green-700' : 'text-gray-700'}>{dep.name}</p>
-                                <p className="text-xs text-gray-400">via {viaName}</p>
-                              </div>
-                              {inPlan && (
-                                <span className="text-xs font-medium text-green-600 shrink-0">✓ בתכנית</span>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                      {downstreamIndirectTruncated > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">ועוד {downstreamIndirectTruncated} קורסים נוספים</p>
-                      )}
-                    </div>
-                  )}
-                </div>
+                <ul className="mt-2 space-y-1">
+                  {downstreamDirect.map((dep) => {
+                    const inPlan = allInPlan.has(dep.id);
+                    return (
+                      <li
+                        key={dep.id}
+                        className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded border ${
+                          inPlan ? 'border-green-200 bg-green-50' : 'border-gray-200'
+                        }`}
+                      >
+                        <span className={inPlan ? 'text-green-700' : 'text-gray-700'}>{dep.name}</span>
+                        {inPlan && (
+                          <span className="text-xs font-medium text-green-600 shrink-0">✓ בתכנית</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </div>
           )}
@@ -698,6 +649,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
             onBlur={() => setCourseNote(effectiveId, noteInput)}
             placeholder="הוסף הערה אישית לקורס..."
             rows={3}
+            maxLength={4000}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 transition-colors resize-none"
           />
         </div>
@@ -748,7 +700,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         <div className="flex flex-col gap-2">
           {semester !== undefined && (
             <button
-              onClick={() => { setCourseNote(effectiveId, noteInput); removeCourseFromSemester(effectiveId, semester); onClose(); }}
+              onClick={() => { removeCourseFromSemester(effectiveId, semester); handleClose(); }}
               className="w-full text-sm text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-400 px-4 py-2 rounded-lg transition-colors font-medium"
             >
               {semester === 0 ? '✕ הסר מהתכנית' : '✕ הסר מהסמסטר'}
@@ -764,14 +716,14 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
             </button>
             {(currentGrade !== undefined || isBinaryPass) && (
               <button
-                onClick={() => { setGrade(course.id, null, semester); setBinaryPass(course.id, null); onClose(); }}
+                onClick={() => { setGrade(course.id, null, semester); setBinaryPass(course.id, null); handleClose(); }}
                 className="text-sm text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-2 rounded-lg transition-colors"
               >
                 מחק ציון
               </button>
             )}
             <button
-              onClick={() => { setCourseNote(effectiveId, noteInput); onClose(); }}
+              onClick={handleClose}
               className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors"
             >
               סגור

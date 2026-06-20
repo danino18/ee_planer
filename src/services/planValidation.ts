@@ -32,6 +32,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'coreToChainOverrides',
   'courseChainAssignments',
   'electiveCreditAssignments',
+  'courseNotes',
   'noAdditionalCreditOverrides',
   'roboticsMinorEnabled',
   'entrepreneurshipMinorEnabled',
@@ -517,6 +518,12 @@ function sanitizeStudentPlanRecord(
     const electiveCreditAssignments = validateElectiveCreditAssignmentMap(value.electiveCreditAssignments, 600);
     if (!electiveCreditAssignments) return null;
     sanitized.electiveCreditAssignments = electiveCreditAssignments;
+  }
+
+  if ('courseNotes' in value) {
+    const courseNotes = validateStringMap(value.courseNotes, 600, 4000);
+    if (!courseNotes) return null;
+    sanitized.courseNotes = courseNotes;
   }
 
   if ('noAdditionalCreditOverrides' in value) {
