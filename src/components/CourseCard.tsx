@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useState } from 'react';
+import { lazy, memo, Suspense, useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
@@ -6,6 +6,7 @@ import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import type { ContainingSubstitution } from '../domain/containingCourse';
 import type { ResolvedStatistic } from '../domain/gradeStatistics/types';
 import { formatSemester } from '../domain/gradeStatistics/semester';
+import { hasPlannedDownstreamDependent } from '../domain/downstreamDependents';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -84,6 +85,8 @@ export const CourseCard = memo(function CourseCard({
     isCompletedViaStore,
     facultyColorOverrides,
     englishTaughtCourses,
+    completedCourses,
+    semesters,
   } = usePlanStore(useShallow((state) => ({
     toggleFavorite: state.toggleFavorite,
     toggleCompleted: state.toggleCompleted,
@@ -96,6 +99,8 @@ export const CourseCard = memo(function CourseCard({
       : false,
     facultyColorOverrides: state.facultyColorOverrides ?? {},
     englishTaughtCourses: state.englishTaughtCourses ?? [],
+    completedCourses: state.completedCourses,
+    semesters: state.semesters,
   })));
   const isRepeatable = REPEATABLE_COURSES.has(course.id);
   const effectiveIsCompleted = isRepeatable && instanceKey
@@ -133,6 +138,15 @@ export const CourseCard = memo(function CourseCard({
     ? getFacultyStyle(course.faculty, course.id, facultyColorOverrides)
     : null;
   const seasonBadge = getTeachingSemesterBadge(course.teachingSemester);
+
+  const plannedSet = useMemo(
+    () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
+    [completedCourses, semesters],
+  );
+  const hasPlannedDownstream = useMemo(
+    () => hasPlannedDownstreamDependent(course.id, courses, plannedSet),
+    [course.id, courses, plannedSet],
+  );
 
   return (
     <>
@@ -301,6 +315,12 @@ export const CourseCard = memo(function CourseCard({
                 className="text-xs"
                 title={hasNoAdditionalCreditWarning ? 'ללא זיכוי נוסף' : 'קדמים חסרים'}
               >⚠️</span>
+            )}
+            {hasPlannedDownstream && (
+              <span
+                className="text-xs"
+                title="קורסים שתלויים בקורס זה משובצים בתכנית — דחייה עלולה להשפיע עליהם"
+              >🔗</span>
             )}
             <span
               className={`text-xs font-bold ${displayedCredits === 0 && course.credits > 0 ? 'text-orange-600 line-through decoration-orange-500' : 'text-gray-600 dark:text-gray-400'}`}

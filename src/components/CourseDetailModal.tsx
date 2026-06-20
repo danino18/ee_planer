@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
 import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import type { ContainingSubstitution } from '../domain/containingCourse';
+import { getDownstreamDependents } from '../domain/downstreamDependents';
 import { usePlanStore, gradeKey } from '../store/planStore';
 import { getTrackSpecializationCatalog } from '../domain/specializations';
 import { CheeseForkInfo } from './CheeseForkInfo';
@@ -77,8 +78,15 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
   const [subSearch, setSubSearch] = useState('');
   const [customSearch, setCustomSearch] = useState('');
+  const [downstreamOpen, setDownstreamOpen] = useState(false);
   const deferredSubSearch = useDeferredValue(subSearch);
   const deferredCustomSearch = useDeferredValue(customSearch);
+
+  const downstream = useMemo(
+    () => getDownstreamDependents(course.id, courses),
+    [course.id, courses],
+  );
+  const downstreamTotal = downstream.direct.length + downstream.indirect.length + downstream.indirectTruncated;
 
   const allInPlan = useMemo(
     () => new Set([...completedCourses, ...Object.values(semesters).flat()]),
@@ -400,6 +408,89 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
                         </li>
                       ))}
                     </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Downstream dependents section */}
+        <div className="mb-4 border border-gray-200 rounded-lg p-3">
+          <p className="text-xs font-semibold text-gray-700 mb-2">מה תלוי בקורס זה</p>
+
+          {downstreamTotal === 0 && (
+            <p className="text-xs text-gray-400 italic">אין קורסים שתלויים בקורס זה</p>
+          )}
+
+          {downstreamTotal > 0 && (
+            <div>
+              <button
+                onClick={() => setDownstreamOpen((o) => !o)}
+                className="w-full flex items-center justify-between text-xs text-gray-600 hover:text-gray-800"
+              >
+                <span>
+                  {downstreamTotal} קורסים תלויים בקורס זה
+                  {' '}
+                  ({downstream.direct.length} ישירות, {downstream.indirect.length + downstream.indirectTruncated} בעקיפין)
+                </span>
+                <span className="text-gray-400">{downstreamOpen ? '▴' : '▾'}</span>
+              </button>
+
+              {downstreamOpen && (
+                <div className="mt-2 space-y-3">
+                  {downstream.direct.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">תלות ישירה</p>
+                      <ul className="space-y-1">
+                        {downstream.direct.map((dep) => {
+                          const inPlan = allInPlan.has(dep.id);
+                          return (
+                            <li
+                              key={dep.id}
+                              className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded border ${
+                                inPlan ? 'border-green-200 bg-green-50' : 'border-gray-200'
+                              }`}
+                            >
+                              <span className={inPlan ? 'text-green-700' : 'text-gray-700'}>{dep.name}</span>
+                              {inPlan && (
+                                <span className="text-xs font-medium text-green-600 shrink-0">✓ בתכנית</span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+                  {downstream.indirect.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">תלות בעקיפין</p>
+                      <ul className="space-y-1">
+                        {downstream.indirect.map(({ course: dep, viaName }) => {
+                          const inPlan = allInPlan.has(dep.id);
+                          return (
+                            <li
+                              key={dep.id}
+                              className={`flex items-center justify-between gap-2 text-xs px-2 py-1 rounded border border-dashed ${
+                                inPlan ? 'border-green-200 bg-green-50' : 'border-gray-200'
+                              }`}
+                            >
+                              <div className="min-w-0">
+                                <p className={inPlan ? 'text-green-700' : 'text-gray-700'}>{dep.name}</p>
+                                <p className="text-xs text-gray-400">via {viaName}</p>
+                              </div>
+                              {inPlan && (
+                                <span className="text-xs font-medium text-green-600 shrink-0">✓ בתכנית</span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {downstream.indirectTruncated > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">ועוד {downstream.indirectTruncated} קורסים נוספים</p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
