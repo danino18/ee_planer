@@ -237,6 +237,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
     <div
       className={`fixed inset-0 bg-black/40 ${elevated ? 'z-[250]' : 'z-50'} flex items-center justify-center p-4`}
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => e.stopPropagation()}
     >
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" dir="rtl">
         {/* Header */}
