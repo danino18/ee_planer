@@ -6,7 +6,7 @@ import type { NoAdditionalCreditConflict } from '../domain/noAdditionalCredit';
 import type { ContainingSubstitution } from '../domain/containingCourse';
 import type { ResolvedStatistic } from '../domain/gradeStatistics/types';
 import { formatSemester } from '../domain/gradeStatistics/semester';
-import { hasPlannedDownstreamDependent } from '../domain/downstreamDependents';
+import { getPostponeSlack, hasPlannedDownstreamDependent } from '../domain/downstreamDependents';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -87,6 +87,7 @@ export const CourseCard = memo(function CourseCard({
     englishTaughtCourses,
     completedCourses,
     semesters,
+    semesterOrder,
   } = usePlanStore(useShallow((state) => ({
     toggleFavorite: state.toggleFavorite,
     toggleCompleted: state.toggleCompleted,
@@ -101,6 +102,7 @@ export const CourseCard = memo(function CourseCard({
     englishTaughtCourses: state.englishTaughtCourses ?? [],
     completedCourses: state.completedCourses,
     semesters: state.semesters,
+    semesterOrder: state.semesterOrder,
   })));
   const isRepeatable = REPEATABLE_COURSES.has(course.id);
   const effectiveIsCompleted = isRepeatable && instanceKey
@@ -146,6 +148,18 @@ export const CourseCard = memo(function CourseCard({
   const hasPlannedDownstream = useMemo(
     () => hasPlannedDownstreamDependent(course.id, courses, plannedSet),
     [course.id, courses, plannedSet],
+  );
+  const courseSemesterMap = useMemo(
+    () => new Map(
+      Object.entries(semesters).flatMap(([sid, ids]) => ids.map((id) => [id, Number(sid)] as const)),
+    ),
+    [semesters],
+  );
+  const postponeSlack = useMemo(
+    () => (hasPlannedDownstream && semester !== undefined
+      ? getPostponeSlack(course.id, semester, courses, courseSemesterMap, semesterOrder)
+      : null),
+    [hasPlannedDownstream, semester, course.id, courses, courseSemesterMap, semesterOrder],
   );
 
   return (
@@ -318,9 +332,15 @@ export const CourseCard = memo(function CourseCard({
             )}
             {hasPlannedDownstream && (
               <span
-                className="text-xs"
-                title="קורסים שתלויים בקורס זה משובצים בתכנית — דחייה עלולה להשפיע עליהם"
-              >🔗</span>
+                className="text-xs relative"
+                title={postponeSlack && postponeSlack > 0
+                  ? `ניתן לדחות עד ${postponeSlack} סמסטרים לפני שזה יתנגש עם קורס מתוכנן`
+                  : 'קורסים שתלויים בקורס זה משובצים בתכנית — דחייה עלולה להשפיע עליהם'}
+              >
+                🔗{postponeSlack !== null && postponeSlack > 0 && (
+                  <sup className="text-[9px]">{postponeSlack}</sup>
+                )}
+              </span>
             )}
             <span
               className={`text-xs font-bold ${displayedCredits === 0 && course.credits > 0 ? 'text-orange-600 line-through decoration-orange-500' : 'text-gray-600 dark:text-gray-400'}`}

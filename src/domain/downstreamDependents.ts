@@ -1,4 +1,5 @@
-import type { SapCourse } from '../types';
+import type { SapCourse, TrackDefinition } from '../types';
+import { getAutomaticElectiveCreditArea } from './electives';
 
 export interface DownstreamIndirectEntry {
   course: SapCourse;
@@ -8,7 +9,6 @@ export interface DownstreamIndirectEntry {
 export interface DownstreamDependents {
   direct: SapCourse[];
   indirect: DownstreamIndirectEntry[];
-  indirectTruncated: number;
 }
 
 const MAX_VISITED_NODES = 500;
@@ -37,16 +37,15 @@ function getReverseGraph(courses: Map<string, SapCourse>): Map<string, string[]>
   return graph;
 }
 
+/** Uncapped BFS over the reverse prerequisite graph. Caller is responsible for filtering/capping for display. */
 export function getDownstreamDependents(
   courseId: string,
   courses: Map<string, SapCourse>,
-  opts?: { indirectCap?: number },
 ): DownstreamDependents {
-  const indirectCap = opts?.indirectCap ?? 15;
   const graph = getReverseGraph(courses);
 
   const direct: SapCourse[] = [];
-  const indirectByName = new Map<string, DownstreamIndirectEntry>();
+  const indirectById = new Map<string, DownstreamIndirectEntry>();
   const visited = new Set<string>([courseId]);
   let queue = graph.get(courseId) ?? [];
   let depth = 1;
@@ -64,8 +63,8 @@ export function getDownstreamDependents(
 
       if (depth === 1) {
         direct.push(course);
-      } else if (!indirectByName.has(id)) {
-        indirectByName.set(id, { course, viaName: viaNames.get(id) ?? '' });
+      } else if (!indirectById.has(id)) {
+        indirectById.set(id, { course, viaName: viaNames.get(id) ?? '' });
       }
 
       for (const childId of graph.get(id) ?? []) {
@@ -82,15 +81,12 @@ export function getDownstreamDependents(
     depth += 1;
   }
 
-  const sortedIndirect = Array.from(indirectByName.values()).sort((a, b) =>
+  direct.sort((a, b) => a.name.localeCompare(b.name, 'he'));
+  const indirect = Array.from(indirectById.values()).sort((a, b) =>
     a.course.name.localeCompare(b.course.name, 'he'),
   );
-  direct.sort((a, b) => a.name.localeCompare(b.name, 'he'));
 
-  const indirect = sortedIndirect.slice(0, indirectCap);
-  const indirectTruncated = sortedIndirect.length - indirect.length;
-
-  return { direct, indirect, indirectTruncated };
+  return { direct, indirect };
 }
 
 export function hasPlannedDownstreamDependent(
@@ -114,5 +110,57 @@ export function hasPlannedDownstreamDependent(
     }
     queue = nextQueue;
   }
+  return false;
+}
+
+/** Number of semesters a placed course could move forward before hitting its nearest already-placed downstream dependent. 0 = no slack (next semester already blocks it). */
+export function getPostponeSlack(
+  courseId: string,
+  currentSemesterId: number,
+  courses: Map<string, SapCourse>,
+  courseSemesterMap: Map<string, number>,
+  semesterOrder: number[],
+): number {
+  const graph = getReverseGraph(courses);
+  const visited = new Set<string>([courseId]);
+  let queue = graph.get(courseId) ?? [];
+  const currentIdx = semesterOrder.indexOf(currentSemesterId);
+  let minDependentIdx = Infinity;
+
+  while (queue.length > 0 && visited.size < MAX_VISITED_NODES) {
+    const nextQueue: string[] = [];
+    for (const id of queue) {
+      if (visited.has(id)) continue;
+      visited.add(id);
+      const placedSemesterId = courseSemesterMap.get(id);
+      if (placedSemesterId !== undefined) {
+        const idx = semesterOrder.indexOf(placedSemesterId);
+        if (idx >= 0 && idx < minDependentIdx) minDependentIdx = idx;
+      }
+      for (const childId of graph.get(id) ?? []) {
+        if (!visited.has(childId)) nextQueue.push(childId);
+      }
+    }
+    queue = nextQueue;
+  }
+
+  if (minDependentIdx === Infinity || currentIdx < 0) return 0;
+  return Math.max(0, minDependentIdx - currentIdx - 1);
+}
+
+export interface RelevanceContext {
+  mandatoryIds: Set<string>;
+  specializationIds: Set<string>;
+  trackDef: TrackDefinition | null;
+}
+
+/** Whether a not-yet-placed course is relevant enough to surface in a downstream-dependents list: mandatory, a specialization/chain course, or a usable faculty elective. */
+export function isCourseRelevantToTrack(
+  course: SapCourse,
+  { mandatoryIds, specializationIds, trackDef }: RelevanceContext,
+): boolean {
+  if (mandatoryIds.has(course.id)) return true;
+  if (specializationIds.has(course.id)) return true;
+  if (trackDef && getAutomaticElectiveCreditArea(course, trackDef) !== 'general') return true;
   return false;
 }
