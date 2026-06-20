@@ -1,15 +1,8 @@
 import type { SpecializationGroupYearVariant } from '../../types';
 
-// Per-year requirement overrides for CS specialization groups.
+// Per-year requirement overrides for CE (הנדסת מחשבים) specialization groups.
 // Key: specialization group name → entry year → override.
-export const CS_SPECIALIZATION_YEAR_VARIANTS: Record<string, Record<number, SpecializationGroupYearVariant>> = {
-  'בקרה ורובוטיקה': {
-    2021: {
-      // 2021/22: 046192 is unconditionally mandatory, no choice between 046192 and 046212
-      mandatoryCourseIds: ['00440191', '00460192'],
-      mandatoryChoiceGroups: [],
-    },
-  },
+export const CE_SPECIALIZATION_YEAR_VARIANTS: Record<string, Record<number, SpecializationGroupYearVariant>> = {
   // 2025/26 (תשפ"ו): 00460237 "מעגלים משולבים - מבוא ל-VLSI" (3 נק"ז) renumbered to
   // 00460231 "מעגלים משולבים – מבוא ל- VLSI" (3.5 נק"ז).
   'מעגלים אלקטרוניים משולבים': {
@@ -21,6 +14,14 @@ export const CS_SPECIALIZATION_YEAR_VARIANTS: Record<string, Record<number, Spec
     },
   },
   'רשתות מחשבים, מערכות מבוזרות ומבנה מחשבים': {
+    2025: {
+      courseSubstitutions: [{
+        from: '00460237',
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'elective' },
+      }],
+    },
+  },
+  'יסודות פיזיקליים בהנדסת מחשבים': {
     2025: {
       courseSubstitutions: [{
         from: '00460237',

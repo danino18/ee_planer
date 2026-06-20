@@ -5,6 +5,11 @@ import {
   applySpecializationGroupYearVariant,
 } from './engine';
 import { CS_SPECIALIZATION_YEAR_VARIANTS } from '../../data/specializations/cs_specializations';
+import { EE_SPECIALIZATION_YEAR_VARIANTS } from '../../data/specializations/ee_specializations';
+import { EE_MATH_SPECIALIZATION_YEAR_VARIANTS } from '../../data/specializations/ee_math_specializations';
+import { EE_PHYSICS_SPECIALIZATION_YEAR_VARIANTS } from '../../data/specializations/ee_physics_specializations';
+import { EE_COMBINED_SPECIALIZATION_YEAR_VARIANTS } from '../../data/specializations/ee_combined_specializations';
+import { CE_SPECIALIZATION_YEAR_VARIANTS } from '../../data/specializations/ce_specializations';
 
 const SPECIALIZATION_FILE_CONTENTS = import.meta.glob(
   '/files/קבוצות התמחות/*/*.json',
@@ -28,6 +33,11 @@ const SPECIALIZATION_CATALOGS = buildTrackSpecializationCatalogs(
 
 const TRACK_SPECIALIZATION_YEAR_VARIANTS: Partial<Record<TrackId, Record<string, Record<number, SpecializationGroupYearVariant>>>> = {
   cs: CS_SPECIALIZATION_YEAR_VARIANTS,
+  ee: EE_SPECIALIZATION_YEAR_VARIANTS,
+  ee_math: EE_MATH_SPECIALIZATION_YEAR_VARIANTS,
+  ee_physics: EE_PHYSICS_SPECIALIZATION_YEAR_VARIANTS,
+  ee_combined: EE_COMBINED_SPECIALIZATION_YEAR_VARIANTS,
+  ce: CE_SPECIALIZATION_YEAR_VARIANTS,
 };
 
 const REPORTED_TRACKS = new Set<TrackId>();

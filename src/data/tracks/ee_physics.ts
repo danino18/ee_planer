@@ -86,4 +86,7 @@ export const eePhysicsTrack: TrackDefinition = {
       ],
     },
   ],
+  yearVariants: {
+    2025: {},
+  },
 };

@@ -71,4 +71,7 @@ export const eeMathTrack: TrackDefinition = {
       courses: ['00440169','01040165'],
     },
   ],
+  yearVariants: {
+    2025: {},
+  },
 };

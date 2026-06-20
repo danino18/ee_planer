@@ -66,4 +66,7 @@ export const ceTrack: TrackDefinition = {
       courses: ['00440169'],
     },
   ],
+  yearVariants: {
+    2025: {},
+  },
 };

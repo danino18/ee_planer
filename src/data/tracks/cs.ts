@@ -135,6 +135,12 @@ export const csTrack: TrackDefinition = {
     2025: {
       totalCreditsRequired: 159.5,
       mandatoryCredits: 106.5,
+      // 00460237 "מעגלים משולבים - מבוא ל-VLSI" (3 נק"ז) renumbered to
+      // 00460231 "מעגלים משולבים – מבוא ל- VLSI" (3.5 נק"ז) starting תשפ"ו.
+      coreRequirement: {
+        courses: ['00440140','00440191','00440198','00440202','00460195','00460231','00460266'],
+        required: 4,
+      },
       semesterSchedule: [
         { semester: 1, courses: ['00440102','01040012','01040064','01140071','02340117','03240033'] },
         { semester: 2, courses: ['00440252','01040013','01040038','01040136','01140075'] },
