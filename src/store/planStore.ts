@@ -73,6 +73,7 @@ interface PlanState extends StudentPlan {
   setCoreToChainOverrides: (ids: string[]) => void;
   setCourseChainAssignment: (courseId: string, chainGroupId: string | null) => void;
   setElectiveCreditAssignment: (courseId: string, area: ElectiveCreditArea | null) => void;
+  setCourseNote: (courseId: string, note: string | null) => void;
   setNoAdditionalCreditOverride: (pairKey: string, courseId: string | null) => void;
   mergeReviewLecturerAliases: (courseId: string, mapping: Record<string, string>) => void;
   mergeReviewTAAliases: (courseId: string, mapping: Record<string, string>) => void;
@@ -225,6 +226,7 @@ const initialState: StudentPlan = {
   dismissedRecommendedCourses: {},
   coreToChainOverrides: [],
   electiveCreditAssignments: {},
+  courseNotes: {},
   noAdditionalCreditOverrides: {},
   roboticsMinorEnabled: false,
   entrepreneurshipMinorEnabled: false,
@@ -469,6 +471,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
     coreToChainOverrides: p.coreToChainOverrides ?? [],
     electiveCreditAssignments: p.electiveCreditAssignments ?? {},
+    courseNotes: p.courseNotes ?? {},
     noAdditionalCreditOverrides: p.noAdditionalCreditOverrides ?? {},
     quantumComputingMinorEnabled: p.quantumComputingMinorEnabled ?? false,
     targetGraduationSemesterId: p.targetGraduationSemesterId ?? null,
@@ -647,6 +650,9 @@ export const usePlanStore = create<PlanState>()(
             electiveCreditAssignments: stillPlaced
               ? state.electiveCreditAssignments ?? {}
               : omitCourseKey(state.electiveCreditAssignments, courseId),
+            courseNotes: stillPlaced
+              ? state.courseNotes ?? {}
+              : omitCourseKey(state.courseNotes, courseId),
             selectedPrereqGroups: stillPlaced
               ? state.selectedPrereqGroups
               : omitCourseKey(state.selectedPrereqGroups, courseId),
@@ -1023,6 +1029,18 @@ export const usePlanStore = create<PlanState>()(
           return { electiveCreditAssignments: { ...current, [courseId]: area } };
         }),
 
+      setCourseNote: (courseId, note) =>
+        set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
+          const current = state.courseNotes ?? {};
+          if (note === null || note.trim() === '') {
+            const rest = { ...current };
+            delete rest[courseId];
+            return { courseNotes: rest };
+          }
+          return { courseNotes: { ...current, [courseId]: note } };
+        }),
+
       setNoAdditionalCreditOverride: (pairKey, courseId) =>
         set((state) => {
           if (isShareReviewReadOnly(state)) return state;
@@ -1221,6 +1239,7 @@ export const usePlanStore = create<PlanState>()(
             dismissedRecommendedCourses,
             savedTracks,
             electiveCreditAssignments: {},
+            courseNotes: {},
             noAdditionalCreditOverrides: {},
             _history: [],
             _initKey: state._initKey + 1,

@@ -36,6 +36,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
     removeCourseFromSemester,
     courseChainAssignments, setCourseChainAssignment,
     setNoAdditionalCreditOverride,
+    courseNotes, setCourseNote,
   } = usePlanStore(useShallow((state) => ({
     grades: state.grades,
     setGrade: state.setGrade,
@@ -52,6 +53,8 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
     courseChainAssignments: state.courseChainAssignments,
     setCourseChainAssignment: state.setCourseChainAssignment,
     setNoAdditionalCreditOverride: state.setNoAdditionalCreditOverride,
+    courseNotes: state.courseNotes,
+    setCourseNote: state.setCourseNote,
   })));
 
   const chainMemberships = useMemo(() => {
@@ -93,6 +96,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
   const isBinaryPass = !!(binaryPass ?? {})[effectiveId];
   const [isBinaryMode, setIsBinaryMode] = useState(isBinaryPass);
   const [gradeInput, setGradeInput] = useState(currentGrade !== undefined ? String(currentGrade) : '');
+  const [noteInput, setNoteInput] = useState(courseNotes?.[effectiveId] ?? '');
   const [subSearch, setSubSearch] = useState('');
   const [customSearch, setCustomSearch] = useState('');
   const [downstreamOpen, setDownstreamOpen] = useState(false);
@@ -198,6 +202,10 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
   }, [currentGrade]);
 
   useEffect(() => {
+    setNoteInput(courseNotes?.[effectiveId] ?? '');
+  }, [effectiveId, courseNotes]);
+
+  useEffect(() => {
     setSubSearch('');
     setCustomSearch('');
   }, [course.id]);
@@ -226,6 +234,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
       const val = parseFloat(gradeInput);
       if (!isNaN(val) && val >= 0 && val <= 100) setGrade(effectiveId, val, semester);
     }
+    setCourseNote(effectiveId, noteInput);
     onClose();
   }
 
@@ -679,6 +688,20 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
           </div>
         )}
 
+        {/* Note */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">הערה</label>
+          <textarea
+            dir="auto"
+            value={noteInput}
+            onChange={(e) => setNoteInput(e.target.value)}
+            onBlur={() => setCourseNote(effectiveId, noteInput)}
+            placeholder="הוסף הערה אישית לקורס..."
+            rows={3}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 transition-colors resize-none"
+          />
+        </div>
+
         {/* Grade */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1.5">ציון</label>
@@ -725,7 +748,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         <div className="flex flex-col gap-2">
           {semester !== undefined && (
             <button
-              onClick={() => { removeCourseFromSemester(effectiveId, semester); onClose(); }}
+              onClick={() => { setCourseNote(effectiveId, noteInput); removeCourseFromSemester(effectiveId, semester); onClose(); }}
               className="w-full text-sm text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-400 px-4 py-2 rounded-lg transition-colors font-medium"
             >
               {semester === 0 ? '✕ הסר מהתכנית' : '✕ הסר מהסמסטר'}
@@ -748,7 +771,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
               </button>
             )}
             <button
-              onClick={onClose}
+              onClick={() => { setCourseNote(effectiveId, noteInput); onClose(); }}
               className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 px-3 py-2 rounded-lg transition-colors"
             >
               סגור

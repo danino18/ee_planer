@@ -307,6 +307,7 @@ export interface StudentPlan {
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
   courseChainAssignments?: Record<string, string>;  // courseId → chainGroupId: explicit single-chain assignment
   electiveCreditAssignments?: Record<string, ElectiveCreditArea>;  // courseId -> manual elective credit bucket
+  courseNotes?: Record<string, string>;  // courseId/instanceKey -> free-text user note
   noAdditionalCreditOverrides?: Record<string, string>;  // pairKey -> courseId that should receive 0 recognized credits
   roboticsMinorEnabled?: boolean;  // student opted into the robotics minor
   entrepreneurshipMinorEnabled?: boolean;  // student opted into the entrepreneurial leadership minor

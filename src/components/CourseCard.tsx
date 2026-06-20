@@ -81,6 +81,7 @@ export const CourseCard = memo(function CourseCard({
     removeCourseFromSemester,
     isFavorite,
     grade,
+    note,
     isBinaryPass,
     isCompletedViaStore,
     facultyColorOverrides,
@@ -94,6 +95,7 @@ export const CourseCard = memo(function CourseCard({
     removeCourseFromSemester: state.removeCourseFromSemester,
     isFavorite: state.favorites.includes(course.id),
     grade: state.grades[gradeKey(effectiveId, semester)],
+    note: state.courseNotes?.[effectiveId],
     isBinaryPass: !!(state.binaryPass ?? {})[effectiveId],
     isCompletedViaStore: REPEATABLE_COURSES.has(effectiveId)
       ? (state.completedCourses ?? []).includes(effectiveId)
@@ -323,6 +325,9 @@ export const CourseCard = memo(function CourseCard({
             )}
             {grade !== undefined && !isBinaryPass && (
               <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-1.5 py-0.5 rounded-full font-medium">{grade}</span>
+            )}
+            {note && (
+              <span className="text-xs" title={note.slice(0, 120)}>📝</span>
             )}
             {(hasPrereqWarning || hasNoAdditionalCreditWarning) && (
               <span
