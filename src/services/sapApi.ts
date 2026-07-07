@@ -277,6 +277,7 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   // English-taught courses (scraped from Technion ugportal, Winter 2024-2025)
   // Note: 03240527 (יסודות היזמות) removed — only sometimes taught in English (user can toggle manually)
   // Note: 03260002 (אתיקה של טכנולוגיות חדשניות) added — always taught in English
+  // Note: 00460243 (טכנולוגיות קוונטיות) added — always taught in English
   for (const [id, course] of merged) {
     if (isEnglishCourseId(id) || isTechnicalEnglishCourseName(course.name)) {
       course.isEnglish = true;
