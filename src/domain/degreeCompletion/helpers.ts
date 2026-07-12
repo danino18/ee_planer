@@ -6,7 +6,7 @@ import {
 } from '../../data/tracks/semesterSchedule';
 import {
   isChoirOrOrchestraCourseId,
-  isFreeElectiveCourseId,
+  isCourseCountedAsMelag,
   isRegularSportCourseId,
   isSportCourseId,
   isSportsTeamCourseId,
@@ -473,7 +473,7 @@ export function buildCourseAssignments(
       credits = recognizedCredits;
     } else if (isSportCourseId(id)) {
       bucket = isRegularSportCourseId(id) ? 'sport' : 'uncounted';
-    } else if (isFreeElectiveCourseId(id)) {
+    } else if (isCourseCountedAsMelag(id, input.manualMelagCourseIds)) {
       bucket = 'melag';
     } else if (visibleMandatoryIds.has(id) && !isMandatoryOnlyBecauseScheduledCeProject) {
       // Visible mandatory course that didn't make it into preciseMandatorySet:

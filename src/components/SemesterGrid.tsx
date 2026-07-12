@@ -20,7 +20,7 @@ import {
   getRecognizedCredits,
 } from '../domain/noAdditionalCredit';
 import { getFacultyStyle, getFacultyShortName, COLOR_OPTIONS } from '../utils/faculty';
-import { isFreeElectiveCourseId, isSportCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
+import { isCourseCountedAsMelag, isSportCourseId, isAdvancedDegreeCourseId } from '../data/generalRequirements/courseClassification';
 import { getVisibleMandatoryCourseIds } from '../data/tracks/semesterSchedule';
 import { buildCoreLockedSet } from '../domain/degreeCompletion/helpers';
 import { computeContainingSubstitutions } from '../domain/containingCourse';
@@ -52,7 +52,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     semesterOrder, reorderSemesters,
     semesterTypeOverrides, semesterWarningsIgnored, setSemesterType, toggleSemesterWarnings,
     grades, binaryPass, courseChainAssignments, facultyColorOverrides, setFacultyColorOverride,
-    englishScore, noAdditionalCreditOverrides, coreToChainOverrides,
+    englishScore, noAdditionalCreditOverrides, coreToChainOverrides, manualMelagCourseIds,
   } = usePlanStore(useShallow((state) => ({
     semesters: state.semesters,
     moveCourse: state.moveCourse,
@@ -81,6 +81,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     englishScore: state.englishScore,
     noAdditionalCreditOverrides: state.noAdditionalCreditOverrides,
     coreToChainOverrides: state.coreToChainOverrides ?? [],
+    manualMelagCourseIds: state.manualMelagCourseIds ?? [],
   })));
   const prereqStatus = usePrerequisiteStatus(courses, trackDef);
   const noAdditionalCreditConflicts = useMemo(
@@ -298,7 +299,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       const sem = Number(semStr);
       if (sem === 0) continue; // skip unassigned pool
       const w: ('melag' | 'sport' | 'advancedDegree')[] = [];
-      const melagCount = ids.filter((id) => isFreeElectiveCourseId(id)).length;
+      const melagCount = ids.filter((id) => isCourseCountedAsMelag(id, manualMelagCourseIds)).length;
       const sportCount = ids.filter((id) => isSportCourseId(id)).length;
       if (melagCount > 2) w.push('melag');
       if (sportCount > 1) w.push('sport');
@@ -335,7 +336,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
     }
 
     return warnings;
-  }, [semesters, completedCourses, courses, noAdditionalCreditCourseIds, trackDef.externalFacultyElectiveEnabled]);
+  }, [semesters, completedCourses, courses, noAdditionalCreditCourseIds, trackDef.externalFacultyElectiveEnabled, manualMelagCourseIds]);
 
   const semesterMutualExclusionWarnings = useMemo(() => {
     const warnings: Record<number, string[]> = {};

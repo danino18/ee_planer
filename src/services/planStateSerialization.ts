@@ -35,6 +35,7 @@ export function serializePlanState(state: StudentPlan): StudentPlan {
     miluimCredits: state.miluimCredits,
     englishScore: state.englishScore,
     englishTaughtCourses: [...(state.englishTaughtCourses ?? [])],
+    manualMelagCourseIds: [...(state.manualMelagCourseIds ?? [])],
     dismissedRecommendedCourses: cloneStringArrayMap(state.dismissedRecommendedCourses) ?? {},
     facultyColorOverrides: { ...(state.facultyColorOverrides ?? {}) },
     coreToChainOverrides: [...(state.coreToChainOverrides ?? [])],

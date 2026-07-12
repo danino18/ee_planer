@@ -85,6 +85,7 @@ function VersionColumn({
         miluimCredits: plan.miluimCredits ?? 0,
         englishScore: plan.englishScore,
         englishTaughtCourses: plan.englishTaughtCourses ?? [],
+        manualMelagCourseIds: plan.manualMelagCourseIds ?? [],
         semesterOrder: plan.semesterOrder,
         coreToChainOverrides: plan.coreToChainOverrides ?? [],
         courseChainAssignments: plan.courseChainAssignments,

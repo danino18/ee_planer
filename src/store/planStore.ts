@@ -87,6 +87,7 @@ interface PlanState extends StudentPlan {
   setLoadProfile: (profile: 'working' | 'fulltime') => void;
   toggleCountOnlyCompleted: () => void;
   toggleEnglishTaughtCourse: (courseId: string) => void;
+  toggleMelagCourse: (courseId: string) => void;
   setFacultyColorOverride: (faculty: string, colorKey: string) => void;
   reorderSemesters: (newOrder: number[]) => void;
   loadPlan: (plan: StudentPlan) => void;
@@ -221,6 +222,7 @@ const initialState: StudentPlan = {
   miluimCredits: undefined,
   englishScore: undefined,
   englishTaughtCourses: [],
+  manualMelagCourseIds: [],
   facultyColorOverrides: {},
   completedInstances: [],
   dismissedRecommendedCourses: {},
@@ -466,6 +468,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     binaryPass: p.binaryPass ?? {},
     explicitSportCompletions: p.explicitSportCompletions ?? [],
     englishTaughtCourses: p.englishTaughtCourses ?? [],
+    manualMelagCourseIds: p.manualMelagCourseIds ?? [],
     facultyColorOverrides: p.facultyColorOverrides ?? {},
     completedInstances: p.completedInstances ?? [],
     dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
@@ -659,6 +662,9 @@ export const usePlanStore = create<PlanState>()(
             englishTaughtCourses: stillPlaced
               ? state.englishTaughtCourses ?? []
               : (state.englishTaughtCourses ?? []).filter((id) => id !== courseId),
+            manualMelagCourseIds: stillPlaced
+              ? state.manualMelagCourseIds ?? []
+              : (state.manualMelagCourseIds ?? []).filter((id) => id !== courseId),
             dismissedRecommendedCourses: stillPlaced
               ? state.dismissedRecommendedCourses ?? {}
               : markDismissedCourse(
@@ -1000,6 +1006,17 @@ export const usePlanStore = create<PlanState>()(
           };
         }),
 
+      toggleMelagCourse: (courseId) =>
+        set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
+          const list = state.manualMelagCourseIds ?? [];
+          return {
+            manualMelagCourseIds: list.includes(courseId)
+              ? list.filter((id) => id !== courseId)
+              : [...list, courseId],
+          };
+        }),
+
       setCoreToChainOverrides: (ids) =>
         set((state) => (
           isShareReviewReadOnly(state) ? state : { coreToChainOverrides: ids }
@@ -1234,6 +1251,7 @@ export const usePlanStore = create<PlanState>()(
             miluimCredits: undefined,
             englishScore: undefined,
             englishTaughtCourses: [],
+            manualMelagCourseIds: [],
             facultyColorOverrides: {},
             completedInstances: [],
             dismissedRecommendedCourses,

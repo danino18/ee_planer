@@ -12,6 +12,7 @@ export interface RequirementsInput {
   miluimCredits: number;
   englishScore: number | undefined;
   englishTaughtCourses: string[];
+  manualMelagCourseIds: string[];
   semesterOrder: number[];
   coreToChainOverrides: string[];
   courseChainAssignments?: Record<string, string>;

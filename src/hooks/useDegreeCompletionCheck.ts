@@ -46,6 +46,7 @@ export function useDegreeCompletionCheck(
     miluimCredits: s.miluimCredits ?? 0,
     englishScore: s.englishScore,
     englishTaughtCourses: s.englishTaughtCourses ?? [],
+    manualMelagCourseIds: s.manualMelagCourseIds ?? [],
     semesterOrder: s.semesterOrder,
     coreToChainOverrides: s.coreToChainOverrides ?? [],
     courseChainAssignments: s.courseChainAssignments,
