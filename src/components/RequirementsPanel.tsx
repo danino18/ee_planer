@@ -44,6 +44,11 @@ const SEM_LABELS = [
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
 ];
 
+const PICKER_MIN_WIDTH = 130;
+const PICKER_VIEWPORT_MARGIN = 8;
+
+type PickerPosition = { left: number };
+
 const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4';
 const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
 const CREDIT_ASSIGNMENT_LABEL = '\u05e9\u05d9\u05d5\u05da \u05e0\u05e7"\u05d6';
@@ -718,17 +723,39 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   const [expandedRoboticsList, setExpandedRoboticsList] = useState<number | null>(null);
   const [expandedQuantumGroup, setExpandedQuantumGroup] = useState<string | null>(null);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [pickerPosition, setPickerPosition] = useState<PickerPosition | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const pickerMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        pickerRef.current
+        && !pickerRef.current.contains(target)
+        && !pickerMenuRef.current?.contains(target)
+      ) {
         setPickerFor(null);
+        setPickerPosition(null);
       }
     }
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!pickerFor) return undefined;
+    function closePicker() {
+      setPickerFor(null);
+      setPickerPosition(null);
+    }
+    window.addEventListener('resize', closePicker);
+    window.addEventListener('scroll', closePicker, true);
+    return () => {
+      window.removeEventListener('resize', closePicker);
+      window.removeEventListener('scroll', closePicker, true);
+    };
+  }, [pickerFor]);
 
   const regularIndexMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -790,7 +817,20 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         <button
           onClick={(event) => {
             event.stopPropagation();
-            setPickerFor(isPickerOpen ? null : courseId);
+            if (isPickerOpen) {
+              setPickerFor(null);
+              setPickerPosition(null);
+              return;
+            }
+            // Right-aligned under the button by default (start-0 in RTL), but pulled left-clamped
+            // to the nearest scroll container so the menu never gets cut off by its overflow clipping.
+            const wrapperRect = event.currentTarget.parentElement!.getBoundingClientRect();
+            const scrollBounds = event.currentTarget.closest('aside')?.getBoundingClientRect();
+            const minViewportLeft = (scrollBounds?.left ?? 0) + PICKER_VIEWPORT_MARGIN;
+            const desiredViewportLeft = wrapperRect.right - PICKER_MIN_WIDTH;
+            const clampedViewportLeft = Math.max(minViewportLeft, desiredViewportLeft);
+            setPickerPosition({ left: clampedViewportLeft - wrapperRect.left });
+            setPickerFor(courseId);
           }}
           className={`text-xs border px-1 py-0.5 rounded transition-colors ${
             isPickerOpen
@@ -801,8 +841,15 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         >
           +
         </button>
-        {isPickerOpen && (
-          <div className="absolute start-0 top-full mt-0.5 z-[60] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1 min-w-[130px]">
+        {isPickerOpen && pickerPosition && (
+          <div
+            ref={pickerMenuRef}
+            className="absolute top-full mt-0.5 z-[60] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1"
+            style={{
+              left: `${pickerPosition.left}px`,
+              minWidth: `${PICKER_MIN_WIDTH}px`,
+            }}
+          >
             {semesterOptions.map(({ label, value }) => (
               <button
                 key={value}
@@ -810,6 +857,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   event.stopPropagation();
                   addCourseToSemester(courseId, value);
                   setPickerFor(null);
+                  setPickerPosition(null);
                 }}
                 className="w-full text-right text-xs px-2.5 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 hover:text-blue-700 transition-colors"
               >

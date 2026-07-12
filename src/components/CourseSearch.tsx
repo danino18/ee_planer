@@ -324,9 +324,12 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
       ? Math.max(PICKER_VIEWPORT_MARGIN, rect.top - PICKER_GAP - pickerHeight)
       : Math.min(rect.bottom + PICKER_GAP, window.innerHeight - PICKER_VIEWPORT_MARGIN - pickerHeight);
 
+    const maxRight = Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - PICKER_MIN_WIDTH - PICKER_VIEWPORT_MARGIN);
+    const right = Math.min(maxRight, Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - rect.right));
+
     setPickerPosition({
       top,
-      right: Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - rect.right),
+      right,
       maxHeight: availableHeight,
     });
     setPickerFor(courseId);
