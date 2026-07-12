@@ -10,7 +10,7 @@ import { getPostponeSlack, hasPlannedDownstreamDependent } from '../domain/downs
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
-import { isCourseTaughtInEnglish, isFreeElectiveCourseId } from '../data/generalRequirements/courseClassification';
+import { isCourseTaughtInEnglish, isFreeElectiveCourseId, isManualMelagEligible, isMelagCourseId } from '../data/generalRequirements/courseClassification';
 import { useShareMode } from '../context/ShareModeContext';
 
 interface Props {
@@ -86,6 +86,7 @@ export const CourseCard = memo(function CourseCard({
     isCompletedViaStore,
     facultyColorOverrides,
     englishTaughtCourses,
+    manualMelagCourseIds,
     completedCourses,
     semesters,
     semesterOrder,
@@ -102,6 +103,7 @@ export const CourseCard = memo(function CourseCard({
       : false,
     facultyColorOverrides: state.facultyColorOverrides ?? {},
     englishTaughtCourses: state.englishTaughtCourses ?? [],
+    manualMelagCourseIds: state.manualMelagCourseIds ?? [],
     completedCourses: state.completedCourses,
     semesters: state.semesters,
     semesterOrder: state.semesterOrder,
@@ -112,7 +114,9 @@ export const CourseCard = memo(function CourseCard({
     : isCompleted;
   const [modalOpen, setModalOpen] = useState(false);
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
-  const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id);
+  const isManualMelag = isManualMelagEligible(course.id) && manualMelagCourseIds.includes(course.id);
+  const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id) || isManualMelag;
+  const showsMelagLabel = isMelagCourseId(course.id) || isManualMelag;
   const showCardActions = showActions && !isDragging && !isReadOnly;
   const hasNoAdditionalCreditWarning = noAdditionalCreditConflicts.length > 0;
   const displayedCredits = recognizedCredits ?? course.credits;
@@ -294,8 +298,8 @@ export const CourseCard = memo(function CourseCard({
               </span>
             )}
             {showsFreeElectiveBadge && (
-              <span className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 px-1 py-0.5 rounded font-semibold leading-none" title="בחירה חופשית">
-                ב"ח
+              <span className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 px-1 py-0.5 rounded font-semibold leading-none" title={showsMelagLabel ? 'מל"ג' : 'בחירה חופשית'}>
+                {showsMelagLabel ? 'מל"ג' : 'ב"ח'}
               </span>
             )}
             {!isCoreLocked && !isMandatory && chainName === 'לא שובץ' ? (

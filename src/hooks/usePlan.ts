@@ -395,6 +395,7 @@ export function computeRequirementsProgress(
     miluimCredits,
     englishScore,
     englishTaughtCourses,
+    manualMelagCourseIds,
     semesterOrder,
     coreToChainOverrides,
     courseChainAssignments,
@@ -806,6 +807,7 @@ export function computeRequirementsProgress(
       completedCourses,
       miluimCredits,
       englishTaughtCourses,
+      manualMelagCourseIds,
       englishScore,
       generalElectiveCourseIds,
       generalElectiveCredits,
@@ -1040,6 +1042,7 @@ export function useRequirementsProgress(
   const miluimCredits = usePlanStore((s) => s.miluimCredits ?? 0);
   const englishScore = usePlanStore((s) => s.englishScore);
   const englishTaughtCourses = usePlanStore((s) => s.englishTaughtCourses ?? []);
+  const manualMelagCourseIds = usePlanStore((s) => s.manualMelagCourseIds ?? []);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
   const coreToChainOverrides = usePlanStore((s) => s.coreToChainOverrides ?? []);
   const courseChainAssignments = usePlanStore((s) => s.courseChainAssignments);
@@ -1066,6 +1069,7 @@ export function useRequirementsProgress(
           miluimCredits,
           englishScore,
           englishTaughtCourses,
+          manualMelagCourseIds,
           semesterOrder,
           coreToChainOverrides,
           courseChainAssignments,
@@ -1082,7 +1086,7 @@ export function useRequirementsProgress(
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, newLabFormatEnabled, countOnlyCompletedCourses, weightedAverage],
+    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, manualMelagCourseIds, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, newLabFormatEnabled, countOnlyCompletedCourses, weightedAverage],
   );
 }
 

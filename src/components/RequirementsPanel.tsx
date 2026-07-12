@@ -6,7 +6,7 @@ import type {
   GeneralElectivesBreakdown,
   GeneralRequirementProgress,
 } from '../domain/generalRequirements/types';
-import { isManualEnglishEligible } from '../data/generalRequirements/courseClassification';
+import { isManualEnglishEligible, isManualMelagEligible } from '../data/generalRequirements/courseClassification';
 import type { ElectiveCreditArea, SpecializationDiagnostic } from '../types';
 import type {
   ElectiveAreaProgress,
@@ -268,6 +268,9 @@ interface GeneralElectivesRowProps {
   manualEnglishCourseIds: string[];
   englishTaughtCourses: string[];
   onToggleEnglishCourse: (courseId: string) => void;
+  manualMelagCourseIds: string[];
+  melagCourses: string[];
+  onToggleMelagCourse: (courseId: string) => void;
 }
 
 function GeneralElectivesRow({
@@ -276,6 +279,9 @@ function GeneralElectivesRow({
   manualEnglishCourseIds,
   englishTaughtCourses,
   onToggleEnglishCourse,
+  manualMelagCourseIds,
+  melagCourses,
+  onToggleMelagCourse,
 }: GeneralElectivesRowProps) {
   const [showDetails, setShowDetails] = useState(false);
   const total = breakdown.total;
@@ -425,6 +431,26 @@ function GeneralElectivesRow({
                   className="rounded"
                 />
                 <span>{course.name} נלמד באנגלית</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      {manualMelagCourseIds.length > 0 && (
+        <div className="mt-2 space-y-1.5">
+          {manualMelagCourseIds.map((courseId) => {
+            const course = req.countedCourses.find((item) => item.courseId === courseId);
+            if (!course) return null;
+            return (
+              <label key={`general-electives-melag-toggle-${courseId}`} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={melagCourses.includes(courseId)}
+                  onChange={() => onToggleMelagCourse(courseId)}
+                  className="rounded"
+                />
+                <span>האם "{course.name}" הוא מל"ג?</span>
               </label>
             );
           })}
@@ -639,6 +665,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setMiluimCredits,
     setEnglishScore,
     toggleEnglishTaughtCourse,
+    toggleMelagCourse,
     setCoreToChainOverrides,
     toggleRoboticsMinor,
     toggleEntrepreneurshipMinor,
@@ -648,6 +675,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setElectiveCreditAssignment,
     miluimCredits,
     englishTaughtCourses,
+    manualMelagCourseIds,
     coreToChainOverrides,
     roboticsMinorEnabled,
     entrepreneurshipMinorEnabled,
@@ -664,6 +692,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
     toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
+    toggleMelagCourse: state.toggleMelagCourse,
     setCoreToChainOverrides: state.setCoreToChainOverrides,
     toggleRoboticsMinor: state.toggleRoboticsMinor,
     toggleEntrepreneurshipMinor: state.toggleEntrepreneurshipMinor,
@@ -673,6 +702,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     setElectiveCreditAssignment: state.setElectiveCreditAssignment,
     miluimCredits: state.miluimCredits,
     englishTaughtCourses: state.englishTaughtCourses ?? [],
+    manualMelagCourseIds: state.manualMelagCourseIds ?? [],
     coreToChainOverrides: state.coreToChainOverrides ?? [],
     roboticsMinorEnabled: state.roboticsMinorEnabled ?? false,
     entrepreneurshipMinorEnabled: state.entrepreneurshipMinorEnabled ?? false,
@@ -740,6 +770,14 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     if (!generalElectives) return [];
     return generalElectives.countedCourses
       .filter((course) => isManualEnglishEligible(course.courseId))
+      .map((course) => course.courseId);
+  }, [compactRequirements]);
+
+  const generalElectivesManualMelagCourseIds = useMemo(() => {
+    const generalElectives = compactRequirements.find((req) => req.requirementId === 'general_electives');
+    if (!generalElectives) return [];
+    return generalElectives.countedCourses
+      .filter((course) => isManualMelagEligible(course.courseId))
       .map((course) => course.courseId);
   }, [compactRequirements]);
 
@@ -1325,6 +1363,9 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   manualEnglishCourseIds={generalElectivesManualEnglishCourseIds}
                   englishTaughtCourses={englishTaughtCourses}
                   onToggleEnglishCourse={toggleEnglishTaughtCourse}
+                  manualMelagCourseIds={generalElectivesManualMelagCourseIds}
+                  melagCourses={manualMelagCourseIds}
+                  onToggleMelagCourse={toggleMelagCourse}
                 />
               );
             }

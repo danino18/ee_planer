@@ -3,6 +3,7 @@ import { bareId } from '../../utils/occurrenceId';
 import { GENERAL_REQUIREMENTS_RULES } from '../../data/generalRequirements/generalRules';
 import {
   isChoirOrOrchestraCourseId,
+  isCourseCountedAsMelag,
   isCourseTaughtInEnglish,
   isFreeElectiveCourseId,
   isRegularSportCourseId,
@@ -25,6 +26,7 @@ export interface BuildGeneralRequirementsParams {
   semesters: Record<number, string[]>;
   completedCourses: string[];
   englishTaughtCourses: string[];
+  manualMelagCourseIds?: string[];
   miluimCredits: number;
   englishScore?: number;
   generalElectiveCourseIds?: Iterable<string>;
@@ -59,6 +61,7 @@ export function buildGeneralRequirementsProgress({
   semesters,
   completedCourses,
   englishTaughtCourses,
+  manualMelagCourseIds = [],
   miluimCredits,
   englishScore,
   generalElectiveCourseIds = [],
@@ -156,14 +159,14 @@ export function buildGeneralRequirementsProgress({
   const melagCredits = courseRefs.reduce(
     (sum, course) =>
       sum +
-      (isFreeElectiveCourseId(course.courseId) && !isSportCourseId(course.courseId)
+      (isCourseCountedAsMelag(course.courseId, manualMelagCourseIds) && !isSportCourseId(course.courseId)
         ? course.credits
         : 0),
     0,
   );
   let externalFacultyCredits = 0;
   for (const course of courseRefs) {
-    if (isSportCourseId(course.courseId) || isFreeElectiveCourseId(course.courseId)) continue;
+    if (isSportCourseId(course.courseId) || isCourseCountedAsMelag(course.courseId, manualMelagCourseIds)) continue;
     if (
       generalElectiveCreditsByCourseId.has(course.courseId) ||
       generalElectiveCourseIdSet.has(course.courseId)
@@ -217,7 +220,7 @@ export function buildGeneralRequirementsProgress({
         targetValue: specialAllocation.enrichmentRequired,
         courseMatcher: {
           predicate: (course) =>
-            isFreeElectiveCourseId(course.courseId) &&
+            isCourseCountedAsMelag(course.courseId, manualMelagCourseIds) &&
             !isChoirOrOrchestraCourseId(course.courseId) &&
             !isSportsTeamCourseId(course.courseId),
         },

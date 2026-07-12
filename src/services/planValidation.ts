@@ -27,6 +27,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'miluimCredits',
   'englishScore',
   'englishTaughtCourses',
+  'manualMelagCourseIds',
   'dismissedRecommendedCourses',
   'facultyColorOverrides',
   'coreToChainOverrides',
@@ -487,6 +488,12 @@ function sanitizeStudentPlanRecord(
     const englishTaughtCourses = validateStringArray(value.englishTaughtCourses, 600, 32);
     if (!englishTaughtCourses) return null;
     sanitized.englishTaughtCourses = englishTaughtCourses;
+  }
+
+  if ('manualMelagCourseIds' in value) {
+    const manualMelagCourseIds = validateStringArray(value.manualMelagCourseIds, 600, 32);
+    if (!manualMelagCourseIds) return null;
+    sanitized.manualMelagCourseIds = manualMelagCourseIds;
   }
 
   if ('dismissedRecommendedCourses' in value) {

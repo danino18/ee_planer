@@ -25,6 +25,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "miluimCredits",
   "englishScore",
   "englishTaughtCourses",
+  "manualMelagCourseIds",
   "facultyColorOverrides",
   "dismissedRecommendedCourses",
   "coreToChainOverrides",
@@ -573,6 +574,19 @@ function validateStudentPlanRecord(
       return englishTaughtCourses;
     }
     sanitized.englishTaughtCourses = englishTaughtCourses;
+  }
+
+  if ("manualMelagCourseIds" in value) {
+    const manualMelagCourseIds = validateStringArray(
+      "manualMelagCourseIds",
+      value.manualMelagCourseIds,
+      600,
+      32
+    );
+    if (isValidationFailure(manualMelagCourseIds)) {
+      return manualMelagCourseIds;
+    }
+    sanitized.manualMelagCourseIds = manualMelagCourseIds;
   }
 
   if ("facultyColorOverrides" in value) {

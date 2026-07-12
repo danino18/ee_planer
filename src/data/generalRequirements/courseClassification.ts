@@ -68,6 +68,18 @@ export function isFreeElectiveCourseId(id: string): boolean {
   return isMelagCourseId(id) || isHumanitiesFreeElectiveCourseId(id);
 }
 
+export function isManualMelagEligible(id: string): boolean {
+  return !isFreeElectiveCourseId(id) &&
+    !isSportCourseId(id) &&
+    !isChoirOrOrchestraCourseId(id) &&
+    !isSportsTeamCourseId(id);
+}
+
+export function isCourseCountedAsMelag(id: string, manualMelagCourseIds: string[] | undefined): boolean {
+  return isFreeElectiveCourseId(id) ||
+    (isManualMelagEligible(id) && (manualMelagCourseIds ?? []).includes(id));
+}
+
 export function isChoirOrOrchestraCourseId(id: string): boolean {
   return CHOIR_ORCHESTRA_COURSE_IDS.has(bareId(id));
 }
