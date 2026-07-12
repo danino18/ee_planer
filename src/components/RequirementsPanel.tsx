@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { SapCourse } from '../types';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
@@ -43,6 +44,11 @@ const SEM_LABELS = [
   "א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ז'",
   "ח'", "ט'", "י'", 'י"א', 'י"ב', 'י"ג', 'י"ד', 'ט"ו', 'ט"ז',
 ];
+
+const PICKER_MIN_WIDTH = 130;
+const PICKER_VIEWPORT_MARGIN = 8;
+
+type PickerPosition = { top: number; right: number };
 
 const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4';
 const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
@@ -718,17 +724,39 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
   const [expandedRoboticsList, setExpandedRoboticsList] = useState<number | null>(null);
   const [expandedQuantumGroup, setExpandedQuantumGroup] = useState<string | null>(null);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [pickerPosition, setPickerPosition] = useState<PickerPosition | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const pickerMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        pickerRef.current
+        && !pickerRef.current.contains(target)
+        && !pickerMenuRef.current?.contains(target)
+      ) {
         setPickerFor(null);
+        setPickerPosition(null);
       }
     }
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!pickerFor) return undefined;
+    function closePicker() {
+      setPickerFor(null);
+      setPickerPosition(null);
+    }
+    window.addEventListener('resize', closePicker);
+    window.addEventListener('scroll', closePicker, true);
+    return () => {
+      window.removeEventListener('resize', closePicker);
+      window.removeEventListener('scroll', closePicker, true);
+    };
+  }, [pickerFor]);
 
   const regularIndexMap = useMemo(() => {
     const map = new Map<number, number>();
@@ -790,7 +818,18 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         <button
           onClick={(event) => {
             event.stopPropagation();
-            setPickerFor(isPickerOpen ? null : courseId);
+            if (isPickerOpen) {
+              setPickerFor(null);
+              setPickerPosition(null);
+              return;
+            }
+            const rect = event.currentTarget.getBoundingClientRect();
+            const maxRight = Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - PICKER_MIN_WIDTH - PICKER_VIEWPORT_MARGIN);
+            setPickerPosition({
+              top: rect.bottom + 2,
+              right: Math.min(maxRight, Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - rect.right)),
+            });
+            setPickerFor(courseId);
           }}
           className={`text-xs border px-1 py-0.5 rounded transition-colors ${
             isPickerOpen
@@ -801,8 +840,16 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         >
           +
         </button>
-        {isPickerOpen && (
-          <div className="absolute start-0 top-full mt-0.5 z-[60] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1 min-w-[130px]">
+        {isPickerOpen && pickerPosition && createPortal(
+          <div
+            ref={pickerMenuRef}
+            className="fixed z-[120] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1"
+            style={{
+              top: `${pickerPosition.top}px`,
+              right: `${pickerPosition.right}px`,
+              minWidth: `${PICKER_MIN_WIDTH}px`,
+            }}
+          >
             {semesterOptions.map(({ label, value }) => (
               <button
                 key={value}
@@ -810,13 +857,15 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                   event.stopPropagation();
                   addCourseToSemester(courseId, value);
                   setPickerFor(null);
+                  setPickerPosition(null);
                 }}
                 className="w-full text-right text-xs px-2.5 py-1 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-gray-700 dark:text-gray-300 hover:text-blue-700 transition-colors"
               >
                 {label}
               </button>
             ))}
-          </div>
+          </div>,
+          document.body,
         )}
       </div>
     );
