@@ -731,7 +731,7 @@ export function computeRequirementsProgress(
       const mode = group.canBeDouble && doubleSpecializations.includes(group.id)
         ? 'double'
         : 'single';
-      const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, effectiveChainAssignments);
+      const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, effectiveChainAssignments, allPlaced);
       return {
         group,
         mode,
@@ -1120,7 +1120,7 @@ export function useChainRecommendations(
     const scored = specializationCatalog.groups
       .filter((group) => !selectedSpecializations.includes(group.id))
       .map((group) => {
-        const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, 'single', effectiveChainAssignments);
+        const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, 'single', effectiveChainAssignments, allPlaced);
         const mandatory = group.mandatoryCourses.filter((id) => chainEligibleCourseIds.has(id));
         const score = evaluation.doneCount * 2 + mandatory.length * 3;
         return { group, score, matchingCourses: evaluation.matchedCourseNumbers };

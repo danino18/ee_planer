@@ -240,6 +240,7 @@ export interface SpecializationGroupEvaluation {
   additionalRuleSatisfied: boolean;
   mutualExclusionSatisfied: boolean;
   matchedCourseNumbers: string[];
+  bypassedMandatoryCourseNumbers: string[];
   ruleBlocks: SpecializationRuleBlock[];
   issues: string[];
 }

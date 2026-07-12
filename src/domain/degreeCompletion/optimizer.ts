@@ -291,7 +291,7 @@ export function suggestMissingCourses(
 
   for (const group of selectedGroups) {
     const mode = getMode(group, input.doubleSpecializations);
-    const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, input.courseChainAssignments);
+    const evaluation = evaluateSpecializationGroup(group, chainEligibleCourseIds, mode, input.courseChainAssignments, buildAllPlaced(input));
 
     if (evaluation.complete) continue;
 

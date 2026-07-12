@@ -411,6 +411,63 @@ test('buildChainEligibleCourseSet: released CS core course can satisfy a special
   assert.equal(ml.complete, true, 'Released machine-learning core course should satisfy the chain');
 });
 
+// ── evaluateSpecializationGroup: core-locked mandatory course bypass ──────────
+
+test('evaluateSpecializationGroup: core-locked mandatory course can be bypassed when 3 other chain courses are taken', () => {
+  const input = makeInput({
+    semesters: {
+      1: ['00460195', '00440191', '00460202', '00460010'],
+    },
+    semesterOrder: [1],
+    selectedSpecializations: [csMachineLearningGroup.id],
+    coreToChainOverrides: ['00440191'],
+  });
+  const allPlaced = new Set(Object.values(input.semesters).flat());
+  const chainEligibleCourseIds = buildChainEligibleCourseSet(input, csTrack);
+
+  const withoutBypassParam = evaluateSpecializationGroup(csMachineLearningGroup, chainEligibleCourseIds);
+  assert.equal(withoutBypassParam.complete, false, 'legacy call shape (no allTakenCourseNumbers) keeps today\'s behavior');
+
+  const withBypass = evaluateSpecializationGroup(csMachineLearningGroup, chainEligibleCourseIds, 'single', undefined, allPlaced);
+  assert.equal(withBypass.complete, true, 'chain should close: 00460195 is core-locked but 3 other chain courses meet the quota');
+  assert.equal(withBypass.doneCount, 3);
+  assert.deepEqual(withBypass.bypassedMandatoryCourseNumbers, ['00460195']);
+});
+
+test('evaluateSpecializationGroup: core-locked mandatory course is NOT bypassed without enough other chain courses', () => {
+  const input = makeInput({
+    semesters: {
+      1: ['00460195', '00460202'],
+    },
+    semesterOrder: [1],
+    selectedSpecializations: [csMachineLearningGroup.id],
+  });
+  const allPlaced = new Set(Object.values(input.semesters).flat());
+  const chainEligibleCourseIds = buildChainEligibleCourseSet(input, csTrack);
+
+  const evaluation = evaluateSpecializationGroup(csMachineLearningGroup, chainEligibleCourseIds, 'single', undefined, allPlaced);
+  assert.equal(evaluation.complete, false, 'only 1 other chain course is taken — below the 3-course quota, so the bypass must not apply');
+  assert.deepEqual(evaluation.bypassedMandatoryCourseNumbers, []);
+});
+
+test('evaluateSpecializationGroup: a mandatory course never taken at all still hard-blocks completion', () => {
+  const input = makeInput({
+    semesters: {
+      1: ['00460202', '00440191', '00460010'],
+    },
+    semesterOrder: [1],
+    selectedSpecializations: [csMachineLearningGroup.id],
+    coreToChainOverrides: ['00440191'],
+  });
+  const allPlaced = new Set(Object.values(input.semesters).flat());
+  const chainEligibleCourseIds = buildChainEligibleCourseSet(input, csTrack);
+
+  const evaluation = evaluateSpecializationGroup(csMachineLearningGroup, chainEligibleCourseIds, 'single', undefined, allPlaced);
+  assert.equal(evaluation.doneCount, 3, 'sanity check: quota is met by the other 3 courses');
+  assert.equal(evaluation.complete, false, '00460195 was never taken anywhere, so it must not be bypassable');
+  assert.deepEqual(evaluation.bypassedMandatoryCourseNumbers, []);
+});
+
 test('buildCoreLockedSet: CE orGroup — only first placed member is locked, second is blocked', () => {
   // CE orGroups: [['02360334', '00440334']]
   const OR_A = '02360334';

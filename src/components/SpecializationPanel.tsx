@@ -122,6 +122,7 @@ export function SpecializationPanel({ catalog, courses }: Props) {
               takenForEval,
               isDouble && group.canBeDouble ? 'double' : 'single',
               isSelected ? effectiveChainAssignments : undefined,
+              allPlaced,
             );
             const progress = getRuleProgress(evaluation.ruleBlocks);
             const pct = Math.min(

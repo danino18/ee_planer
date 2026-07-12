@@ -84,8 +84,8 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
   );
   const mode = group.canBeDouble && doubleSpecializations.includes(group.id) ? 'double' : 'single';
   const evaluation = useMemo(
-    () => evaluateSpecializationGroup(group, chainEligibleSet, mode, effectiveChainAssignments),
-    [chainEligibleSet, group, mode, effectiveChainAssignments],
+    () => evaluateSpecializationGroup(group, chainEligibleSet, mode, effectiveChainAssignments, allPlaced),
+    [chainEligibleSet, group, mode, effectiveChainAssignments, allPlaced],
   );
   const displayedCourseNumbers = useMemo(
     () => new Set(evaluation.ruleBlocks.flatMap((block) => block.options.map((option) => option.courseNumber))),

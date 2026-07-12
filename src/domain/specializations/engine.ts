@@ -832,17 +832,32 @@ function evaluateChoiceRule(
 function evaluateMandatoryCourses(
   requirements: SpecializationRequirementSet,
   takenCourses: Set<string>,
+  allTakenCourses: Set<string>,
   replacementMap: Map<string, string[]>,
-): { satisfied: boolean; matchedCourseNumbers: string[] } {
+  doneCount: number,
+): { satisfied: boolean; matchedCourseNumbers: string[]; bypassedCourseNumbers: string[] } {
   const matched: string[] = [];
+  const bypassed: string[] = [];
   for (const course of requirements.mandatoryCourses) {
-    const evaluation = courseIsSatisfied(course.courseNumber, takenCourses, replacementMap);
-    if (!evaluation.satisfied) return { satisfied: false, matchedCourseNumbers: matched };
-    matched.push(...evaluation.matchedCourseNumbers);
+    const direct = courseIsSatisfied(course.courseNumber, takenCourses, replacementMap);
+    if (direct.satisfied) {
+      matched.push(...direct.matchedCourseNumbers);
+      continue;
+    }
+    // Not counted toward this chain directly — either never taken at all, or taken
+    // but spoken for by core / a different chain. Only the latter is bypassable,
+    // and only if the rest of the chain already meets its own course quota.
+    const takenElsewhere = courseIsSatisfied(course.courseNumber, allTakenCourses, replacementMap);
+    if (takenElsewhere.satisfied && doneCount >= requirements.totalCoursesRequiredForGroup) {
+      bypassed.push(...takenElsewhere.matchedCourseNumbers);
+      continue;
+    }
+    return { satisfied: false, matchedCourseNumbers: matched, bypassedCourseNumbers: bypassed };
   }
   return {
     satisfied: true,
     matchedCourseNumbers: dedupeCourseNumbers(matched),
+    bypassedCourseNumbers: dedupeCourseNumbers(bypassed),
   };
 }
 
@@ -1049,9 +1064,11 @@ export function evaluateSpecializationGroup(
   takenCourseNumbers: Iterable<string>,
   mode: SpecializationMode = 'single',
   courseChainAssignments?: Record<string, string>,
+  allTakenCourseNumbers?: Iterable<string>,
 ): SpecializationGroupEvaluation {
+  const takenCourseNumbersArray = [...takenCourseNumbers];
   const takenCourses = new Set(
-    [...takenCourseNumbers].filter((id) => {
+    takenCourseNumbersArray.filter((id) => {
       // When no assignment map is provided (e.g. unit tests calling the function directly),
       // use the legacy permissive behavior so all chain-eligible courses count.
       // When an effective assignment map is provided, require an explicit assignment to this group.
@@ -1059,6 +1076,15 @@ export function evaluateSpecializationGroup(
       return courseChainAssignments[id] === group.id;
     }),
   );
+  // Unfiltered pool of everything the student has ever placed, regardless of core-lock
+  // or cross-chain assignment. Used only to distinguish "never taken" (hard block) from
+  // "taken but counted elsewhere" (bypassable) for mandatory-course requirements. Defaults
+  // to the assignment-filtered `takenCourses` (not the raw, pre-filter `takenCourseNumbers`
+  // argument) so the bypass is unreachable unless a caller explicitly opts in, even when
+  // `courseChainAssignments` is provided.
+  const allTakenCourses = allTakenCourseNumbers !== undefined
+    ? new Set(allTakenCourseNumbers)
+    : takenCourses;
   const requirements = group.requirementsByMode[mode] ?? group.requirementsByMode.single;
 
   if (!requirements) {
@@ -1075,36 +1101,41 @@ export function evaluateSpecializationGroup(
       additionalRuleSatisfied: false,
       mutualExclusionSatisfied: false,
       matchedCourseNumbers: [],
+      bypassedMandatoryCourseNumbers: [],
       ruleBlocks: [],
       issues: ['חוקי ההתמחות אינם זמינים.'],
     };
   }
 
   const replacementMap = buildReplacementAliasMap(group);
-  const mandatoryCourses = evaluateMandatoryCourses(requirements, takenCourses, replacementMap);
+  const allKnownCourseNumbers = collectTrackGroupCourseNumbers(group);
+  const doneCount = allKnownCourseNumbers.filter((courseNumber) => takenCourses.has(courseNumber)).length;
+  const mandatoryCourses = evaluateMandatoryCourses(requirements, takenCourses, allTakenCourses, replacementMap, doneCount);
   const mandatoryChoices = requirements.mandatoryChoiceRules.map((rule) =>
     evaluateChoiceRule(rule, takenCourses, replacementMap),
   );
   const selectionRule = evaluateChoiceRule(requirements.selectionRule, takenCourses, replacementMap);
   const mutualExclusion = evaluateMutualExclusionRules(group.mutualExclusionRules, takenCourses);
-  const allKnownCourseNumbers = collectTrackGroupCourseNumbers(group);
-  const doneCount = allKnownCourseNumbers.filter((courseNumber) => takenCourses.has(courseNumber)).length;
 
   const ruleBlocks: SpecializationRuleBlock[] = [];
 
   if (requirements.mandatoryCourses.length > 0) {
-    const satisfiedMandatoryCount = requirements.mandatoryCourses.filter(
+    const directSatisfiedCount = requirements.mandatoryCourses.filter(
       (course) => courseIsSatisfied(course.courseNumber, takenCourses, replacementMap).satisfied,
     ).length;
+    const hasBypass = mandatoryCourses.bypassedCourseNumbers.length > 0;
     ruleBlocks.push({
       id: 'mandatory_courses',
       kind: 'mandatory_courses',
       title: 'קורסי חובה',
       requiredCount: requirements.mandatoryCourses.length,
-      satisfiedCount: satisfiedMandatoryCount,
+      satisfiedCount: mandatoryCourses.satisfied ? requirements.mandatoryCourses.length : directSatisfiedCount,
       isSatisfied: mandatoryCourses.satisfied,
       options: requirements.mandatoryCourses,
       matchedCourseNumbers: mandatoryCourses.matchedCourseNumbers,
+      note: hasBypass
+        ? `נספר כחובה גם קורס שנלקח אך משויך לשרשרת/ליבה אחרת, מכיוון שהושלמו ${requirements.totalCoursesRequiredForGroup} קורסים אחרים בקבוצה זו.`
+        : undefined,
     });
   }
 
@@ -1201,6 +1232,7 @@ export function evaluateSpecializationGroup(
       ...selectionRule.matchedCourseNumbers,
       ...additionalRule.matchedCourseNumbers,
     ]),
+    bypassedMandatoryCourseNumbers: mandatoryCourses.bypassedCourseNumbers,
     ruleBlocks,
     issues,
   };
