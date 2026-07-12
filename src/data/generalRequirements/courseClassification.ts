@@ -75,9 +75,9 @@ export function isManualMelagEligible(id: string): boolean {
     !isSportsTeamCourseId(id);
 }
 
-export function isCourseCountedAsMelag(id: string, manualMelagCourseIds: string[]): boolean {
+export function isCourseCountedAsMelag(id: string, manualMelagCourseIds: string[] | undefined): boolean {
   return isFreeElectiveCourseId(id) ||
-    (isManualMelagEligible(id) && manualMelagCourseIds.includes(id));
+    (isManualMelagEligible(id) && (manualMelagCourseIds ?? []).includes(id));
 }
 
 export function isChoirOrOrchestraCourseId(id: string): boolean {
