@@ -27,6 +27,7 @@ const transpiledEngine = ts.transpileModule(engineSource, {
 const engineModuleUrl = `data:text/javascript;base64,${Buffer.from(transpiledEngine).toString('base64')}`;
 const {
   buildTrackSpecializationCatalogs,
+  buildEffectiveChainAssignments,
   evaluateSpecializationGroup,
 } = await import(engineModuleUrl);
 
@@ -257,6 +258,60 @@ test('track-specific specialization catalogs load and validate correctly', () =>
     missingCatalogs.cs.diagnostics.some((diagnostic) => diagnostic.code === 'missing-track-specialization-files'),
     'Missing track folder diagnostic should be reported',
   );
+});
+
+test('evaluateSpecializationGroup: a course cross-assigned to another chain can still bypass its own chain\'s mandatory-course slot', () => {
+  const sources = buildSourcesFromFiles();
+  const catalogs = buildTrackSpecializationCatalogs(sources);
+  const eeControlRobotics = findGroup(catalogs.ee, 'בקרה ורובוטיקה');
+  const eeMachineLearning = findGroup(catalogs.ee, 'למידת מכונה');
+
+  // 00460195 ("מערכות לומדות") is the mandatory course of eeMachineLearning, but it's also a
+  // valid "additional course" option for eeControlRobotics. 00440191 is eeControlRobotics's own
+  // mandatory course, but also appears as an elective option in eeMachineLearning. Both are
+  // ambiguous between the two selected chains, so they need an explicit assignment.
+  const allTakenEE = ['00460195', '00440191', '00460192', '00460202', '00460217', '00460010'];
+  const explicitAssignments = { '00460195': eeControlRobotics.id, '00440191': eeControlRobotics.id };
+  const effectiveAssignments = buildEffectiveChainAssignments(
+    new Set(allTakenEE),
+    [eeControlRobotics, eeMachineLearning],
+    explicitAssignments,
+  );
+
+  const controlEval = evaluateSpecializationGroup(eeControlRobotics, allTakenEE, 'single', effectiveAssignments, allTakenEE);
+  assert.equal(controlEval.complete, true, 'Control & Robotics should close using the cross-assigned מערכות לומדות course');
+
+  const mlEval = evaluateSpecializationGroup(eeMachineLearning, allTakenEE, 'single', effectiveAssignments, allTakenEE);
+  assert.equal(
+    mlEval.complete,
+    true,
+    'ML/IS chain should still close via the bypass: 00460202+00460217+00460010 satisfy the 3-course quota without counting the cross-assigned mandatory course',
+  );
+  assert.deepEqual(mlEval.bypassedMandatoryCourseNumbers, ['00460195']);
+
+  // Regression guard: same effective assignments, but WITHOUT the new allTakenCourseNumbers
+  // argument — the cross-assigned mandatory course must NOT bypass under the legacy call shape.
+  const mlEvalNoBypassParam = evaluateSpecializationGroup(eeMachineLearning, allTakenEE, 'single', effectiveAssignments);
+  assert.equal(mlEvalNoBypassParam.complete, false, 'legacy call shape (no allTakenCourseNumbers) keeps today\'s behavior');
+
+  // Regression guard: mandatory course never taken by anyone at all must still block completion,
+  // even with 3+ other chain courses present and the bypass parameter supplied.
+  const noMandatoryAtAll = ['00460192', '00460202', '00460217', '00460010'];
+  const effectiveAssignments2 = buildEffectiveChainAssignments(
+    new Set(noMandatoryAtAll),
+    [eeControlRobotics, eeMachineLearning],
+    {},
+  );
+  const mlEvalNeverTaken = evaluateSpecializationGroup(
+    eeMachineLearning,
+    noMandatoryAtAll,
+    'single',
+    effectiveAssignments2,
+    noMandatoryAtAll,
+  );
+  assert.equal(mlEvalNeverTaken.doneCount, 3, 'sanity check: quota is met by the other 3 courses');
+  assert.equal(mlEvalNeverTaken.complete, false, '00460195 was never taken anywhere, so it must not be bypassable');
+  assert.equal(mlEvalNeverTaken.bypassedMandatoryCourseNumbers.length, 0);
 });
 
 
