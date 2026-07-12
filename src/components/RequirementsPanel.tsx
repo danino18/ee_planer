@@ -1,5 +1,4 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { SapCourse } from '../types';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlanStore } from '../store/planStore';
@@ -48,7 +47,7 @@ const SEM_LABELS = [
 const PICKER_MIN_WIDTH = 130;
 const PICKER_VIEWPORT_MARGIN = 8;
 
-type PickerPosition = { top: number; right: number };
+type PickerPosition = { left: number };
 
 const REQUIRED_ANY_OF_LABEL = '\u05dc\u05e4\u05d7\u05d5\u05ea \u05e7\u05d5\u05e8\u05e1 \u05d0\u05d7\u05d3 \u05de\u05d4\u05e8\u05e9\u05d9\u05de\u05d4';
 const MANUAL_ASSIGNMENT_TITLE = '\u05e9\u05d9\u05d5\u05da \u05e7\u05d5\u05e8\u05e1\u05d9\u05dd \u05d3\u05d5-\u05de\u05e9\u05de\u05e2\u05d9\u05d9\u05dd';
@@ -823,12 +822,14 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
               setPickerPosition(null);
               return;
             }
-            const rect = event.currentTarget.getBoundingClientRect();
-            const maxRight = Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - PICKER_MIN_WIDTH - PICKER_VIEWPORT_MARGIN);
-            setPickerPosition({
-              top: rect.bottom + 2,
-              right: Math.min(maxRight, Math.max(PICKER_VIEWPORT_MARGIN, window.innerWidth - rect.right)),
-            });
+            // Right-aligned under the button by default (start-0 in RTL), but pulled left-clamped
+            // to the nearest scroll container so the menu never gets cut off by its overflow clipping.
+            const wrapperRect = event.currentTarget.parentElement!.getBoundingClientRect();
+            const scrollBounds = event.currentTarget.closest('aside')?.getBoundingClientRect();
+            const minViewportLeft = (scrollBounds?.left ?? 0) + PICKER_VIEWPORT_MARGIN;
+            const desiredViewportLeft = wrapperRect.right - PICKER_MIN_WIDTH;
+            const clampedViewportLeft = Math.max(minViewportLeft, desiredViewportLeft);
+            setPickerPosition({ left: clampedViewportLeft - wrapperRect.left });
             setPickerFor(courseId);
           }}
           className={`text-xs border px-1 py-0.5 rounded transition-colors ${
@@ -840,13 +841,12 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
         >
           +
         </button>
-        {isPickerOpen && pickerPosition && createPortal(
+        {isPickerOpen && pickerPosition && (
           <div
             ref={pickerMenuRef}
-            className="fixed z-[120] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1"
+            className="absolute top-full mt-0.5 z-[60] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl py-1"
             style={{
-              top: `${pickerPosition.top}px`,
-              right: `${pickerPosition.right}px`,
+              left: `${pickerPosition.left}px`,
               minWidth: `${PICKER_MIN_WIDTH}px`,
             }}
           >
@@ -864,8 +864,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 {label}
               </button>
             ))}
-          </div>,
-          document.body,
+          </div>
         )}
       </div>
     );
