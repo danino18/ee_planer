@@ -745,16 +745,16 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
 
   useEffect(() => {
     if (!pickerFor) return undefined;
+    // Only resize needs to close the picker: its clamped left offset was computed
+    // against the aside's bounds at open time and would go stale on resize. Scrolling
+    // doesn't need this — the menu is absolutely positioned against its anchor row (not
+    // fixed to the viewport), so it scrolls along with the sidebar naturally.
     function closePicker() {
       setPickerFor(null);
       setPickerPosition(null);
     }
     window.addEventListener('resize', closePicker);
-    window.addEventListener('scroll', closePicker, true);
-    return () => {
-      window.removeEventListener('resize', closePicker);
-      window.removeEventListener('scroll', closePicker, true);
-    };
+    return () => window.removeEventListener('resize', closePicker);
   }, [pickerFor]);
 
   const regularIndexMap = useMemo(() => {
