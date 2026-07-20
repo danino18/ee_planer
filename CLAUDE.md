@@ -21,6 +21,7 @@
 - Tailwind v4: no string interpolation in class names (dynamic classes won't scan).
 
 ## Detailed Docs
+- Codebase file map (what's where, key exports, dependency flow) → `docs/codebase-map.md` — check this before broad exploration
 - Store + persistence → `docs/store.md`
 - Requirements engine → `docs/domain.md`
 - Component/RTL conventions → `docs/components.md`
@@ -36,3 +37,21 @@ When compacting, preserve: list of modified files, pending commands, current tas
   `~/.claude/projects/C--Users-eyald-OneDrive---Technion-planer-ee/memory/current_focus.md`
 - Check it at session start. Update before ending or switching context.
 - Do NOT look for `memory/current_focus.md` at the project root — it does not exist there.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Setup: requires the CLI (`uv tool install graphifyy`), not an npm dependency. `graph.json` and
+`GRAPH_REPORT.md` are committed and portable; `graphify-out/cache/`, `manifest.json`, and other
+dotfiles under `graphify-out/` are machine-local and gitignored. Git hooks (auto-rebuild on
+commit/checkout) and the `.claude/settings.json` PreToolUse integration are per-machine —
+gitignored, so a fresh clone needs `graphify hook install` + `graphify claude install` run once to
+get them. Community labels in the report may show as `Community N` (unnamed) unless someone runs
+`graphify label . --backend=<claude|gemini|openai|...>`, which needs an LLM API key/backend.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

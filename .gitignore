@@ -11,3 +11,14 @@ functions/lib/
 functions/.env
 functions/.env.local
 functions/.secret.local
+
+# graphify: keep graph.json + GRAPH_REPORT.md (committed, portable), ignore
+# machine-local cache/scratch state (absolute paths, rebuild cache, incremental manifest)
+# and graph.html (2MB regenerated viz, CDN-dependent — regenerate via
+# `graphify cluster-only .` instead of committing it)
+graphify-out/cache/
+graphify-out/.graphify_root
+graphify-out/.graphify_analysis.json
+graphify-out/.graphify_labels.json*
+graphify-out/manifest.json
+graphify-out/graph.html
