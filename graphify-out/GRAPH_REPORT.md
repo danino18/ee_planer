@@ -4,12 +4,12 @@
 - cluster-only mode — file stats not available
 
 ## Summary
-- 2141 nodes · 4247 edges · 144 communities (119 shown, 25 thin omitted)
+- 2141 nodes · 4247 edges · 143 communities (118 shown, 25 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 102 edges (avg confidence: 0.74)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1d239f9a`
+- Built from commit: `32f37bb2`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -39,7 +39,7 @@
 - Community 22
 - Community 23
 - Community 24
-- Community 25
+- TestTailwindConfigGenerator
 - Community 26
 - Community 27
 - Community 28
@@ -51,23 +51,23 @@
 - Community 34
 - Community 35
 - Community 36
-- Community 37
+- color
 - Community 38
 - Community 39
 - Community 40
 - Community 41
 - Community 42
-- Community 43
+- TailwindConfigGenerator
 - Community 44
 - Community 45
-- Community 46
+- design_system.py
 - Community 47
 - Community 48
 - Community 49
 - Community 50
 - Community 51
 - Community 52
-- Community 53
+- color
 - Community 54
 - Community 55
 - Community 56
@@ -92,7 +92,7 @@
 - Community 75
 - Community 76
 - Community 77
-- Community 78
+- blue
 - Community 79
 - Community 80
 - Community 81
@@ -101,14 +101,14 @@
 - Community 84
 - Community 85
 - Community 86
-- Community 87
+- input
 - Community 88
 - Community 89
 - Community 90
 - Community 91
 - Community 92
 - Community 93
-- Community 94
+- _generate_intelligent_overrides
 - Community 95
 - Community 96
 - Community 97
@@ -126,10 +126,10 @@
 - Community 109
 - Community 110
 - Community 111
-- Community 112
-- Community 113
+- padding-y
+- destructive
 - Community 114
-- Community 115
+- .test_full_configuration_javascript
 - Community 116
 - Community 117
 - Community 118
@@ -144,10 +144,9 @@
 - Community 127
 - Community 128
 - Community 129
-- Community 130
+- .test_default_output_path_javascript
 - Community 131
-- Community 132
-- Community 133
+- .test_add_colors_multiple_times
 - Community 134
 - Community 135
 - Community 136
@@ -183,7 +182,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (144 total, 25 thin omitted)
+## Communities (143 total, 25 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.05
@@ -285,9 +284,9 @@ Nodes (26): DOM, DOM.Iterable, vite/client, compilerOptions, allowImportingTsExt
 Cohesion: 0.11
 Nodes (19): BM25, detect_domain(), _load_csv(), Load CSV and return list of dicts, Core search function using BM25, Auto-detect the most relevant domain from query, Main search function with auto-domain detection, Search across all domains and combine results (+11 more)
 
-### Community 25 - "Community 25"
-Cohesion: 0.07
-Nodes (14): Test adding full color palette., Test adding custom fonts., Test TailwindConfigGenerator class., Test that adding same plugin twice doesn't duplicate., Test plugin recommendations., Test plugin recommendations for Next.js., Test generating JavaScript configuration., Test initialization for JavaScript config. (+6 more)
+### Community 25 - "TestTailwindConfigGenerator"
+Cohesion: 0.08
+Nodes (13): Test adding full color palette., Test adding custom fonts., Test adding custom spacing., Test TailwindConfigGenerator class., Test that adding same plugin twice doesn't duplicate., Test plugin recommendations., Test plugin recommendations for Next.js., Test generating JavaScript configuration. (+5 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.16
@@ -333,9 +332,9 @@ Nodes (17): TRACK_ICONS, TrackSelector(), getAllScheduledCourseIds(), getAllSeme
 Cohesion: 0.11
 Nodes (19): $type, $value, $type, $value, $type, $value, $type, $value (+11 more)
 
-### Community 37 - "Community 37"
+### Community 37 - "color"
 Cohesion: 0.11
-Nodes (19): $type, $value, background, destructive, foreground, muted-foreground, primary-hover, secondary (+11 more)
+Nodes (19): $type, $value, background, foreground, muted-foreground, primary, primary-hover, secondary (+11 more)
 
 ### Community 38 - "Community 38"
 Cohesion: 0.19
@@ -357,9 +356,9 @@ Nodes (17): generate_css_for_background(), get_background_image(), get_curated_i
 Cohesion: 0.11
 Nodes (9): main(), Add custom font families.          Args:             fonts: Dict of font_type: [, Add custom spacing values.          Args:             spacing: Dict of name: val, Add custom breakpoints.          Args:             breakpoints: Dict of name: wi, Add plugin requirements.          Args:             plugins: List of plugin name, Get plugin recommendations based on configuration.          Returns:, Validate configuration.          Returns:             Tuple of (valid, message), Add custom colors to theme.          Args:             colors: Dict of color_nam (+1 more)
 
-### Community 43 - "Community 43"
-Cohesion: 0.12
-Nodes (9): Generate Tailwind CSS configuration files., Add full color palette (50-950 shades) for a base color.          Args:, TailwindConfigGenerator, Test initialization with default settings., Test generating config with custom colors., Test generating config with plugins., Test validating valid configuration., Test generating complete TypeScript configuration. (+1 more)
+### Community 43 - "TailwindConfigGenerator"
+Cohesion: 0.11
+Nodes (10): Generate Tailwind CSS configuration files., Add full color palette (50-950 shades) for a base color.          Args:, TailwindConfigGenerator, Test initialization with default settings., Test generating config with custom colors., Test generating config with plugins., Test validating valid configuration., Test initialization with different frameworks. (+2 more)
 
 ### Community 44 - "Community 44"
 Cohesion: 0.12
@@ -369,9 +368,9 @@ Nodes (17): SemesterScheduleAlternativeGroup, SemesterScheduleEntry, Specializat
 Cohesion: 0.20
 Nodes (12): $type, $value, bg, bg, padding, shadow, card, bg (+4 more)
 
-### Community 46 - "Community 46"
-Cohesion: 0.17
-Nodes (16): ansi_ljust(), format_ascii_box(), format_markdown(), format_master_md(), generate_design_system(), hex_to_ansi(), persist_design_system(), Convert hex color to ANSI True Color swatch (██) with fallback. (+8 more)
+### Community 46 - "design_system.py"
+Cohesion: 0.15
+Nodes (18): ansi_ljust(), format_ascii_box(), format_markdown(), format_master_md(), format_page_override_md(), generate_design_system(), hex_to_ansi(), persist_design_system() (+10 more)
 
 ### Community 47 - "Community 47"
 Cohesion: 0.16
@@ -397,9 +396,9 @@ Nodes (13): generate_chart_slide(), generate_deck(), generate_metrics_slide(), g
 Cohesion: 0.15
 Nodes (11): csControlRoboticsGroup, csMachineLearningGroup, EE_LAB_IDS, emptyCatalog, loadTranspiledModule(), makeChoiceRule(), makeSpecializationGroup(), repoRoot (+3 more)
 
-### Community 53 - "Community 53"
-Cohesion: 0.20
-Nodes (15): $type, $value, 500, blue, green, red, white, yellow (+7 more)
+### Community 53 - "color"
+Cohesion: 0.19
+Nodes (15): $type, $value, 500, green, red, white, yellow, 500 (+7 more)
 
 ### Community 54 - "Community 54"
 Cohesion: 0.15
@@ -497,9 +496,9 @@ Nodes (9): enhance_prompt(), generate_batch(), generate_logo(), load_env(), main
 Cohesion: 0.36
 Nodes (9): flattenTokens(), fs, generateCSS(), generateTailwind(), main(), parseArgs(), path, resolveReference() (+1 more)
 
-### Community 78 - "Community 78"
-Cohesion: 0.53
-Nodes (6): $type, $value, 600, 600, 600, 600
+### Community 78 - "blue"
+Cohesion: 0.27
+Nodes (10): $type, $value, $type, $value, 50, 600, blue, 50 (+2 more)
 
 ### Community 79 - "Community 79"
 Cohesion: 0.20
@@ -533,9 +532,9 @@ Nodes (6): loadTranspiledModule(), mandatoryIds, repoRoot, resolveTypeScriptModu
 Cohesion: 0.33
 Nodes (8): createEnvelope(), createPlan(), loadPlanSyncModule(), loadSerializerModule(), localEnvelopeForSignatureCheck(), repoRoot, serializerModuleUrl, transpileToModuleUrl()
 
-### Community 87 - "Community 87"
+### Community 87 - "input"
 Cohesion: 0.29
-Nodes (8): padding-y, input, $type, $value, focus-ring, padding-y, $type, $value
+Nodes (8): padding-x, input, $type, $value, focus-ring, padding-x, $type, $value
 
 ### Community 88 - "Community 88"
 Cohesion: 0.32
@@ -561,9 +560,9 @@ Nodes (5): loadTranspiledModule(), repoRoot, resolveTypeScriptModule(), transpil
 Cohesion: 0.38
 Nodes (5): loadModule(), repoRoot, resolveTypeScriptModule(), transpiledModuleUrls, transpileToDataUrl()
 
-### Community 94 - "Community 94"
-Cohesion: 0.33
-Nodes (6): _detect_page_type(), format_page_override_md(), _generate_intelligent_overrides(), Detect page type from context and search results., Format a page-specific override file with intelligent AI-generated content., Generate intelligent overrides based on page type using layered search.
+### Community 94 - "_generate_intelligent_overrides"
+Cohesion: 0.50
+Nodes (4): _detect_page_type(), _generate_intelligent_overrides(), Detect page type from context and search results., Generate intelligent overrides based on page type using layered search.
 
 ### Community 96 - "Community 96"
 Cohesion: 0.47
@@ -617,21 +616,17 @@ Nodes (5): $type, $value, border, border, border
 Cohesion: 0.67
 Nodes (3): quotePowerShellArg(), runStep(), steps
 
-### Community 112 - "Community 112"
+### Community 112 - "padding-y"
 Cohesion: 0.67
-Nodes (4): $type, $value, 50, 50
+Nodes (4): padding-y, padding-y, $type, $value
 
-### Community 113 - "Community 113"
+### Community 113 - "destructive"
 Cohesion: 0.67
-Nodes (4): padding-x, padding-x, $type, $value
+Nodes (3): destructive, $type, $value
 
 ### Community 114 - "Community 114"
 Cohesion: 0.67
 Nodes (3): destructive-foreground, $type, $value
-
-### Community 115 - "Community 115"
-Cohesion: 0.67
-Nodes (3): primary, $type, $value
 
 ### Community 116 - "Community 116"
 Cohesion: 0.67
@@ -661,7 +656,7 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.025) - this node is a cross-community bridge._
 - **Why does `SapCourse` connect `Community 26` to `Community 1`, `Community 35`, `Community 5`, `Community 7`, `Community 8`, `Community 10`, `Community 11`, `Community 12`, `Community 44`, `Community 15`, `Community 17`, `Community 18`, `Community 58`, `Community 29`?**
   _High betweenness centrality (0.013) - this node is a cross-community bridge._
-- **Why does `primitive` connect `Community 27` to `Community 65`, `Community 34`, `Community 14`, `Community 80`, `Community 53`?**
+- **Why does `primitive` connect `Community 27` to `Community 65`, `Community 34`, `Community 14`, `Community 80`, `color`?**
   _High betweenness centrality (0.013) - this node is a cross-community bridge._
 - **Are the 33 inferred relationships involving `TailwindConfigGenerator` (e.g. with `TestTailwindConfigGenerator` and `.test_add_breakpoints()`) actually correct?**
   _`TailwindConfigGenerator` has 33 INFERRED edges - model-reasoned connections that need verification._
