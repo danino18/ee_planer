@@ -8,6 +8,13 @@ Read this before grepping broadly. For *rules and conventions* (not file locatio
 listed in `CLAUDE.md` → Detailed Docs (`store.md`, `domain.md`, `components.md`, `deploy.md`,
 `data-sync.md`, `grade-statistics.md`) — this file complements those, it doesn't replace them.
 
+**Queryable alternative:** this file is a static, hand-written summary. For a live, queryable
+graph of the actual code (dependency edges, "what calls X", shortest path between two symbols),
+see `graphify-out/graph.json` / `graphify-out/GRAPH_REPORT.md` and the `## Codebase Graph
+(graphify)` section in `CLAUDE.md`. Re-run `graphify update . --code-only` after nontrivial
+changes to keep it in sync; this markdown file should be updated by hand if the directory
+structure itself changes.
+
 ## Architecture flow
 
 ```mermaid
