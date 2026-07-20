@@ -10,8 +10,8 @@ listed in `CLAUDE.md` → Detailed Docs (`store.md`, `domain.md`, `components.md
 
 **Queryable alternative:** this file is a static, hand-written summary. For a live, queryable
 graph of the actual code (dependency edges, "what calls X", shortest path between two symbols),
-see `graphify-out/graph.json` / `graphify-out/GRAPH_REPORT.md` and the `## Codebase Graph
-(graphify)` section in `CLAUDE.md`. Re-run `graphify update . --code-only` after nontrivial
+see `graphify-out/graph.json` / `graphify-out/GRAPH_REPORT.md` and the `## graphify` section in
+`CLAUDE.md`. Re-run `graphify update .` after nontrivial
 changes to keep it in sync; this markdown file should be updated by hand if the directory
 structure itself changes.
 
