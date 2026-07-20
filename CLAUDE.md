@@ -21,6 +21,7 @@
 - Tailwind v4: no string interpolation in class names (dynamic classes won't scan).
 
 ## Detailed Docs
+- Codebase file map (what's where, key exports, dependency flow) → `docs/codebase-map.md` — check this before broad exploration
 - Store + persistence → `docs/store.md`
 - Requirements engine → `docs/domain.md`
 - Component/RTL conventions → `docs/components.md`
