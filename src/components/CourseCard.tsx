@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useMemo, useState } from 'react';
+import { lazy, memo, Suspense, useEffect, useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { useShallow } from 'zustand/react/shallow';
 import type { SapCourse } from '../types';
@@ -7,6 +7,13 @@ import type { ContainingSubstitution } from '../domain/containingCourse';
 import type { ResolvedStatistic } from '../domain/gradeStatistics/types';
 import { formatSemester } from '../domain/gradeStatistics/semester';
 import { getPostponeSlack, hasPlannedDownstreamDependent } from '../domain/downstreamDependents';
+import {
+  averageDifficultyRank,
+  averageGeneralRank,
+  fetchCheeseForkFeedback,
+  peekCheeseForkFeedback,
+  type CheeseForkFeedback,
+} from '../services/cheesefork';
 import { usePlanStore, gradeKey, REPEATABLE_COURSES } from '../store/planStore';
 import { getFacultyStyle } from '../utils/faculty';
 import { getTeachingSemesterBadge } from '../utils/teachingSemester';
@@ -113,6 +120,21 @@ export const CourseCard = memo(function CourseCard({
     ? isCompletedViaStore
     : isCompleted;
   const [modalOpen, setModalOpen] = useState(false);
+  const [cheeseFork, setCheeseFork] = useState<CheeseForkFeedback | null | undefined>(
+    () => peekCheeseForkFeedback(course.id),
+  );
+  useEffect(() => {
+    if (peekCheeseForkFeedback(course.id) !== undefined) return;
+    let cancelled = false;
+    fetchCheeseForkFeedback(course.id).then((feedback) => {
+      if (!cancelled) setCheeseFork(feedback);
+    });
+    return () => { cancelled = true; };
+  }, [course.id]);
+  const difficultyAvg = averageDifficultyRank(cheeseFork);
+  const generalAvg = averageGeneralRank(cheeseFork);
+  const reviewCount = cheeseFork?.posts.length ?? 0;
+  const hasCheeseForkStats = cheeseFork != null && reviewCount > 0;
   const showsEnglishBadge = isCourseTaughtInEnglish(course, englishTaughtCourses);
   const isManualMelag = isManualMelagEligible(course.id) && manualMelagCourseIds.includes(course.id);
   const showsFreeElectiveBadge = isFreeElectiveCourseId(course.id) || isManualMelag;
@@ -379,6 +401,14 @@ export const CourseCard = memo(function CourseCard({
                 <span aria-hidden>·</span>
                 <span>{gradeStat.students} נבחנים</span>
               </>
+            )}
+            {hasCheeseForkStats && (
+              <span className="hidden md:contents">
+                <span aria-hidden>·</span>
+                {difficultyAvg !== null && <span>קושי {difficultyAvg}/5</span>}
+                {generalAvg !== null && <span>כללי {generalAvg}/5</span>}
+                <span>{reviewCount} {reviewCount === 1 ? 'ביקורת' : 'ביקורות'}</span>
+              </span>
             )}
           </div>
         )}

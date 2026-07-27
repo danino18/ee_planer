@@ -36,6 +36,18 @@ export function averageGeneralRank(feedback: CheeseForkFeedback | null | undefin
   return averageRank(values);
 }
 
+/**
+ * Average `difficultyRank` across all posts that have one. Returns `null` if
+ * there is no feedback or no post carries a difficultyRank value.
+ */
+export function averageDifficultyRank(feedback: CheeseForkFeedback | null | undefined): number | null {
+  if (!feedback) return null;
+  const values = feedback.posts
+    .map((p) => p.difficultyRank)
+    .filter((n): n is number => n !== null);
+  return averageRank(values);
+}
+
 const cache = new Map<string, CheeseForkFeedback | null>();
 const inflight = new Map<string, Promise<CheeseForkFeedback | null>>();
 
