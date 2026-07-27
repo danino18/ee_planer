@@ -406,7 +406,9 @@ export const CourseCard = memo(function CourseCard({
               <span className="hidden md:contents">
                 <span aria-hidden>·</span>
                 {difficultyAvg !== null && <span>קושי {difficultyAvg}/5</span>}
+                {difficultyAvg !== null && generalAvg !== null && <span aria-hidden>·</span>}
                 {generalAvg !== null && <span>כללי {generalAvg}/5</span>}
+                {(difficultyAvg !== null || generalAvg !== null) && <span aria-hidden>·</span>}
                 <span>{reviewCount} {reviewCount === 1 ? 'ביקורת' : 'ביקורות'}</span>
               </span>
             )}
