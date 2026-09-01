@@ -987,42 +987,6 @@ function substituteGroupCourses(
   };
 }
 
-function addElectiveCoursesToGroup(
-  group: SpecializationGroup,
-  newCourses: SpecializationCourseReference[],
-): SpecializationGroup {
-  const existingNumbers = new Set(group.courses.map((c) => c.courseNumber));
-  const coursesToAdd = newCourses.filter((c) => !existingNumbers.has(c.courseNumber));
-  if (coursesToAdd.length === 0) return group;
-
-  const newOptions: SpecializationCourseOption[] = coursesToAdd.map((c) => ({ kind: 'course', ...c }));
-  const expandedCourses = [...group.courses, ...coursesToAdd];
-
-  const expandedReqsByMode = Object.fromEntries(
-    MODES.map((mode) => {
-      const requirements = group.requirementsByMode[mode];
-      if (!requirements || !requirements.additionalCourseSelectionRule) return [mode, requirements];
-      return [mode, {
-        ...requirements,
-        additionalCourseSelectionRule: {
-          ...requirements.additionalCourseSelectionRule,
-          options: [...requirements.additionalCourseSelectionRule.options, ...newOptions],
-        },
-      }];
-    }),
-  ) as Record<SpecializationMode, SpecializationRequirementSet | null>;
-
-  const legacyLists = buildGroupLegacyLists(expandedCourses, expandedReqsByMode);
-
-  return {
-    ...group,
-    courses: expandedCourses,
-    requirementsByMode: expandedReqsByMode,
-    mandatoryCourses: legacyLists.mandatoryCourses,
-    electiveCourses: legacyLists.electiveCourses,
-  };
-}
-
 export function applySpecializationGroupYearVariant(
   group: SpecializationGroup,
   variant: SpecializationGroupYearVariant,
@@ -1031,18 +995,14 @@ export function applySpecializationGroupYearVariant(
     ? substituteGroupCourses(group, variant.courseSubstitutions)
     : group;
 
-  const expandedGroup = variant.additionalElectiveCourses?.length
-    ? addElectiveCoursesToGroup(substitutedGroup, variant.additionalElectiveCourses)
-    : substitutedGroup;
-
-  const singleReq = expandedGroup.requirementsByMode.single;
-  if (!singleReq) return expandedGroup;
+  const singleReq = substitutedGroup.requirementsByMode.single;
+  if (!singleReq) return substitutedGroup;
 
   if (variant.mandatoryCourseIds === undefined && variant.mandatoryChoiceGroups === undefined) {
-    return expandedGroup;
+    return substitutedGroup;
   }
 
-  const courseMap = new Map(expandedGroup.courses.map((c) => [c.courseNumber, c]));
+  const courseMap = new Map(substitutedGroup.courses.map((c) => [c.courseNumber, c]));
 
   const resolvedMandatory = variant.mandatoryCourseIds !== undefined
     ? variant.mandatoryCourseIds
@@ -1069,11 +1029,11 @@ export function applySpecializationGroupYearVariant(
     mandatoryCourses: resolvedMandatory,
     mandatoryChoiceRules: resolvedChoiceRules,
   };
-  const resolvedReqsByMode = { ...expandedGroup.requirementsByMode, single: resolvedSingle };
-  const legacyLists = buildGroupLegacyLists(expandedGroup.courses, resolvedReqsByMode);
+  const resolvedReqsByMode = { ...substitutedGroup.requirementsByMode, single: resolvedSingle };
+  const legacyLists = buildGroupLegacyLists(substitutedGroup.courses, resolvedReqsByMode);
 
   return {
-    ...expandedGroup,
+    ...substitutedGroup,
     requirementsByMode: resolvedReqsByMode,
     mandatoryCourses: legacyLists.mandatoryCourses,
     mandatoryOptions: resolvedChoiceRules.map((rule) => collectRuleCourseNumbers(rule)),
