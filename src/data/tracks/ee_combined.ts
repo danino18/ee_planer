@@ -40,7 +40,7 @@ export const eeCombinedTrack: TrackDefinition = {
       '00450105','00450106','00450107','00450108','00450109',
       '00450110','00450111','00450112','00450113','00450114',
       '00450115','00450116','00450117','00450118','00450119',
-      '00450120',
+      '00450120','00450121',
     ],
   },
   semesterSchedule: [
@@ -155,6 +155,44 @@ export const eeCombinedTrack: TrackDefinition = {
     // 2025/26: 104016/104064 as alt group in sem 1; sem 3 drops 114030;
     //          sem 4: showBoth for 114246/440140
     2025: {
+      totalCreditsRequired: 178,
+      semesterSchedule: [
+        {
+          semester: 1,
+          courses: ['00440102','01040012','01140020','01140074','02340117','03240033'],
+          alternativeGroups: [
+            { courseIds: ['01040064','01040016'], defaultCourseId: '01040064' },
+          ],
+        },
+        { semester: 2, courses: ['00440252','01040013','01040038','01040136','01140030','01140076'] },
+        { semester: 3, courses: ['00440105','00440268','01040034','01040214','01040215','01040220','01140101'] },
+        {
+          semester: 4,
+          courses: ['00440127','00440131','00440157','01150203','01140036'],
+          alternativeGroups: [
+            {
+              courseIds: ['01140246','00440140'],
+              showBoth: true,
+              warningText: '⚠️ במסלול הזה יש לבחור רק אחד: שדות אלקטרומגנטיים או אלקטרומגנטיות ואלקטרודינמיקה',
+            },
+          ],
+        },
+        { semester: 5, courses: ['00440137','00440148','00440202','01150204','01160217'] },
+        { semester: 6, courses: ['00440158','00440167','01140035'] },
+        { semester: 7, courses: ['00440169','01140037','01240108'] },
+        {
+          semester: 8,
+          courses: [],
+          alternativeGroups: [
+            { courseIds: ['01140250','01140252'], showBoth: true },
+          ],
+        },
+      ],
+    },
+
+    // 2026/27 (תשפ"ז): no track-level credit/schedule changes announced; restated in full
+    // since year-variant resolution is exact-match, not cumulative from 2025.
+    2026: {
       totalCreditsRequired: 178,
       semesterSchedule: [
         {

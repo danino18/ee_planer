@@ -36,7 +36,7 @@ export function TrackSelector({ tracks }: { tracks: TrackDefinition[] }) {
           </div>
           <h1 className="text-5xl font-black text-white mb-4 tracking-tight">מתכנן לימודים</h1>
           <p className="text-xl font-light" style={{ color: 'rgba(147,197,253,0.9)' }}>הפקולטה להנדסת חשמל ומחשבים - הטכניון</p>
-          <p className="text-sm mt-2" style={{ color: 'rgba(147,197,253,0.6)' }}>תכנית לימודים 2025/2026</p>
+          <p className="text-sm mt-2" style={{ color: 'rgba(147,197,253,0.6)' }}>תכנית לימודים 2026/2027</p>
         </div>
 
         <p className="text-base font-medium text-center mb-8 tracking-wide" style={{ color: 'rgba(147,197,253,0.7)' }}>בחר מסלול לימודים</p>
