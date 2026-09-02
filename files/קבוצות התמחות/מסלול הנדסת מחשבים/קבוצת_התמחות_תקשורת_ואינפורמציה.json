@@ -96,6 +96,11 @@
       "course_number": "00460868",
       "course_name": "יסודות תהליכים אקראיים",
       "category": "elective"
+    },
+    {
+      "course_number": "00460735",
+      "course_name": "סודיות קוונטית",
+      "category": "elective"
     }
   ],
   "requirements": {
@@ -203,6 +208,10 @@
           {
             "course_number": "00460868",
             "course_name": "יסודות תהליכים אקראיים"
+          },
+          {
+            "course_number": "00460735",
+            "course_name": "סודיות קוונטית"
           }
         ]
       },
@@ -312,6 +321,10 @@
           {
             "course_number": "00460868",
             "course_name": "יסודות תהליכים אקראיים"
+          },
+          {
+            "course_number": "00460735",
+            "course_name": "סודיות קוונטית"
           }
         ]
       },

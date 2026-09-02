@@ -151,6 +151,11 @@
       "course_number": "02360330",
       "course_name": "מבוא לאופטימיזציה",
       "category": "replacement_for_00460197"
+    },
+    {
+      "course_number": "00440114",
+      "course_name": "מתמטיקה דיסקרטית ח'",
+      "category": "elective"
     }
   ],
   "requirements": {
@@ -296,6 +301,10 @@
           {
             "course_number": "02360990",
             "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "00440114",
+            "course_name": "מתמטיקה דיסקרטית ח'"
           }
         ]
       },
@@ -430,6 +439,10 @@
           {
             "course_number": "02360990",
             "course_name": "מבוא לעיבוד אינפורמציה קוונטית"
+          },
+          {
+            "course_number": "00440114",
+            "course_name": "מתמטיקה דיסקרטית ח'"
           }
         ]
       },

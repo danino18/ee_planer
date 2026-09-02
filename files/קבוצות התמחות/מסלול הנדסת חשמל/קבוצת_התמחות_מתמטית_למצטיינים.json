@@ -52,6 +52,21 @@
       "course_number": "01060349",
       "course_name": "הסתברות מתקדמת",
       "category": "elective"
+    },
+    {
+      "course_number": "00460868",
+      "course_name": "יסודות תהליכים אקראיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "01060429",
+      "course_name": "תהליכים סטוכסטיים",
+      "category": "elective"
+    },
+    {
+      "course_number": "01040273",
+      "course_name": "מבוא לאנליזה פונקציונלית ואנליזת פורייה",
+      "category": "elective"
     }
   ],
   "requirements": {
@@ -118,6 +133,18 @@
         {
           "course_number": "01060349",
           "course_name": "הסתברות מתקדמת"
+        },
+        {
+          "course_number": "00460868",
+          "course_name": "יסודות תהליכים אקראיים"
+        },
+        {
+          "course_number": "01060429",
+          "course_name": "תהליכים סטוכסטיים"
+        },
+        {
+          "course_number": "01040273",
+          "course_name": "מבוא לאנליזה פונקציונלית ואנליזת פורייה"
         }
       ]
     },

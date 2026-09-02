@@ -71,6 +71,11 @@
       "course_number": "01160037",
       "course_name": "מיחשוב קוונטי רועש",
       "category": "elective"
+    },
+    {
+      "course_number": "00460735",
+      "course_name": "סודיות קוונטית",
+      "category": "elective"
     }
   ],
   "requirements": {
@@ -150,6 +155,10 @@
           {
             "course_number": "01160037",
             "course_name": "מיחשוב קוונטי רועש"
+          },
+          {
+            "course_number": "00460735",
+            "course_name": "סודיות קוונטית"
           }
         ]
       },
@@ -231,6 +240,10 @@
           {
             "course_number": "01160037",
             "course_name": "מיחשוב קוונטי רועש"
+          },
+          {
+            "course_number": "00460735",
+            "course_name": "סודיות קוונטית"
           }
         ]
       },
