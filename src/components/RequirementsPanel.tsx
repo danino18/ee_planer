@@ -1393,7 +1393,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
           </div>
         )}
 
-        <div className="flex justify-between items-center">
+        <div data-tour="weighted-average-row" className="flex justify-between items-center">
           <span className="text-sm text-gray-700 dark:text-gray-300">ממוצע משוקלל</span>
           <span className="text-sm font-bold text-gray-800 dark:text-gray-100">
             {weightedAverage !== null ? weightedAverage.toFixed(1) : '—'}

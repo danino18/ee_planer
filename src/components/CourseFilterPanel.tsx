@@ -256,7 +256,7 @@ export function CourseFilterPanel({
   const sortValue = `${filters.sortBy}:${filters.sortDirection}`;
 
   return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2 px-1" role="group" aria-label="סינון ומיון">
+    <div data-tour="search-filters" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 mt-2 px-1" role="group" aria-label="סינון ומיון">
       <SubjectsChip filters={filters} onChange={onChange} />
 
       {TOGGLE_FILTERS.map((t) => (
@@ -297,6 +297,7 @@ export function CourseFilterPanel({
       />
 
       <select
+        data-tour="sort-select"
         value={sortValue}
         onChange={(e) => {
           const opt = SORT_OPTIONS.find((o) => o.value === e.target.value);

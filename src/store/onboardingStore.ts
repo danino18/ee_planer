@@ -1,15 +1,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type TourId = 'basic' | 'advanced';
+
 interface OnboardingState {
   // Persisted
   hasCompletedOnboarding: boolean;
   // Ephemeral — NOT persisted
-  isActive: boolean;
+  activeTourId: TourId | null;
   stepIndex: number;
   mobileSidebarOpen: boolean;
 
-  start: () => void;
+  start: (tourId?: TourId) => void;
   next: () => void;
   back: () => void;
   skip: () => void;
@@ -19,17 +21,25 @@ interface OnboardingState {
 
 export const useOnboardingStore = create<OnboardingState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       hasCompletedOnboarding: false,
-      isActive: false,
+      activeTourId: null,
       stepIndex: 0,
       mobileSidebarOpen: false,
 
-      start: () => set({ isActive: true, stepIndex: 0 }),
+      start: (tourId = 'basic') => set({ activeTourId: tourId, stepIndex: 0 }),
       next: () => set((state) => ({ stepIndex: state.stepIndex + 1 })),
       back: () => set((state) => ({ stepIndex: Math.max(0, state.stepIndex - 1) })),
-      skip: () => set({ isActive: false, mobileSidebarOpen: false, hasCompletedOnboarding: true }),
-      finish: () => set({ isActive: false, mobileSidebarOpen: false, hasCompletedOnboarding: true }),
+      skip: () => set({
+        activeTourId: null,
+        mobileSidebarOpen: false,
+        hasCompletedOnboarding: get().activeTourId === 'basic' ? true : get().hasCompletedOnboarding,
+      }),
+      finish: () => set({
+        activeTourId: null,
+        mobileSidebarOpen: false,
+        hasCompletedOnboarding: get().activeTourId === 'basic' ? true : get().hasCompletedOnboarding,
+      }),
       setMobileSidebarOpen: (open) => set({ mobileSidebarOpen: open }),
     }),
     {

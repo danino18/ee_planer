@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useOnboardingStore } from '../store/onboardingStore';
 import { usePlanStore } from '../store/planStore';
-import { TOUR_STEPS } from '../onboarding/tourSteps';
+import { BASIC_TOUR_STEPS, ADVANCED_TOUR_STEPS } from '../onboarding/tourSteps';
 
 const SPOTLIGHT_PADDING = 8;
 const TARGET_TIMEOUT_MS = 1000;
@@ -22,7 +22,7 @@ function isMobileViewport(): boolean {
 }
 
 export function TourOverlay() {
-  const isActive = useOnboardingStore((s) => s.isActive);
+  const activeTourId = useOnboardingStore((s) => s.activeTourId);
   const stepIndex = useOnboardingStore((s) => s.stepIndex);
   const next = useOnboardingStore((s) => s.next);
   const back = useOnboardingStore((s) => s.back);
@@ -31,7 +31,9 @@ export function TourOverlay() {
   const setMobileSidebarOpen = useOnboardingStore((s) => s.setMobileSidebarOpen);
   const trackId = usePlanStore((s) => s.trackId);
 
-  const step = isActive ? TOUR_STEPS[stepIndex] : undefined;
+  const isActive = activeTourId !== null;
+  const steps = activeTourId === 'advanced' ? ADVANCED_TOUR_STEPS : BASIC_TOUR_STEPS;
+  const step = isActive ? steps[stepIndex] : undefined;
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   // Auto-advance once a track is chosen, for the track-selection step.
@@ -67,12 +69,12 @@ export function TourOverlay() {
       if (cancelled) return;
       const el = resolveTourTarget(step!.selector!);
       if (el) {
+        el.scrollIntoView({ block: 'center', behavior: 'auto' });
         setRect(el.getBoundingClientRect());
-        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
         return;
       }
       if (performance.now() - startedAt > TARGET_TIMEOUT_MS) {
-        next();
+        if (step!.fallback !== 'describe') next();
         return;
       }
       rafId = requestAnimationFrame(tick);
@@ -115,7 +117,7 @@ export function TourOverlay() {
 
   if (!isActive || !step) return null;
 
-  const totalSteps = TOUR_STEPS.length;
+  const totalSteps = steps.length;
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === totalSteps - 1;
   const awaitingTrackSelection = step.advanceOn === 'track-selected';
@@ -187,7 +189,7 @@ export function TourOverlay() {
         style={{ top: cardTop, left: cardLeft, width: cardWidth, pointerEvents: 'auto' }}
       >
         <div className="flex items-center gap-1.5 mb-3">
-          {TOUR_STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <span
               key={s.id}
               className={`h-1.5 rounded-full transition-all ${i === stepIndex ? 'w-5 bg-blue-500' : 'w-1.5 bg-gray-200 dark:bg-slate-700'}`}
