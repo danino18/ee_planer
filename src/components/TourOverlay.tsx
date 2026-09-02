@@ -166,6 +166,23 @@ export function TourOverlay() {
           <div style={{ ...bandStyle, top: effectiveRect.bottom + pad, left: 0, right: 0, bottom: 0 }} />
           <div style={{ ...bandStyle, top: effectiveRect.top - pad, height: effectiveRect.height + pad * 2, left: 0, width: Math.max(0, effectiveRect.left - pad) }} />
           <div style={{ ...bandStyle, top: effectiveRect.top - pad, height: effectiveRect.height + pad * 2, left: effectiveRect.right + pad, right: 0 }} />
+          {!awaitingTrackSelection && (
+            // Steps that don't need the user to interact with the real element (i.e. all
+            // except track selection) must not leave it clickable through the cutout —
+            // otherwise a stray click (e.g. a rapid double-click while clicking through
+            // the tour) can silently trigger the real control underneath.
+            <div
+              style={{
+                position: 'fixed',
+                top: effectiveRect.top - pad,
+                left: effectiveRect.left - pad,
+                width: effectiveRect.width + pad * 2,
+                height: effectiveRect.height + pad * 2,
+                pointerEvents: 'auto',
+                transition: 'all 200ms ease',
+              }}
+            />
+          )}
           <div
             className="rounded-xl"
             style={{
