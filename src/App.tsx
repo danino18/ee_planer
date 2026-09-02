@@ -32,7 +32,7 @@ import type { SapCourse, TrackDefinition, VersionedPlanEnvelope } from './types'
 import { useRequirementsProgress, useWeightedAverage } from './hooks/usePlan';
 import { useDegreeCompletionCheck } from './hooks/useDegreeCompletionCheck';
 import { DegreeCompletionModal } from './components/DegreeCompletionModal';
-import { getRecommendedCourseIdsForEntry, getAllScheduledCourseIds } from './data/tracks/semesterSchedule';
+import { getRecommendedCourseIdsForEntry } from './data/tracks/semesterSchedule';
 import {
   getTrackSpecializationCatalog,
   reportTrackSpecializationDiagnostics,
@@ -812,7 +812,7 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
               {availableYears.length > 0 && (
                 <select
                   value={catalogYear ?? availableYears[0]}
-                  onChange={(e) => switchCatalogYear(Number(e.target.value), getAllScheduledCourseIds(trackDef))}
+                  onChange={(e) => switchCatalogYear(Number(e.target.value))}
                   className="text-sm border px-2 py-1.5 rounded-lg bg-transparent cursor-pointer"
                   style={{ color: 'rgba(147,197,253,0.9)', borderColor: 'rgba(147,197,253,0.3)' }}
                 >
