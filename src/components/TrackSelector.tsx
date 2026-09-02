@@ -41,7 +41,7 @@ export function TrackSelector({ tracks }: { tracks: TrackDefinition[] }) {
 
         <p className="text-base font-medium text-center mb-8 tracking-wide" style={{ color: 'rgba(147,197,253,0.7)' }}>בחר מסלול לימודים</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4" data-tour="track-grid">
           {tracks.map((track) => {
             const availableYears = getAvailableYears(track);
             return (
