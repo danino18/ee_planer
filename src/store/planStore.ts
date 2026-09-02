@@ -45,7 +45,7 @@ interface PlanState extends StudentPlan {
 
   setTrack: (trackId: TrackId, catalogYear?: number | null) => void;
   setCatalogYear: (year: number | null) => void;
-  switchCatalogYear: (newYear: number, oldScheduledIds: string[]) => void;
+  switchCatalogYear: (newYear: number) => void;
   beginTrackSwitch: () => void;
   finishTrackSwitch: () => void;
   addCourseToSemester: (courseId: string, semester: number) => void;
@@ -551,23 +551,39 @@ export const usePlanStore = create<PlanState>()(
           return { catalogYear: year };
         }),
 
-      switchCatalogYear: (newYear, oldScheduledIds) =>
+      switchCatalogYear: (newYear) =>
         set((state) => {
           if (isShareReviewReadOnly(state)) return state;
-          const oldSet = new Set(oldScheduledIds);
+          const track = TRACKS.find((t) => t.id === state.trackId);
+          if (!track) return { catalogYear: newYear };
+
+          const oldSet = new Set(getAllScheduledCourseIds(resolveTrackForYear(track, state.catalogYear)));
+          const newSet = new Set(getAllScheduledCourseIds(resolveTrackForYear(track, newYear)));
           const completedSet = new Set(state.completedCourses ?? []);
+
           const newSemesters: typeof state.semesters = {};
           for (const [key, ids] of Object.entries(state.semesters)) {
             newSemesters[Number(key)] = (ids as string[]).filter(
-              (id) => !oldSet.has(id) || completedSet.has(id),
+              // Only drop a course if it's genuinely gone from the new year's schedule too —
+              // don't touch anything still mandatory/scheduled in the new year, or completed.
+              (id) => !oldSet.has(id) || newSet.has(id) || completedSet.has(id),
             );
           }
+
+          const oldInitKey = state.catalogYear ? `${track.id}:${state.catalogYear}` : track.id;
+          const newInitKey = newYear ? `${track.id}:${newYear}` : track.id;
+          const wasInitialized = (state.initializedTracks ?? []).includes(oldInitKey);
+          const remainingInitializedTracks = (state.initializedTracks ?? []).filter((id) => id !== oldInitKey);
+
           return {
             catalogYear: newYear,
             semesters: newSemesters,
-            initializedTracks: (state.initializedTracks ?? []).filter(
-              (id) => id !== state.trackId && !id.startsWith(`${state.trackId}:`),
-            ),
+            // Carry the opt-in "recommended courses" auto-sync flag over to the new year
+            // instead of dropping it, so the effect in App.tsx keeps filling in the new
+            // year's missing mandatory courses right after the switch.
+            initializedTracks: wasInitialized && !remainingInitializedTracks.includes(newInitKey)
+              ? [...remainingInitializedTracks, newInitKey]
+              : remainingInitializedTracks,
           };
         }),
 
