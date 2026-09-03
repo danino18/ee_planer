@@ -326,7 +326,7 @@ export const CourseCard = memo(function CourseCard({
             )}
             {!isCoreLocked && !isMandatory && chainName === 'לא שובץ' ? (
               <>
-                <span className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded font-medium leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
+                <span data-tour="course-card-chain-badge" className="text-xs bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded font-medium leading-none" title="קורס שייך למספר שרשראות — יש לשבץ ידנית">
                   לא שובץ
                 </span>
                 <span className="text-xs bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400 px-1 py-0.5 rounded font-medium leading-none">
@@ -357,12 +357,14 @@ export const CourseCard = memo(function CourseCard({
             )}
             {(hasPrereqWarning || hasNoAdditionalCreditWarning) && (
               <span
+                data-tour="course-card-prereq-warning"
                 className="text-xs"
                 title={hasNoAdditionalCreditWarning ? 'ללא זיכוי נוסף' : 'קדמים חסרים'}
               >⚠️</span>
             )}
             {hasPlannedDownstream && (
               <span
+                data-tour="course-card-postpone-icon"
                 className="text-xs relative"
                 title={postponeSlack && postponeSlack > 0
                   ? `ניתן לדחות עד ${postponeSlack} סמסטרים לפני שזה יתנגש עם קורס מתוכנן`

@@ -451,7 +451,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         {/* 3-way segmented view toggle */}
-        <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden text-sm">
+        <div data-tour="view-toggle" className="flex items-center border border-gray-300 rounded-lg overflow-hidden text-sm">
           {([
             { mode: 'grid' as const, icon: '⊞', label: 'גריד' },
             { mode: 'rows' as const, icon: '☰', label: 'שורות' },
@@ -474,7 +474,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
         </div>
 
         {viewMode === 'grid' && (
-          <div className="hidden md:flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
+          <div data-tour="grid-cols-stepper" className="hidden md:flex items-center gap-1 border border-gray-300 rounded-lg overflow-hidden text-sm text-gray-600">
             <button
               onClick={() => setGridCols(gridCols > 1 ? (gridCols - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 : 1)}
               disabled={gridCols <= 1}

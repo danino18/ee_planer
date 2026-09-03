@@ -58,7 +58,7 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
   }
 
   return (
-    <div className="flex items-center gap-1 flex-wrap">
+    <div data-tour="version-tabs" className="flex items-center gap-1 flex-wrap">
       {versions.map((v) => {
         const isActive = v.id === activeVersionId;
         const isEditing = editingId === v.id;
@@ -135,6 +135,7 @@ export function VersionTabs({ onCompare }: { onCompare: () => void }) {
 
       {versions.length > 1 && (
         <button
+          data-tour="version-compare-btn"
           onClick={onCompare}
           className="px-2 py-1 rounded-lg text-sm border transition-colors text-white/50 hover:text-purple-300"
           style={{ borderColor: 'rgba(255,255,255,0.15)' }}
