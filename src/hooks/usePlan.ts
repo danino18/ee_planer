@@ -60,7 +60,7 @@ import { buildChainEligibleCourseSet, buildCoreLockedSet } from '../domain/degre
 
 const PREREQ_EQUIVALENCES: string[][] = [
   ['01040064', '01040065', '01040016'],
-  ['01040012', '01040031', '01040041', '01040042', '01040018'],
+  ['01040012', '01040031', '01040036', '01040041', '01040042', '01040047', '01040018'],
   ['01140071', '01130013'],
   ['01140075', '01130014'],
 ];
@@ -238,7 +238,10 @@ export function usePrerequisiteStatus(
         const selectedGroup = selectedPrereqGroups[courseId];
         if (selectedGroup !== undefined) {
           const satisfied = selectedGroup.every((prereqId) => alreadyTaken.has(prereqId));
-          missingMap.set(courseId, satisfied ? [] : [selectedGroup]);
+          missingMap.set(
+            courseId,
+            satisfied ? [] : [selectedGroup.filter((prereqId) => !alreadyTaken.has(prereqId))],
+          );
           continue;
         }
 
@@ -249,9 +252,12 @@ export function usePrerequisiteStatus(
         if (isSatisfied) {
           missingMap.set(courseId, []);
         } else {
-          const unsatisfied = course.prerequisites.filter(
-            (orGroup) => !orGroup.every((prereqId) => alreadyTaken.has(prereqId))
-          );
+          // Only surface the courses still actually missing from each unsatisfied
+          // OR-group — not the whole group, which would also list prerequisites the
+          // student already completed alongside the genuinely missing ones.
+          const unsatisfied = course.prerequisites
+            .filter((orGroup) => !orGroup.every((prereqId) => alreadyTaken.has(prereqId)))
+            .map((orGroup) => orGroup.filter((prereqId) => !alreadyTaken.has(prereqId)));
           missingMap.set(courseId, unsatisfied);
         }
       }
@@ -385,7 +391,7 @@ export function computeRequirementsProgress(
   weightedAverage: number | null,
 ) {
   const {
-    semesters,
+    semesters: rawSemesters,
     completedCourses,
     grades: inputGrades,
     binaryPass: inputBinaryPass,
@@ -406,9 +412,18 @@ export function computeRequirementsProgress(
     quantumComputingMinorEnabled,
     newLabFormatEnabled,
     countOnlyCompleted,
+    excludedFromCreditsCourseIds,
   } = input;
 
   if (!trackDef) return null;
+
+  // Courses parked in the unassigned pool (semester 0) that the student marked
+  // as "don't count" — excluded from every credit/requirement sum below, but
+  // still visible on the board (which reads the raw, unfiltered store state).
+  const excludedFromCreditsSet = new Set(excludedFromCreditsCourseIds ?? []);
+  const semesters: Record<number, string[]> = excludedFromCreditsSet.size > 0 && rawSemesters[0]?.length
+    ? { ...rawSemesters, 0: rawSemesters[0].filter((id) => !excludedFromCreditsSet.has(id)) }
+    : rawSemesters;
 
   const doneSet = countOnlyCompleted
     ? buildDoneSet(completedCourses, inputGrades, inputBinaryPass)
@@ -1053,6 +1068,7 @@ export function useRequirementsProgress(
   const quantumComputingMinorEnabled = usePlanStore((s) => s.quantumComputingMinorEnabled ?? false);
   const newLabFormatEnabled = usePlanStore((s) => s.newLabFormatEnabled ?? false);
   const countOnlyCompletedCourses = usePlanStore((s) => s.countOnlyCompletedCourses ?? false);
+  const excludedFromCreditsCourseIds = usePlanStore((s) => s.excludedFromCreditsCourseIds ?? []);
 
   return useMemo(
     () =>
@@ -1080,13 +1096,14 @@ export function useRequirementsProgress(
           quantumComputingMinorEnabled,
           newLabFormatEnabled,
           countOnlyCompleted: countOnlyCompletedCourses,
+          excludedFromCreditsCourseIds,
         },
         courses,
         trackDef,
         specializationCatalog,
         weightedAverage,
       ),
-    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, manualMelagCourseIds, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, newLabFormatEnabled, countOnlyCompletedCourses, weightedAverage],
+    [semesters, completedCourses, completedInstances, grades, binaryPass, courses, trackDef, specializationCatalog, selectedSpecializations, doubleSpecializations, hasEnglishExemption, miluimCredits, englishScore, englishTaughtCourses, manualMelagCourseIds, semesterOrder, coreToChainOverrides, courseChainAssignments, electiveCreditAssignments, noAdditionalCreditOverrides, roboticsMinorEnabled, entrepreneurshipMinorEnabled, quantumComputingMinorEnabled, newLabFormatEnabled, countOnlyCompletedCourses, excludedFromCreditsCourseIds, weightedAverage],
   );
 }
 

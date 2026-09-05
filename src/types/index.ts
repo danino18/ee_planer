@@ -308,6 +308,7 @@ export interface StudentPlan {
   dismissedRecommendedCourses?: Record<string, string[]>;
   facultyColorOverrides?: Record<string, string>;  // faculty name → color key override
   coreToChainOverrides?: string[];  // course IDs the student released from core → count toward specialization chain
+  excludedFromCreditsCourseIds?: string[];  // unassigned-pool course IDs excluded from mandatory/elective/total credit sums
   courseChainAssignments?: Record<string, string>;  // courseId → chainGroupId: explicit single-chain assignment
   electiveCreditAssignments?: Record<string, ElectiveCreditArea>;  // courseId -> manual elective credit bucket
   courseNotes?: Record<string, string>;  // courseId/instanceKey -> free-text user note

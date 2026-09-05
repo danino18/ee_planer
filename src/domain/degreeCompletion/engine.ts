@@ -34,8 +34,16 @@ export function computeDegreeCompletionCheck(
     };
   }
 
+  // Bucket assignment must agree with the credit sums above: courses parked in
+  // the unassigned pool that the student excluded from the sum should not be
+  // bucketed as counting toward any requirement either.
+  const excludedFromCreditsSet = new Set(input.excludedFromCreditsCourseIds ?? []);
+  const effectiveInput = excludedFromCreditsSet.size > 0 && input.semesters[0]?.length
+    ? { ...input, semesters: { ...input.semesters, 0: input.semesters[0].filter((id) => !excludedFromCreditsSet.has(id)) } }
+    : input;
+
   const courseAssignments = buildCourseAssignments(
-    input,
+    effectiveInput,
     courses,
     trackDef,
     specializationCatalog,

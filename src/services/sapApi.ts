@@ -232,6 +232,16 @@ export async function fetchCourses(): Promise<Map<string, SapCourse>> {
   // Fix: 00460267 (מבנה מחשבים) also accepts this two-course prerequisite path.
   addPrerequisiteOption(merged.get('00460267'), ['02340124', '00440252']);
 
+  // Fix: 01040012 (חדו"א 1ת') lists 01040047 (חדו"א 1מ3, a different faculty's parallel
+  // calculus-1 course) as a prerequisite. SAP itself marks these as mutually-exclusive
+  // "ללא זיכוי נוסף" alternatives, not a sequential prerequisite — remove the bogus edge.
+  const calc1t = merged.get('01040012');
+  if (calc1t) {
+    calc1t.prerequisites = calc1t.prerequisites
+      .map(group => group.filter(id => id !== '01040047'))
+      .filter(group => group.length > 0);
+  }
+
   // Force correct credits for sport courses (SAP data may have wrong values)
   const SPORT_OVERRIDES: Record<string, number> = {
     '03940900': 1,

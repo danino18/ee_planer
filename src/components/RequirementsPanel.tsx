@@ -218,6 +218,8 @@ interface CompactRequirementRowProps {
   englishScore?: number;
   onSetEnglishScore?: (score: number | null) => void;
   englishRequirementItems?: EnglishRequirementItem[];
+  hasEnglishExemption?: boolean;
+  onToggleEnglishExemption?: () => void;
 }
 
 function getRequirementDisplayLabel(req: GeneralRequirementProgress): string {
@@ -493,12 +495,17 @@ function CompactRequirementRow({
   englishScore,
   onSetEnglishScore,
   englishRequirementItems,
+  hasEnglishExemption = false,
+  onToggleEnglishExemption,
 }: CompactRequirementRowProps) {
-  const pct = Math.min(100, targetValue > 0 ? (req.completedValue / targetValue) * 100 : 0);
-  const isDone = req.completedValue >= targetValue;
-  const missingText = missingValue > 0
-    ? `${missingValue % 1 === 0 ? missingValue : missingValue.toFixed(1)} ${req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים'} חסרים`
-    : 'הושלם';
+  const isEnglishExempt = req.requirementId === 'english' && hasEnglishExemption;
+  const pct = isEnglishExempt ? 100 : Math.min(100, targetValue > 0 ? (req.completedValue / targetValue) * 100 : 0);
+  const isDone = isEnglishExempt || req.completedValue >= targetValue;
+  const missingText = isEnglishExempt
+    ? 'הושלם (פטור)'
+    : missingValue > 0
+      ? `${missingValue % 1 === 0 ? missingValue : missingValue.toFixed(1)} ${req.targetUnit === 'credits' ? 'נק"ז' : 'קורסים'} חסרים`
+      : 'הושלם';
 
   return (
     <div className="rounded-lg border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50 px-3 py-2.5">
@@ -522,7 +529,19 @@ function CompactRequirementRow({
         />
       </div>
 
-      {req.requirementId === 'english' && onSetEnglishScore && (
+      {req.requirementId === 'english' && onToggleEnglishExemption && (
+        <label className="mt-3 flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={hasEnglishExemption}
+            onChange={onToggleEnglishExemption}
+            className="rounded"
+          />
+          <span>פטורה מדרישת האנגלית</span>
+        </label>
+      )}
+
+      {req.requirementId === 'english' && !isEnglishExempt && onSetEnglishScore && (
         <div className="mt-3 flex items-center gap-2">
           <span className="text-xs text-gray-500 shrink-0">ניקוד אמיר"ם:</span>
           <input
@@ -540,7 +559,7 @@ function CompactRequirementRow({
         </div>
       )}
 
-      {req.requirementId === 'english' && (
+      {req.requirementId === 'english' && !isEnglishExempt && (
         <div className="mt-2 space-y-1.5">
           {englishScore === undefined ? (
             <p className="text-xs text-gray-400 dark:text-gray-500">הזן ניקוד אמיר"ם כדי לחשב את דרישות האנגלית</p>
@@ -669,6 +688,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     trackId,
     setMiluimCredits,
     setEnglishScore,
+    toggleEnglishExemption,
     toggleEnglishTaughtCourse,
     toggleMelagCourse,
     setCoreToChainOverrides,
@@ -696,6 +716,7 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
     trackId: state.trackId,
     setMiluimCredits: state.setMiluimCredits,
     setEnglishScore: state.setEnglishScore,
+    toggleEnglishExemption: state.toggleEnglishExemption,
     toggleEnglishTaughtCourse: state.toggleEnglishTaughtCourse,
     toggleMelagCourse: state.toggleMelagCourse,
     setCoreToChainOverrides: state.setCoreToChainOverrides,
@@ -1430,6 +1451,8 @@ export const RequirementsPanel = memo(function RequirementsPanel({ progress, wei
                 englishScore={req.requirementId === 'english' ? progress.english.score : undefined}
                 onSetEnglishScore={req.requirementId === 'english' ? setEnglishScore : undefined}
                 englishRequirementItems={req.requirementId === 'english' ? progress.english.requirements : undefined}
+                hasEnglishExemption={req.requirementId === 'english' ? progress.english.hasExemption : undefined}
+                onToggleEnglishExemption={req.requirementId === 'english' ? toggleEnglishExemption : undefined}
               />
             );
           })}

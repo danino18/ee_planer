@@ -71,6 +71,7 @@ interface PlanState extends StudentPlan {
   setBinaryPass: (courseId: string, value: boolean | null) => void;
   setMiluimCredits: (n: number | null) => void;
   setCoreToChainOverrides: (ids: string[]) => void;
+  toggleCourseExcludedFromCredits: (courseId: string) => void;
   setCourseChainAssignment: (courseId: string, chainGroupId: string | null) => void;
   setElectiveCreditAssignment: (courseId: string, area: ElectiveCreditArea | null) => void;
   setCourseNote: (courseId: string, note: string | null) => void;
@@ -227,6 +228,7 @@ const initialState: StudentPlan = {
   completedInstances: [],
   dismissedRecommendedCourses: {},
   coreToChainOverrides: [],
+  excludedFromCreditsCourseIds: [],
   electiveCreditAssignments: {},
   courseNotes: {},
   noAdditionalCreditOverrides: {},
@@ -473,6 +475,7 @@ function planToStateFields(plan: StudentPlan, current: PlanState): Partial<PlanS
     completedInstances: p.completedInstances ?? [],
     dismissedRecommendedCourses: p.dismissedRecommendedCourses ?? {},
     coreToChainOverrides: p.coreToChainOverrides ?? [],
+    excludedFromCreditsCourseIds: p.excludedFromCreditsCourseIds ?? [],
     electiveCreditAssignments: p.electiveCreditAssignments ?? {},
     courseNotes: p.courseNotes ?? {},
     noAdditionalCreditOverrides: p.noAdditionalCreditOverrides ?? {},
@@ -1037,6 +1040,17 @@ export const usePlanStore = create<PlanState>()(
         set((state) => (
           isShareReviewReadOnly(state) ? state : { coreToChainOverrides: ids }
         )),
+
+      toggleCourseExcludedFromCredits: (courseId) =>
+        set((state) => {
+          if (isShareReviewReadOnly(state)) return state;
+          const list = state.excludedFromCreditsCourseIds ?? [];
+          return {
+            excludedFromCreditsCourseIds: list.includes(courseId)
+              ? list.filter((id) => id !== courseId)
+              : [...list, courseId],
+          };
+        }),
 
       setCourseChainAssignment: (courseId, chainGroupId) =>
         set((state) => {

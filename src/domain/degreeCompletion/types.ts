@@ -15,6 +15,8 @@ export interface RequirementsInput {
   manualMelagCourseIds: string[];
   semesterOrder: number[];
   coreToChainOverrides: string[];
+  /** Unassigned-pool (semester 0) course IDs excluded from credit/requirement sums. */
+  excludedFromCreditsCourseIds?: string[];
   courseChainAssignments?: Record<string, string>;
   electiveCreditAssignments?: Record<string, ElectiveCreditArea>;
   noAdditionalCreditOverrides?: Record<string, string>;

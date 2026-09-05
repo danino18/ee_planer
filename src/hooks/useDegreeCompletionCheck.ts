@@ -49,6 +49,7 @@ export function useDegreeCompletionCheck(
     manualMelagCourseIds: s.manualMelagCourseIds ?? [],
     semesterOrder: s.semesterOrder,
     coreToChainOverrides: s.coreToChainOverrides ?? [],
+    excludedFromCreditsCourseIds: s.excludedFromCreditsCourseIds ?? [],
     courseChainAssignments: s.courseChainAssignments,
     noAdditionalCreditOverrides: s.noAdditionalCreditOverrides,
     roboticsMinorEnabled: s.roboticsMinorEnabled ?? false,
