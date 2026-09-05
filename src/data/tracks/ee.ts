@@ -142,7 +142,7 @@ export const eeTrack: TrackDefinition = {
       semesterSchedule: [
         {
           semester: 1,
-          courses: ['00440102','01040012','01040064','01140071','01140032','02340117','03240033'],
+          courses: ['00440102','01040012','01040064','02340117','03240033'],
           alternativeGroups: [
             { courseIds: ['01140071','01140074'], defaultCourseId: '01140071', useDefaultCreditsForMandatory: true },
             { courseIds: ['01140032','01140020'], defaultCourseId: '01140032', useDefaultCreditsForMandatory: true },
@@ -171,7 +171,7 @@ export const eeTrack: TrackDefinition = {
       semesterSchedule: [
         {
           semester: 1,
-          courses: ['00440102','01040012','01040064','01140071','01140032','02340117','03240033'],
+          courses: ['00440102','01040012','01040064','02340117','03240033'],
           alternativeGroups: [
             { courseIds: ['01140071','01140074'], defaultCourseId: '01140071', useDefaultCreditsForMandatory: true },
             { courseIds: ['01140032','01140020'], defaultCourseId: '01140032', useDefaultCreditsForMandatory: true },
