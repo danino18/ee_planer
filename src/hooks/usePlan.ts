@@ -874,11 +874,9 @@ export function computeRequirementsProgress(
           { kind: 'advanced_b', label: "מתקדמים ב'", done: !!advancedBName, courseNames: advancedBName ? [advancedBName] : [] },
           { kind: 'content_course', label: 'קורס תוכן באנגלית', done: englishContentCourseNamesInPlan.length >= 1, courseNames: englishContentCourseNamesInPlan.slice(0, 1), neededCount: 1 },
         ];
-      } else if (englishScore >= 134 && englishScore <= 150) {
-        englishRequirements = [
-          { kind: 'content_course', label: 'קורסי תוכן באנגלית', done: englishContentCourseNamesInPlan.length >= 2, courseNames: englishContentCourseNamesInPlan.slice(0, 2), neededCount: 2 },
-        ];
       }
+      // A 134+ score is a full exemption — no further English-taught courses
+      // are required, so englishRequirements stays empty for that bracket.
     }
 
     const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);

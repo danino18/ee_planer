@@ -41,6 +41,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     setCourseChainAssignment,
     coreToChainOverrides,
     trackId,
+    catalogYear,
   } = usePlanStore(useShallow((state) => ({
     favorites: state.favorites,
     toggleFavorite: state.toggleFavorite,
@@ -54,6 +55,7 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
     setCourseChainAssignment: state.setCourseChainAssignment,
     coreToChainOverrides: state.coreToChainOverrides ?? [],
     trackId: state.trackId,
+    catalogYear: state.catalogYear,
   })));
   const [detailCourse, setDetailCourse] = useState<SapCourse | null>(null);
   const favoriteSet = useMemo(() => new Set(favorites), [favorites]);
@@ -63,8 +65,8 @@ export function SpecializationGroupModal({ group, courses, onClose }: Props) {
   );
   const trackDef = useMemo(() => getTrackDefinition(trackId), [trackId]);
   const allGroups = useMemo(
-    () => trackId ? getTrackSpecializationCatalog(trackId).groups : [],
-    [trackId],
+    () => trackId ? getTrackSpecializationCatalog(trackId, catalogYear).groups : [],
+    [trackId, catalogYear],
   );
   const coreLockedSet = useMemo(
     () => trackDef ? buildCoreLockedSet({ semesters, completedCourses, coreToChainOverrides, courseChainAssignments }, trackDef) : new Set<string>(),

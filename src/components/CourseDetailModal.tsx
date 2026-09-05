@@ -35,6 +35,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
     courseChainAssignments, setCourseChainAssignment,
     setNoAdditionalCreditOverride,
     courseNotes, setCourseNote,
+    catalogYear,
   } = usePlanStore(useShallow((state) => ({
     grades: state.grades,
     setGrade: state.setGrade,
@@ -45,6 +46,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
     selectedPrereqGroups: state.selectedPrereqGroups,
     setSelectedPrereqGroup: state.setSelectedPrereqGroup,
     trackId: state.trackId,
+    catalogYear: state.catalogYear,
     binaryPass: state.binaryPass,
     setBinaryPass: state.setBinaryPass,
     removeCourseFromSemester: state.removeCourseFromSemester,
@@ -56,7 +58,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
   })));
 
   const chainMemberships = useMemo(() => {
-    const allSpecs = trackId ? getTrackSpecializationCatalog(trackId).groups : [];
+    const allSpecs = trackId ? getTrackSpecializationCatalog(trackId, catalogYear).groups : [];
     return allSpecs
       .filter((g) =>
         g.mandatoryCourses.includes(course.id) || g.electiveCourses.includes(course.id)
@@ -66,7 +68,7 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
         name: g.name,
         role: g.mandatoryCourses.includes(course.id) ? 'mandatory' as const : 'elective' as const,
       }));
-  }, [trackId, course.id]);
+  }, [trackId, catalogYear, course.id]);
 
   const trackDef = useMemo(() => getTrackDefinition(trackId), [trackId]);
 
@@ -81,10 +83,10 @@ export function CourseDetailModal({ course, courses, semester, instanceKey, noAd
   const specializationIds = useMemo(
     () => new Set(
       trackId
-        ? getTrackSpecializationCatalog(trackId).groups.flatMap((g) => [...g.mandatoryCourses, ...g.electiveCourses])
+        ? getTrackSpecializationCatalog(trackId, catalogYear).groups.flatMap((g) => [...g.mandatoryCourses, ...g.electiveCourses])
         : [],
     ),
-    [trackId],
+    [trackId, catalogYear],
   );
 
   const effectiveId = instanceKey ?? course.id;

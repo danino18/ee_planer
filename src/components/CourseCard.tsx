@@ -271,14 +271,14 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleCourseExcludedFromCredits(effectiveId);
             }}
-            className={`absolute top-0 right-11 w-11 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${isExcludedFromCredits ? 'text-gray-300 dark:text-slate-600 hover:text-blue-400' : 'text-blue-500 hover:text-blue-600'}`}
+            className={`absolute top-0 right-11 w-14 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${isExcludedFromCredits ? 'text-gray-300 dark:text-slate-600 hover:text-blue-400' : 'text-blue-500 hover:text-blue-600'}`}
             title={isExcludedFromCredits ? 'לא נספר בסכימה — לחץ כדי לכלול' : 'נספר בסכימה — לחץ כדי לא להתחשב'}
           >
             Σ
           </button>
         )}
 
-        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? `pl-28 ${semester === 0 ? 'pr-24' : 'pr-11'}` : ''}`}>{course.name}</p>
+        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? `pl-28 ${semester === 0 ? 'pr-28' : 'pr-11'}` : ''}`}>{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">
