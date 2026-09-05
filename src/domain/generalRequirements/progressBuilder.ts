@@ -238,13 +238,6 @@ export function buildGeneralRequirementsProgress({
     }
 
     if (rule.id === 'english') {
-      // A 134+ Amiram/Psychometric English score is a full exemption from the
-      // English requirement — Technion treats it like a built-in binary pass,
-      // no further English-taught courses needed.
-      if (englishScore !== undefined && englishScore >= 134 && englishScore <= 150) {
-        return { ...rule, targetValue: 0 };
-      }
-
       return {
         ...rule,
         courseMatcher: {

@@ -86,6 +86,7 @@ export function useDegreeCompletionCheck(
       doubleSpecializations: input.doubleSpecializations,
       coreToChainOverrides: input.coreToChainOverrides,
       trackDef,
+      englishScore: input.englishScore,
     };
 
     // Build semester labels map

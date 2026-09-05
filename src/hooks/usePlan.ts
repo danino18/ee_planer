@@ -32,6 +32,7 @@ import {
   isFreeElectiveCourseId,
   isSportCourseId,
   isSportsTeamCourseId,
+  isTechnicalEnglishAdvancedAName,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
 import {
@@ -188,10 +189,22 @@ export function usePrerequisiteStatus(
   const selectedPrereqGroups = usePlanStore((s) => s.selectedPrereqGroups);
   const currentSemester = usePlanStore((s) => s.currentSemester);
   const semesterOrder = usePlanStore((s) => s.semesterOrder);
+  const englishScore = usePlanStore((s) => s.englishScore);
 
   return useMemo(() => {
     const missingMap = new Map<string, string[][]>();
     if (!trackDef) return missingMap;
+
+    // A 120+ English score waives the "אנגלית מתקדמים א'" prerequisite that
+    // "אנגלית מתקדמים ב'" carries in live SAP data — from that score up, the
+    // bracket rules no longer require Advanced A at all. There's no fixed
+    // course ID for it, so resolve it by name.
+    const scoreExemptIds = new Set<string>();
+    if (englishScore !== undefined && englishScore >= 120 && englishScore <= 150) {
+      for (const [id, c] of courses) {
+        if (isTechnicalEnglishAdvancedAName(c.name)) scoreExemptIds.add(id);
+      }
+    }
 
     const baseTaken = new Set<string>();
     for (const id of completedCourses) { baseTaken.add(id); baseTaken.add(bareId(id)); }
@@ -227,6 +240,8 @@ export function usePrerequisiteStatus(
 
       const expanded = expandWithEquivalents(alreadyTaken);
       for (const id of expanded) alreadyTaken.add(id);
+
+      for (const id of scoreExemptIds) alreadyTaken.add(id);
 
       for (const courseId of courseIds) {
         const course = courses.get(bareId(courseId));
@@ -264,7 +279,7 @@ export function usePrerequisiteStatus(
     }
 
     return missingMap;
-  }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester, semesterOrder]);
+  }, [semesters, completedCourses, substitutions, selectedPrereqGroups, courses, trackDef, currentSemester, semesterOrder, englishScore]);
 }
 
 export function useWeightedAverage(courses: Map<string, SapCourse>): number | null {
@@ -874,9 +889,11 @@ export function computeRequirementsProgress(
           { kind: 'advanced_b', label: "מתקדמים ב'", done: !!advancedBName, courseNames: advancedBName ? [advancedBName] : [] },
           { kind: 'content_course', label: 'קורס תוכן באנגלית', done: englishContentCourseNamesInPlan.length >= 1, courseNames: englishContentCourseNamesInPlan.slice(0, 1), neededCount: 1 },
         ];
+      } else if (englishScore >= 134 && englishScore <= 150) {
+        englishRequirements = [
+          { kind: 'content_course', label: 'קורסי תוכן באנגלית', done: englishContentCourseNamesInPlan.length >= 2, courseNames: englishContentCourseNamesInPlan.slice(0, 2), neededCount: 2 },
+        ];
       }
-      // A 134+ score is a full exemption — no further English-taught courses
-      // are required, so englishRequirements stays empty for that bracket.
     }
 
     const generalRequired = Math.max(0, trackDef.generalCreditsRequired - miluimCredits);

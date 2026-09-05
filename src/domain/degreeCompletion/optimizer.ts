@@ -6,7 +6,7 @@ import type {
   SpecializationMode,
 } from '../../types';
 import { evaluateSpecializationGroup } from '../specializations';
-import { getSatisfiedAlternativeCourseId } from '../../data/tracks/semesterSchedule';
+import { getSatisfiedAlternativeCourseId, shouldHideRecommendedCourse } from '../../data/tracks/semesterSchedule';
 import { buildChainEligibleCourseSet } from './helpers';
 
 export interface OptimizerInput {
@@ -17,6 +17,7 @@ export interface OptimizerInput {
   doubleSpecializations: string[];
   coreToChainOverrides: string[];
   trackDef?: TrackDefinition | null;
+  englishScore?: number;
 }
 
 export interface SchedulingContext {
@@ -355,14 +356,17 @@ function getMissingScheduleCourseIds(
   trackDef: TrackDefinition,
   allPlaced: Set<string>,
   courses: Map<string, SapCourse>,
+  englishScore?: number,
 ): string[] {
   const missing: string[] = [];
   for (const entry of trackDef.semesterSchedule) {
     for (const courseId of entry.courses) {
-      if (!allPlaced.has(courseId)) missing.push(courseId);
+      if (allPlaced.has(courseId)) continue;
+      if (shouldHideRecommendedCourse(courseId, courses, englishScore)) continue;
+      missing.push(courseId);
     }
     for (const group of entry.alternativeGroups ?? []) {
-      if (getSatisfiedAlternativeCourseId(group, allPlaced, courses)) continue;
+      if (getSatisfiedAlternativeCourseId(group, allPlaced, courses, englishScore)) continue;
       const preferredIds = group.showBoth ? group.courseIds : [group.defaultCourseId ?? group.courseIds[0]];
       missing.push(...preferredIds);
     }
@@ -381,7 +385,7 @@ export function suggestTrackScheduleCourses(
   const recommendations: CourseRecommendation[] = [];
 
   // Mandatory courses from semester schedule
-  const scheduledIds = getMissingScheduleCourseIds(trackDef, allPlaced, courses);
+  const scheduledIds = getMissingScheduleCourseIds(trackDef, allPlaced, courses, input.englishScore);
   let mandatoryCount = 0;
   for (const courseId of scheduledIds) {
     if (mandatoryCount >= 10) break;

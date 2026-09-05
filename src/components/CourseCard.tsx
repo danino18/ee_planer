@@ -264,6 +264,7 @@ export const CourseCard = memo(function CourseCard({
 
         {showCardActions && semester === 0 && (
           <button
+            data-tour="course-card-sum-toggle"
             onPointerDown={(e) => {
               e.stopPropagation();
             }}
