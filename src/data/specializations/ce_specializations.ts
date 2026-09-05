@@ -15,13 +15,13 @@ export const CE_SPECIALIZATION_YEAR_VARIANTS: Record<string, Record<number, Spec
     2025: {
       courseSubstitutions: [{
         from: '00460237',
-        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'mandatory_core' },
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים לשרשרת VLSI', category: 'mandatory_core' },
       }],
     },
     2026: {
       courseSubstitutions: [{
         from: '00460237',
-        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'mandatory_core' },
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים לשרשרת VLSI', category: 'mandatory_core' },
       }],
     },
   },
@@ -29,13 +29,13 @@ export const CE_SPECIALIZATION_YEAR_VARIANTS: Record<string, Record<number, Spec
     2025: {
       courseSubstitutions: [{
         from: '00460237',
-        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'elective' },
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים לשרשרת VLSI', category: 'elective' },
       }],
     },
     2026: {
       courseSubstitutions: [{
         from: '00460237',
-        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'elective' },
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים לשרשרת VLSI', category: 'elective' },
       }],
     },
   },
@@ -43,13 +43,13 @@ export const CE_SPECIALIZATION_YEAR_VARIANTS: Record<string, Record<number, Spec
     2025: {
       courseSubstitutions: [{
         from: '00460237',
-        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'elective' },
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים לשרשרת VLSI', category: 'elective' },
       }],
     },
     2026: {
       courseSubstitutions: [{
         from: '00460237',
-        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים – מבוא ל- VLSI', category: 'elective' },
+        to: { courseNumber: '00460231', courseName: 'מעגלים משולבים לשרשרת VLSI', category: 'elective' },
       }],
     },
   },

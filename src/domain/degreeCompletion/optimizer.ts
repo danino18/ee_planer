@@ -6,7 +6,7 @@ import type {
   SpecializationMode,
 } from '../../types';
 import { evaluateSpecializationGroup } from '../specializations';
-import { getAllScheduledCourseIds } from '../../data/tracks/semesterSchedule';
+import { getSatisfiedAlternativeCourseId, shouldHideRecommendedCourse } from '../../data/tracks/semesterSchedule';
 import { buildChainEligibleCourseSet } from './helpers';
 
 export interface OptimizerInput {
@@ -17,6 +17,7 @@ export interface OptimizerInput {
   doubleSpecializations: string[];
   coreToChainOverrides: string[];
   trackDef?: TrackDefinition | null;
+  englishScore?: number;
 }
 
 export interface SchedulingContext {
@@ -343,6 +344,36 @@ export function suggestMissingCourses(
   return recommendations;
 }
 
+/**
+ * Course IDs still missing from the track's mandatory semester schedule.
+ * Mirrors `buildPreciseMandatorySet`'s alt-group resolution: a group counts
+ * as satisfied (and is skipped) if the student took *any* one of its
+ * members, not just the default one — otherwise a student who took the
+ * non-default alternative (e.g. פיזיקה 1פ instead of the default פיזיקה 1מ)
+ * would still see the default recommended as "missing".
+ */
+function getMissingScheduleCourseIds(
+  trackDef: TrackDefinition,
+  allPlaced: Set<string>,
+  courses: Map<string, SapCourse>,
+  englishScore?: number,
+): string[] {
+  const missing: string[] = [];
+  for (const entry of trackDef.semesterSchedule) {
+    for (const courseId of entry.courses) {
+      if (allPlaced.has(courseId)) continue;
+      if (shouldHideRecommendedCourse(courseId, courses, englishScore)) continue;
+      missing.push(courseId);
+    }
+    for (const group of entry.alternativeGroups ?? []) {
+      if (getSatisfiedAlternativeCourseId(group, allPlaced, courses, englishScore)) continue;
+      const preferredIds = group.showBoth ? group.courseIds : [group.defaultCourseId ?? group.courseIds[0]];
+      missing.push(...preferredIds);
+    }
+  }
+  return missing;
+}
+
 export function suggestTrackScheduleCourses(
   input: OptimizerInput,
   courses: Map<string, SapCourse>,
@@ -354,7 +385,7 @@ export function suggestTrackScheduleCourses(
   const recommendations: CourseRecommendation[] = [];
 
   // Mandatory courses from semester schedule
-  const scheduledIds = getAllScheduledCourseIds(trackDef);
+  const scheduledIds = getMissingScheduleCourseIds(trackDef, allPlaced, courses, input.englishScore);
   let mandatoryCount = 0;
   for (const courseId of scheduledIds) {
     if (mandatoryCount >= 10) break;

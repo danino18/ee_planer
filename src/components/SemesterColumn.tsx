@@ -122,6 +122,7 @@ export const SemesterColumn = memo(function SemesterColumn({
       ref={setColumnRef}
       style={sortableStyle}
       data-print-col
+      data-tour={semester === 0 ? 'unassigned-pool' : undefined}
       className={`flex flex-col rounded-2xl border-2 min-h-44 transition-all duration-200 ${columnStyle}`}
     >
       <div className={`px-3 py-2.5 rounded-t-2xl border-b ${isSummer ? 'bg-amber-50/80 dark:bg-amber-950/80 border-amber-200/70 dark:border-amber-900/70' : 'bg-white/90 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700'}`}>

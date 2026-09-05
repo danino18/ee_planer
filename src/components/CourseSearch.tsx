@@ -338,7 +338,8 @@ export const CourseSearch = memo(function CourseSearch({ courses, onCourseAdded 
   useEffect(() => {
     if (!pickerFor) return undefined;
 
-    function closePicker() {
+    function closePicker(event?: Event) {
+      if (event && pickerMenuRef.current?.contains(event.target as Node)) return;
       setPickerFor(null);
       setPickerPosition(null);
     }

@@ -86,6 +86,7 @@ export const CourseCard = memo(function CourseCard({
     toggleFavorite,
     toggleCompleted,
     removeCourseFromSemester,
+    toggleCourseExcludedFromCredits,
     isFavorite,
     grade,
     note,
@@ -97,10 +98,12 @@ export const CourseCard = memo(function CourseCard({
     completedCourses,
     semesters,
     semesterOrder,
+    isExcludedFromCredits,
   } = usePlanStore(useShallow((state) => ({
     toggleFavorite: state.toggleFavorite,
     toggleCompleted: state.toggleCompleted,
     removeCourseFromSemester: state.removeCourseFromSemester,
+    toggleCourseExcludedFromCredits: state.toggleCourseExcludedFromCredits,
     isFavorite: state.favorites.includes(course.id),
     grade: state.grades[gradeKey(effectiveId, semester)],
     note: state.courseNotes?.[effectiveId],
@@ -114,6 +117,7 @@ export const CourseCard = memo(function CourseCard({
     completedCourses: state.completedCourses,
     semesters: state.semesters,
     semesterOrder: state.semesterOrder,
+    isExcludedFromCredits: (state.excludedFromCreditsCourseIds ?? []).includes(effectiveId),
   })));
   const isRepeatable = REPEATABLE_COURSES.has(course.id);
   const effectiveIsCompleted = isRepeatable && instanceKey
@@ -258,7 +262,24 @@ export const CourseCard = memo(function CourseCard({
           </button>
         )}
 
-        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? 'pr-11 pl-28' : ''}`}>{course.name}</p>
+        {showCardActions && semester === 0 && (
+          <button
+            data-tour="course-card-sum-toggle"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleCourseExcludedFromCredits(effectiveId);
+            }}
+            className={`absolute top-0 right-11 w-14 h-11 flex items-center justify-center text-sm leading-none font-bold transition-colors ${isExcludedFromCredits ? 'text-gray-300 dark:text-slate-600 hover:text-blue-400' : 'text-blue-500 hover:text-blue-600'}`}
+            title={isExcludedFromCredits ? 'לא נספר בסכימה — לחץ כדי לכלול' : 'נספר בסכימה — לחץ כדי לא להתחשב'}
+          >
+            Σ
+          </button>
+        )}
+
+        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? `pl-28 ${semester === 0 ? 'pr-28' : 'pr-11'}` : ''}`}>{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">

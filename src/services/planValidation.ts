@@ -31,6 +31,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set<keyof StudentPlan>([
   'dismissedRecommendedCourses',
   'facultyColorOverrides',
   'coreToChainOverrides',
+  'excludedFromCreditsCourseIds',
   'courseChainAssignments',
   'electiveCreditAssignments',
   'courseNotes',
@@ -512,6 +513,12 @@ function sanitizeStudentPlanRecord(
     const coreToChainOverrides = validateStringArray(value.coreToChainOverrides, 600, 32);
     if (!coreToChainOverrides) return null;
     sanitized.coreToChainOverrides = coreToChainOverrides;
+  }
+
+  if ('excludedFromCreditsCourseIds' in value) {
+    const excludedFromCreditsCourseIds = validateStringArray(value.excludedFromCreditsCourseIds, 600, 32);
+    if (!excludedFromCreditsCourseIds) return null;
+    sanitized.excludedFromCreditsCourseIds = excludedFromCreditsCourseIds;
   }
 
   if ('courseChainAssignments' in value) {

@@ -29,6 +29,7 @@ const ALLOWED_TOP_LEVEL_KEYS = new Set([
   "facultyColorOverrides",
   "dismissedRecommendedCourses",
   "coreToChainOverrides",
+  "excludedFromCreditsCourseIds",
   "courseChainAssignments",
   "electiveCreditAssignments",
   "courseNotes",
@@ -627,6 +628,19 @@ function validateStudentPlanRecord(
       return coreToChainOverrides;
     }
     sanitized.coreToChainOverrides = coreToChainOverrides;
+  }
+
+  if ("excludedFromCreditsCourseIds" in value) {
+    const excludedFromCreditsCourseIds = validateStringArray(
+      "excludedFromCreditsCourseIds",
+      value.excludedFromCreditsCourseIds,
+      600,
+      32
+    );
+    if (isValidationFailure(excludedFromCreditsCourseIds)) {
+      return excludedFromCreditsCourseIds;
+    }
+    sanitized.excludedFromCreditsCourseIds = excludedFromCreditsCourseIds;
   }
 
   if ("courseChainAssignments" in value) {

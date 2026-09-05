@@ -14,8 +14,11 @@ export const csTrack: TrackDefinition = {
   electivePolicy: {
     facultyCourseAreas: ['ee', 'cs'],
   },
+  // 00460237 "מעגלים משולבים - מבוא ל-VLSI" was renumbered/renamed to 00460231
+  // "מעגלים משולבים לשרשרת VLSI" starting 2025/26 (תשפ"ו); every currently enrolled
+  // student takes it under the new number regardless of entry year.
   coreRequirement: {
-    courses: ['00440140','00440191','00440198','00440202','00460195','00460237','00460266'],
+    courses: ['00440140','00440191','00440198','00440202','00460195','00460231','00460266'],
     required: 4,
   },
   semesterSchedule: [

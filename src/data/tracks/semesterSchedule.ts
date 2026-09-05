@@ -4,26 +4,33 @@ import type {
   SemesterScheduleEntry,
   TrackDefinition,
 } from '../../types';
-import { isTechnicalEnglishCourseName } from '../generalRequirements/courseClassification';
+import {
+  isTechnicalEnglishAdvancedAName,
+  isTechnicalEnglishAdvancedBName,
+} from '../generalRequirements/courseClassification';
 
-function isTechnicalEnglishAdvancedB(
-  course: Pick<SapCourse, 'name'> | undefined,
-): boolean {
-  if (!course) return false;
-  const normalized = course.name.replace(/['׳"]/g, '');
-  return isTechnicalEnglishCourseName(course.name) && normalized.includes('מתקדמים ב');
-}
-
+/**
+ * A score of 120+ fully exempts the student from Advanced English A, and a
+ * score of 134+ additionally exempts from Advanced English B (see the
+ * bracket rules in usePlan.ts/progressBuilder.ts) — so a fixed-schedule
+ * course matching either name should stop being recommended/counted as
+ * mandatory once the corresponding threshold is reached.
+ */
 export function shouldHideRecommendedCourse(
   courseId: string,
   courses: Map<string, SapCourse>,
   englishScore?: number,
 ): boolean {
-  if (englishScore === undefined || englishScore < 134 || englishScore > 150) {
+  if (englishScore === undefined || englishScore < 120 || englishScore > 150) {
     return false;
   }
 
-  return isTechnicalEnglishAdvancedB(courses.get(courseId));
+  const course = courses.get(courseId);
+  if (!course) return false;
+
+  if (isTechnicalEnglishAdvancedAName(course.name)) return true;
+  if (englishScore >= 134 && isTechnicalEnglishAdvancedBName(course.name)) return true;
+  return false;
 }
 
 export function getAllSemesterEntryCourseIds(entry: SemesterScheduleEntry): string[] {

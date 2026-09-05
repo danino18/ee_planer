@@ -153,6 +153,22 @@ export const ADVANCED_TOUR_STEPS: TourStep[] = [
     advanceOn: 'button',
   },
   {
+    id: 'course-card-sum-toggle',
+    selector: '[data-tour="course-card-sum-toggle"]',
+    title: 'התחשבות בסכימה',
+    body: 'קורסים ב"לא משובץ" נספרים כברירת מחדל בכל סכימות הדרישות (חובה, בחירה, סה"כ). אם אתם מציבים שם כמה אפשרויות לבחירה כדי להשוות ביניהן, לחצו על כפתור ה-Σ בכרטיסיית הקורס כדי להוציא אותו מהסכימה זמנית — הקורס יישאר בלוח, ולחיצה נוספת תחזיר אותו להיספר.',
+    fallback: 'describe',
+    advanceOn: 'button',
+  },
+  {
+    id: 'unassigned-pool',
+    selector: '[data-tour="unassigned-pool"]',
+    title: 'עמודת "לא משובץ"',
+    body: 'קורסים שהוספתם דרך החיפוש אך עדיין לא גררתם לסמסטר מסוים ממתינים כאן. הם לא אבודים — ותוכלו לשלוט האם כל אחד מהם נספר בדרישות התואר, כמו שראינו בשלב הקודם.',
+    fallback: 'describe',
+    advanceOn: 'button',
+  },
+  {
     id: 'view-toggle',
     selector: '[data-tour="view-toggle"]',
     title: 'תצוגות שונות ללוח',

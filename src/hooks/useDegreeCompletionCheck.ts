@@ -49,6 +49,7 @@ export function useDegreeCompletionCheck(
     manualMelagCourseIds: s.manualMelagCourseIds ?? [],
     semesterOrder: s.semesterOrder,
     coreToChainOverrides: s.coreToChainOverrides ?? [],
+    excludedFromCreditsCourseIds: s.excludedFromCreditsCourseIds ?? [],
     courseChainAssignments: s.courseChainAssignments,
     noAdditionalCreditOverrides: s.noAdditionalCreditOverrides,
     roboticsMinorEnabled: s.roboticsMinorEnabled ?? false,
@@ -85,6 +86,7 @@ export function useDegreeCompletionCheck(
       doubleSpecializations: input.doubleSpecializations,
       coreToChainOverrides: input.coreToChainOverrides,
       trackDef,
+      englishScore: input.englishScore,
     };
 
     // Build semester labels map
