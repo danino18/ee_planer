@@ -118,6 +118,35 @@ function mandatoryEarnedFor(trackDef, courses, placedIds) {
   return progress.mandatory.earned;
 }
 
+function mandatoryRequiredFor(trackDef, courses, placedIds, englishScore) {
+  const progress = computeRequirementsProgress(
+    {
+      semesters: { 0: placedIds },
+      completedCourses: [],
+      completedInstances: [],
+      grades: {},
+      binaryPass: {},
+      selectedSpecializations: [],
+      doubleSpecializations: [],
+      hasEnglishExemption: false,
+      miluimCredits: 0,
+      englishScore,
+      englishTaughtCourses: [],
+      semesterOrder: [1],
+      coreToChainOverrides: [],
+      courseChainAssignments: {},
+      electiveCreditAssignments: {},
+      roboticsMinorEnabled: false,
+      entrepreneurshipMinorEnabled: false,
+    },
+    courses,
+    trackDef,
+    emptyCatalog(trackDef.id),
+    null,
+  );
+  return progress.mandatory.required;
+}
+
 // Regression test for the reported bug: in the 2025/26 and 2026/27 ee.ts year
 // variants, semester 1 listed 01140071 (פיזיקה 1מ') and 01140032 (the lab
 // alternative-group default) both directly in `courses` AND inside
@@ -179,3 +208,46 @@ test('ee 2025 semester 1 still recognizes the physics defaults as mandatory via 
   assert.ok(allIds.has('01140071'));
   assert.ok(allIds.has('01140032'));
 });
+
+// English exemption (englishScore >= 134): the Advanced English B course
+// (03240033) is already hidden from mandatoryIds at that threshold; this
+// verifies the required mandatory-credit total is reduced by that course's
+// real credits to match, on the plain track path and the CE project-profile
+// path, and that the narrower 120-133 partial-exemption band (Advanced
+// English A only) does not affect the total.
+{
+  const englishAdvancedBCourse = { id: '03240033', name: "אנגלית טכנית-מתקדמים ב'", credits: 3, prerequisites: [], faculty: '' };
+
+  test('ee 2025 track: no exemption keeps mandatory required at the base total', () => {
+    const trackDef = resolveTrackForYear(eeTrack, 2025);
+    const courses = new Map([[englishAdvancedBCourse.id, englishAdvancedBCourse]]);
+    assert.equal(mandatoryRequiredFor(trackDef, courses, [], undefined), 106);
+  });
+
+  test('ee 2025 track: englishScore >= 134 reduces mandatory required by 3', () => {
+    const trackDef = resolveTrackForYear(eeTrack, 2025);
+    const courses = new Map([[englishAdvancedBCourse.id, englishAdvancedBCourse]]);
+    assert.equal(mandatoryRequiredFor(trackDef, courses, [], 134), 103);
+  });
+
+  test('ee 2025 track: englishScore in the 120-133 partial band does not reduce mandatory required', () => {
+    const trackDef = resolveTrackForYear(eeTrack, 2025);
+    const courses = new Map([[englishAdvancedBCourse.id, englishAdvancedBCourse]]);
+    assert.equal(mandatoryRequiredFor(trackDef, courses, [], 125), 106);
+  });
+
+  test('ce track: English exemption reduces mandatory required on top of the CS-project profile', () => {
+    const trackDef = resolveTrackForYear(ceTrack, 2025);
+    const csProjectA = { id: '02340991', name: 'פרויקט א', credits: 4, prerequisites: [], faculty: '' };
+    const csProjectB = { id: '02340992', name: 'פרויקט ב', credits: 4, prerequisites: [], faculty: '' };
+    const courses = new Map([
+      [englishAdvancedBCourse.id, englishAdvancedBCourse],
+      [csProjectA.id, csProjectA],
+      [csProjectB.id, csProjectB],
+    ]);
+    const placedIds = [csProjectA.id, csProjectB.id];
+
+    assert.equal(mandatoryRequiredFor(trackDef, courses, placedIds, undefined), 112.5);
+    assert.equal(mandatoryRequiredFor(trackDef, courses, placedIds, 134), 109.5);
+  });
+}

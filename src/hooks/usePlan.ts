@@ -33,9 +33,11 @@ import {
   isSportCourseId,
   isSportsTeamCourseId,
   isTechnicalEnglishAdvancedAName,
+  isTechnicalEnglishAdvancedBName,
   isTechnicalEnglishCourseName,
 } from '../data/generalRequirements/courseClassification';
 import {
+  getAllScheduledCourseIds,
   getSatisfiedAlternativeCourseId,
   getVisibleMandatoryCourseIds,
 } from '../data/tracks/semesterSchedule';
@@ -537,6 +539,22 @@ export function computeRequirementsProgress(
       const labPoolRequired = trackDef.labPool?.required ?? 0;
       // Remove old lab credits, add back the labPool requirement (net −2 for EE: −5 + 3)
       mandatoryCreditsRequired -= oldLabCredits - labPoolRequired;
+    }
+
+    // English exemption: englishScore >= 134 already hides the Advanced English B
+    // course from mandatoryIds (getVisibleMandatoryCourseIds / shouldHideRecommendedCourse).
+    // Shrink the required bucket by that course's real credits so the ceiling stays
+    // reachable. Scoped to B only — the 120-133 partial-exemption band (Advanced English A)
+    // is intentionally out of scope.
+    const rawMandatoryIds = new Set(getAllScheduledCourseIds(trackDef));
+    const englishAdvancedBHiddenIds = [...rawMandatoryIds].filter((id) => (
+      !mandatoryIds.has(id) && isTechnicalEnglishAdvancedBName(courses.get(id)?.name ?? '')
+    ));
+    if (englishAdvancedBHiddenIds.length > 0) {
+      mandatoryCreditsRequired -= englishAdvancedBHiddenIds.reduce(
+        (sum, id) => sum + (courses.get(id)?.credits ?? 0),
+        0,
+      );
     }
 
     // Issue 3: partialMandatoryIds tracks courses where only a capped amount (the default course's
