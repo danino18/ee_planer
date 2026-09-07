@@ -790,15 +790,6 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
               >
                 {darkMode === 'dark' ? '🌙' : darkMode === 'light' ? '☀️' : '🌓'}
               </button>
-              <button
-                onClick={undo}
-                disabled={_history.length === 0}
-                className="text-sm border px-3 py-1.5 rounded-lg transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
-                style={{ color: 'rgba(255,255,255,0.65)', borderColor: 'rgba(255,255,255,0.18)' }}
-                title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
-              >
-                <span>↩</span><span className="hidden sm:inline"> בטל</span>
-              </button>
               <div data-tour="degree-planning-menu">
                 <DegreePlanningMenu
                   onInitializeRecommended={handleInitializeRecommended}
@@ -844,6 +835,15 @@ function PlannerApp({ courses, trackDef, availableYears }: { courses: Map<string
                 style={{ color: 'rgba(252,165,165,0.9)', borderColor: 'rgba(252,165,165,0.3)' }}
               >
                 <span className="hidden sm:inline">החלף מסלול</span><span className="sm:hidden">מסלול</span>
+              </button>
+              <button
+                onClick={undo}
+                disabled={_history.length === 0}
+                className="text-sm font-medium border px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border-white/25 hover:border-white/40 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-white/10"
+                style={{ color: 'rgba(255,255,255,0.85)' }}
+                title={_history.length > 0 ? `בטל פעולה אחרונה (${_history.length})` : 'אין פעולות לביטול'}
+              >
+                <span>↩</span><span className="hidden sm:inline"> בטל</span>
               </button>
             </div>
           </div>

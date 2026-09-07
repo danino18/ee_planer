@@ -393,6 +393,7 @@ export const SemesterGrid = memo(function SemesterGrid({ courses, trackDef, spec
       summerIndex: summerSemesters.includes(sem) ? summerSemesters.indexOf(sem) + 1 : undefined,
       regularIndex: regularIndexMap.get(sem),
       isRowMode: viewMode === 'rows' || viewMode === 'buckets',
+      compactActions: viewMode === 'grid' && gridCols >= 5 && sem !== 0,
       semesterType: getSemesterType(sem),
       onSetSemesterType: (type: 'winter' | 'spring') => setSemesterType(sem, type),
       warningsIgnored: !!(semesterWarningsIgnored ?? []).includes(sem),
