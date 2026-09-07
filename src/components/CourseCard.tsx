@@ -213,7 +213,7 @@ export const CourseCard = memo(function CourseCard({
         `}
       >
         {showCardActions && (
-          <div dir="ltr" className="absolute top-0 left-0 flex items-center">
+          <div dir="ltr" className="absolute top-0 left-0 flex items-center gap-4">
           <button
             onPointerDown={(e) => {
               e.stopPropagation();
@@ -222,7 +222,7 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleFavorite(course.id);
             }}
-            className={`w-14 h-14 flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'}`}
+            className={`w-12 h-14 flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'}`}
             title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
           >
             {isFavorite ? '★' : '☆'}
@@ -236,7 +236,7 @@ export const CourseCard = memo(function CourseCard({
                 e.stopPropagation();
                 removeCourseFromSemester(effectiveId, semester);
               }}
-              className="w-14 h-14 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors"
+              className="w-12 h-14 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors"
               title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
               aria-label={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
             >

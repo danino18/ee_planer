@@ -19,6 +19,7 @@ const HUMANITIES_FREE_ELECTIVE_COURSES = [
   { id: '03240621', name: 'רוסית מתחילים', credits: 2 },
   { id: '03240630', name: 'איטלקית מתחילים', credits: 2 },
   { id: '03240675', name: 'ספרדית מתחילים', credits: 2 },
+  { id: '03240679', name: 'ספרדית בינונית', credits: 2 },
   { id: '03240697', name: 'עקרונות מעשיים לעיבוד תמונה', credits: 2 },
   { id: '03250001', name: 'אומן בקמפוס – 1 (סאונד)', credits: 2 },
   { id: '03250013', name: 'סטודיו אומן בקמפוס 5 (אמנות)', credits: 2 },
