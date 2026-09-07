@@ -137,14 +137,33 @@ export function TourOverlay() {
   let cardTop: number;
   let cardLeft: number;
   if (effectiveRect) {
+    // Try below/above/right/left of the target, in that preference order, and
+    // only clamp the axis that doesn't separate the card from the target —
+    // clamping the *other* axis to fit the viewport must never push the card
+    // back on top of the spotlighted element (this used to happen for large
+    // targets, like a whole column, taller than the space above and below it).
     const spaceBelow = window.innerHeight - effectiveRect.bottom;
     const spaceAbove = effectiveRect.top;
-    cardTop = spaceBelow >= cardEstHeight + margin || spaceBelow >= spaceAbove
-      ? effectiveRect.bottom + margin
-      : effectiveRect.top - cardEstHeight - margin;
-    cardTop = Math.min(Math.max(cardTop, margin), window.innerHeight - margin - cardEstHeight);
-    cardLeft = effectiveRect.right - cardWidth;
-    cardLeft = Math.min(Math.max(cardLeft, margin), window.innerWidth - cardWidth - margin);
+    const spaceRight = window.innerWidth - effectiveRect.right;
+    const spaceLeft = effectiveRect.left;
+    const fitsBelow = spaceBelow >= cardEstHeight + margin;
+    const fitsAbove = spaceAbove >= cardEstHeight + margin;
+    const fitsRight = spaceRight >= cardWidth + margin;
+    const fitsLeft = spaceLeft >= cardWidth + margin;
+
+    if (fitsBelow || (!fitsAbove && !fitsRight && !fitsLeft)) {
+      cardTop = Math.max(effectiveRect.bottom + margin, margin);
+      cardLeft = Math.min(Math.max(effectiveRect.right - cardWidth, margin), window.innerWidth - cardWidth - margin);
+    } else if (fitsAbove) {
+      cardTop = Math.min(effectiveRect.top - cardEstHeight - margin, window.innerHeight - margin - cardEstHeight);
+      cardLeft = Math.min(Math.max(effectiveRect.right - cardWidth, margin), window.innerWidth - cardWidth - margin);
+    } else if (fitsRight || spaceRight >= spaceLeft) {
+      cardLeft = Math.max(effectiveRect.right + margin, margin);
+      cardTop = Math.min(Math.max(effectiveRect.top, margin), window.innerHeight - margin - cardEstHeight);
+    } else {
+      cardLeft = Math.max(Math.min(effectiveRect.left - cardWidth - margin, window.innerWidth - cardWidth - margin), margin);
+      cardTop = Math.min(Math.max(effectiveRect.top, margin), window.innerHeight - margin - cardEstHeight);
+    }
   } else {
     cardTop = Math.max(margin, window.innerHeight / 2 - cardEstHeight / 2);
     cardLeft = Math.max(margin, window.innerWidth / 2 - cardWidth / 2);
