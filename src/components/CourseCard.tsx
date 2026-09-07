@@ -40,6 +40,8 @@ interface Props {
   showActions?: boolean;
   /** Resolved historical grade statistic for the selected semester (catalog only). */
   gradeStat?: ResolvedStatistic | null;
+  /** Stack the favorite/remove buttons vertically instead of side by side, for narrow columns (e.g. 5-8 up grid view). */
+  compactActions?: boolean;
 }
 
 /** Format a 0–100 grade value, preserving a single decimal when present. */
@@ -71,6 +73,7 @@ export const CourseCard = memo(function CourseCard({
   draggable = true,
   showActions = true,
   gradeStat,
+  compactActions = false,
 }: Props) {
   const shareMode = useShareMode();
   const isReadOnly = shareMode?.isShareReview ?? false;
@@ -213,7 +216,7 @@ export const CourseCard = memo(function CourseCard({
         `}
       >
         {showCardActions && (
-          <div dir="ltr" className="absolute top-0 left-0 flex items-center gap-4">
+          <div dir="ltr" className={compactActions ? 'absolute top-0 left-0 flex flex-col items-center gap-1' : 'absolute top-0 left-0 flex items-center gap-4'}>
           <button
             onPointerDown={(e) => {
               e.stopPropagation();
@@ -222,7 +225,7 @@ export const CourseCard = memo(function CourseCard({
               e.stopPropagation();
               toggleFavorite(course.id);
             }}
-            className={`w-12 h-14 flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'}`}
+            className={`${compactActions ? 'w-11 h-9' : 'w-12 h-14'} flex items-center justify-center text-sm leading-none transition-colors ${isFavorite ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'}`}
             title={isFavorite ? 'הסר ממועדפים' : 'הוסף למועדפים'}
           >
             {isFavorite ? '★' : '☆'}
@@ -236,7 +239,7 @@ export const CourseCard = memo(function CourseCard({
                 e.stopPropagation();
                 removeCourseFromSemester(effectiveId, semester);
               }}
-              className="w-12 h-14 flex items-center justify-center text-xl leading-none font-semibold text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors"
+              className={`${compactActions ? 'w-11 h-9' : 'w-12 h-14'} flex items-center justify-center text-xl leading-none font-semibold text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors`}
               title={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
               aria-label={semester === 0 ? 'הסר מהתכנית' : 'הסר מהסמסטר'}
             >
@@ -279,7 +282,7 @@ export const CourseCard = memo(function CourseCard({
           </button>
         )}
 
-        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? `pl-28 ${semester === 0 ? 'pr-28' : 'pr-11'}` : ''}`}>{course.name}</p>
+        <p className={`text-xs font-semibold text-slate-800 dark:text-slate-100 leading-snug pt-0.5 ${showCardActions ? `${compactActions ? 'pl-14' : 'pl-28'} ${semester === 0 ? 'pr-28' : 'pr-11'}` : ''}`}>{course.name}</p>
 
         {wrongSemesterType && (
           <p className="text-xs text-red-500 mt-0.5 px-4 leading-tight">

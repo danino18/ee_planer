@@ -46,6 +46,7 @@ interface Props {
   containingSubstitutions?: Map<string, ContainingSubstitution>;
   onMarkSemesterComplete?: () => void;
   readOnly?: boolean;
+  compactActions?: boolean;
 }
 
 function getColumnStyle(isOver: boolean, isDragging: boolean, isSummer: boolean, isCurrent: boolean, isPast: boolean, isFuture: boolean): string {
@@ -72,6 +73,7 @@ export const SemesterColumn = memo(function SemesterColumn({
   containingSubstitutions = new Map(),
   onMarkSemesterComplete,
   readOnly = false,
+  compactActions = false,
 }: Props) {
   const { setNodeRef, isOver } = useDroppable({ id: `semester-${semester}`, disabled: readOnly });
   const {
@@ -284,6 +286,7 @@ export const SemesterColumn = memo(function SemesterColumn({
               isCoreLocked={coreLockedSet?.has(id) ?? false}
               draggable={!readOnly}
               showActions={!readOnly}
+              compactActions={compactActions}
             />
           );
         })}
